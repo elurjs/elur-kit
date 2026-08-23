@@ -239,6 +239,7 @@ export function nixJsKit(options: NixJsKitViteOptions = {}): Plugin[] {
 
 export { nixJsInterpolationPlugin, type InterpolationPluginOptions } from "./interpolation-plugin.js";
 export type { InterpolationMode } from "./interpolation-plugin.js";
+export { coreSupportsPartialInterpolation, shouldUseLegacyInterpolation } from "./interpolation-plugin.js";
 
 function setupHmr(
   server: ViteDevServer,
