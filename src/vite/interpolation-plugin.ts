@@ -1,4 +1,59 @@
+import { createRequire } from "node:module";
 import type { Plugin } from "vite";
+
+/**
+ * How the legacy interpolation transform is handled relative to the installed
+ * Nix.js core:
+ *
+ * - `"auto"` (default): the transform is only applied when the installed core
+ *   does NOT support partial attribute interpolation natively.
+ * - `"legacy"`: always apply the transform (for migrations), with a one-time
+ *   deprecation warning.
+ * - `"off"`: never apply the transform. With a core that supports partials
+ *   this is the recommended production mode.
+ */
+export type InterpolationMode = "auto" | "legacy" | "off";
+
+const require = createRequire(import.meta.url);
+
+let _warnedLegacy = false;
+
+function warnLegacyOnce(): void {
+  if (_warnedLegacy) return;
+  _warnedLegacy = true;
+  console.warn(
+    "[nix-js-kit] The legacy interpolation transform is deprecated. " +
+      "Nix.js core now supports partial attribute interpolation natively. " +
+      "Remove `interpolation: \"legacy\"` once migration is complete.",
+  );
+}
+
+/**
+ * Detects whether the installed Nix.js core supports partial attribute
+ * interpolation natively (via the public `templateFeatures` capability).
+ */
+export function coreSupportsPartialInterpolation(): boolean {
+  try {
+    const core = require("@deijose/nix-js") as {
+      templateFeatures?: { partialAttributeInterpolation?: boolean };
+    };
+    return core?.templateFeatures?.partialAttributeInterpolation === true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Resolves whether the legacy transform should be applied for the given mode.
+ */
+export function shouldUseLegacyInterpolation(mode: InterpolationMode): boolean {
+  if (mode === "off") return false;
+  if (mode === "legacy") {
+    warnLegacyOnce();
+    return true;
+  }
+  return !coreSupportsPartialInterpolation();
+}
 
 /**
  * Transforms Nix.js `html\`\`` templates so that attributes with partial
@@ -14,6 +69,10 @@ import type { Plugin } from "vite";
  *   html\`<a href=${"/blog/" + slug}>...</a>\`
  *
  * Only files inside the app and islands directories are processed.
+ *
+ * @deprecated Nix.js core supports partial attribute interpolation natively.
+ *   Keep this transform only for migrations against older cores
+ *   (`interpolation: "legacy"`).
  */
 export interface InterpolationPluginOptions {
   appDir?: string;
@@ -322,6 +381,10 @@ function transformTemplateContent(content: string): string {
   return out;
 }
 
+/**
+ * @deprecated Use the native partial attribute interpolation of Nix.js core
+ *   (core >= 3.3). Kept for legacy migrations and direct consumers.
+ */
 export function transformPartialInterpolations(source: string): string {
   let result = "";
   let i = 0;

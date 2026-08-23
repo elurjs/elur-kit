@@ -1,6 +1,10 @@
 import { describe, it, after } from "node:test";
 import assert from "node:assert/strict";
 import { transformPartialInterpolations } from "../src/vite/interpolation-plugin.ts";
+import {
+  coreSupportsPartialInterpolation,
+  shouldUseLegacyInterpolation,
+} from "../src/vite/interpolation-plugin.ts";
 import { transformProjectFiles } from "../src/build/transform-source.ts";
 import { readFile, readdir, mkdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -62,6 +66,40 @@ describe("nixJsInterpolationPlugin transform", () => {
   });
 });
 
+describe("core capability detection and legacy mode", () => {
+  it("warns once when legacy mode is active", () => {
+    const warnings: string[] = [];
+    const original = console.warn;
+    console.warn = (msg: string) => warnings.push(msg);
+    try {
+      shouldUseLegacyInterpolation("legacy");
+      shouldUseLegacyInterpolation("legacy");
+      assert.equal(warnings.length, 1);
+      assert.ok(warnings[0].includes("deprecated"), warnings[0]);
+    } finally {
+      console.warn = original;
+    }
+  });
+
+  it("detects the installed core capability via templateFeatures", () => {
+    // The workspace core build exposes templateFeatures.partialAttributeInterpolation.
+    assert.equal(coreSupportsPartialInterpolation(), true);
+  });
+
+  it("resolves modes: legacy always transforms, off never transforms", () => {
+    assert.equal(shouldUseLegacyInterpolation("legacy"), true);
+    assert.equal(shouldUseLegacyInterpolation("off"), false);
+    // With a capable core the auto mode skips the legacy transform.
+    assert.equal(shouldUseLegacyInterpolation("auto"), false);
+  });
+
+  it("keeps transformPartialInterpolations exported for direct consumers", () => {
+    const source = 'html' + '`<a href="/blog/${slug}">Post</a>`;';
+    const result = transformPartialInterpolations(source);
+    assert.ok(result.includes('href=${"/blog/" + (slug)}'), result);
+  });
+});
+
 describe("transformProjectFiles", () => {
   const root = join(process.cwd(), "test/fixtures/transform-tmp");
   const appDir = join(root, "src/app");
@@ -94,7 +132,8 @@ describe("transformProjectFiles", () => {
 
   it("mirrors the tree and compensates relative imports", async () => {
     await writeFixture();
-    await transformProjectFiles({ root, appDir, islandsDir, outDir });
+    // Explicit legacy mode forces the transform regardless of core support.
+    await transformProjectFiles({ root, appDir, islandsDir, outDir, interpolation: "legacy" });
 
     const transformedPage = await readFile(join(outDir, "app/blog/[slug]/page.ts"), "utf8");
     // Imports within the mirror base keep working unchanged: the page imports
@@ -108,6 +147,24 @@ describe("transformProjectFiles", () => {
 
     const island = await readFile(join(outDir, "islands/LikeButton.ts"), "utf8");
     assert.ok(island.includes("LikeButton"));
+  });
+
+  it("with a capable core (auto) leaves partial interpolations verbatim", async () => {
+    await writeFixture();
+    await transformProjectFiles({ root, appDir, islandsDir, outDir });
+
+    const transformedPage = await readFile(join(outDir, "app/blog/[slug]/page.ts"), "utf8");
+    // The native runtime path is preserved: no rewrite of the partial.
+    assert.ok(transformedPage.includes('href="/blog/${slug}"'), transformedPage);
+    assert.ok(!transformedPage.includes('href=${"/blog/" + (slug)}'), transformedPage);
+  });
+
+  it("off mode never transforms", async () => {
+    await writeFixture();
+    await transformProjectFiles({ root, appDir, islandsDir, outDir, interpolation: "off" });
+
+    const transformedPage = await readFile(join(outDir, "app/blog/[slug]/page.ts"), "utf8");
+    assert.ok(transformedPage.includes('href="/blog/${slug}"'), transformedPage);
   });
 });
 

@@ -1,6 +1,6 @@
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { dirname, extname, relative, resolve, sep } from "node:path";
-import { transformPartialInterpolations } from "../vite/interpolation-plugin.js";
+import { shouldUseLegacyInterpolation, transformPartialInterpolations, type InterpolationMode } from "../vite/interpolation-plugin.js";
 
 export interface TransformProjectOptions {
   root: string;
@@ -13,6 +13,13 @@ export interface TransformProjectOptions {
    * that escape that ancestor are compensated for the added directory depth.
    */
   outDir: string;
+  /**
+   * How the legacy interpolation transform is handled (default: "auto").
+   * With a Nix.js core that supports partial attribute interpolation natively
+   * the transform is not applied; use "legacy" for migrations against older
+   * cores and "off" to never transform.
+   */
+  interpolation?: InterpolationMode;
 }
 
 /**
@@ -198,7 +205,7 @@ export async function transformProjectFiles(options: TransformProjectOptions): P
   for (const file of files) {
     const source = await readFile(file, "utf8");
     let output = source;
-    if (source.includes("html`")) {
+    if (source.includes("html`") && shouldUseLegacyInterpolation(options.interpolation ?? "auto")) {
       const transformed = transformPartialInterpolations(source);
       if (transformed !== source) {
         output = transformed;

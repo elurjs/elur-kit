@@ -2,7 +2,7 @@ import { mkdir, rm, rename, stat, cp, access } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join, resolve, dirname, relative } from "node:path";
 import { build as viteBuild, type InlineConfig, type PluginOption } from "vite";
-import { nixJsInterpolationPlugin } from "../vite/interpolation-plugin.js";
+import { nixJsInterpolationPlugin, shouldUseLegacyInterpolation, type InterpolationMode } from "../vite/interpolation-plugin.js";
 
 // --- Programmatic Vite build orchestration ---
 //
@@ -30,6 +30,13 @@ export interface ClientBuildOptions {
   base?: string;
   /** Optional log prefix. */
   logPrefix?: string;
+  /**
+   * How the legacy interpolation transform is handled (default: "auto").
+   * With a Nix.js core that supports partial attribute interpolation natively
+   * the transform is not applied; use "legacy" for migrations against older
+   * cores and "off" to never transform.
+   */
+  interpolation?: InterpolationMode;
 }
 
 export interface ClientBuildResult {
@@ -51,10 +58,12 @@ export async function buildClientBundle(options: ClientBuildOptions): Promise<Cl
   console.log(`${log} Building hydration bundle...`);
 
   const userConfig = await loadUserConfig(options.userConfigPath, options.root);
-  const pluginOptions: PluginOption = nixJsInterpolationPlugin({
-    appDir: options.appDir,
-    islandsDir: options.islandsDir,
-  });
+  const pluginOptions: PluginOption = shouldUseLegacyInterpolation(options.interpolation ?? "auto")
+    ? nixJsInterpolationPlugin({
+        appDir: options.appDir,
+        islandsDir: options.islandsDir,
+      })
+    : [];
 
   const config: InlineConfig = {
     ...userConfig,

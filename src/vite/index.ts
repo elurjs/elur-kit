@@ -10,7 +10,7 @@ import { matchApiRoute, matchRoute } from "../ssr/match.js";
 import { renderPage, renderErrorPage } from "../ssr/render.js";
 import { setContentRoot, clearContentCache } from "../content/collections.js";
 import { loadMiddleware, matchesMiddleware, runMiddleware, type LoadedMiddleware } from "../middleware/index.js";
-import { nixJsInterpolationPlugin } from "./interpolation-plugin.js";
+import { nixJsInterpolationPlugin, shouldUseLegacyInterpolation, type InterpolationMode } from "./interpolation-plugin.js";
 import { incomingMessageToRequest } from "../runtime/node-http.js";
 
 export interface NixJsKitViteOptions {
@@ -32,6 +32,13 @@ export interface NixJsKitViteOptions {
   routerImport?: string;
   /** CSRF / origin policy applied to the server actions endpoint in dev. */
   actionSecurity?: ActionSecurityOptions;
+  /**
+   * How the legacy interpolation transform is handled (default: "auto").
+   * With a Nix.js core that supports partial attribute interpolation natively
+   * the transform is not applied; use "legacy" for migrations against older
+   * cores and "off" to never transform.
+   */
+  interpolation?: InterpolationMode;
 }
 
 /**
@@ -225,10 +232,13 @@ export function nixJsKit(options: NixJsKitViteOptions = {}): Plugin[] {
     },
   };
 
-  return [mainPlugin, nixJsInterpolationPlugin({ appDir, islandsDir })];
+  return shouldUseLegacyInterpolation(options.interpolation ?? "auto")
+    ? [mainPlugin, nixJsInterpolationPlugin({ appDir, islandsDir })]
+    : [mainPlugin];
 }
 
 export { nixJsInterpolationPlugin, type InterpolationPluginOptions } from "./interpolation-plugin.js";
+export type { InterpolationMode } from "./interpolation-plugin.js";
 
 function setupHmr(
   server: ViteDevServer,

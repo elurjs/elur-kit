@@ -5,6 +5,23 @@ All notable changes to Nix.js Kit are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0]
+
+### Changed
+
+- **Native partial attribute interpolation** — when the installed Nix.js core
+  exposes `templateFeatures.partialAttributeInterpolation` (core ≥ 3.3), the
+  kit no longer injects the legacy `nixJsInterpolationPlugin` transform
+  (`interpolation: "auto"`). Partial attributes now run through the runtime's
+  native normalization, which preserves fine-grained reactivity instead of
+  collapsing getters into a static concatenation.
+  - New `interpolation: "auto" | "legacy" | "off"` option on `nixJsKit()`,
+    `buildClientBundle()` and `transformProjectFiles()`.
+  - `interpolation: "legacy"` forces the old transform for migrations and
+    emits a one-time deprecation warning; `interpolation: "off"` disables it.
+  - `transformPartialInterpolations` stays exported for direct consumers and
+    is marked deprecated.
+
 ## [2.1.0]
 
 ### Added — five reported limitations fixed
@@ -115,7 +132,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - README: streaming labelled experimental; static serving now documents
   Range/HEAD. See `docs/nix-js-kit/` for the full remediation record.
 
-## [Unreleased] — v2 development
+## [2.1.x] — v2 development
 
 ### Fixed — v2.0.1 patch: hydration and asset serving
 

@@ -221,7 +221,7 @@ Options:
 
 ## What's new in v1.2
 
-- **Automatic attribute interpolation** — no more manual workarounds for `href="/blog/${slug}"`. The kit rewrites partial interpolations into valid Nix.js single interpolations during build, dev, start, and preview.
+- **Automatic attribute interpolation** — no more manual workarounds for `href="/blog/${slug}"`. When the installed Nix.js core supports partial attribute interpolation natively (`templateFeatures.partialAttributeInterpolation`, core ≥ 3.3), the kit skips its legacy transform and lets the runtime handle the syntax — with reactivity preserved. On older cores the legacy rewrite still applies automatically (`interpolation: "auto"`), and `interpolation: "legacy"` forces it for migrations (deprecated; emits a one-time warning).
 - **Client router in the bundle** — the SPA router lives in the generated client entry (`/_nix-js/entry-client.js`) instead of being inlined into every page, keeping the HTML clean and the routing code cacheable.
 - **SSR fallback in preview** — `preview` now renders dynamic routes on demand when a static file is missing, so slugs work even without `generateStaticParams`.
 - **Auto client bundle build** — when `vite.client.config.ts` is present, `build` and `dev` build the hydration bundle automatically; no `--client-config` flag is required.
@@ -620,6 +620,16 @@ npx vite
 The plugin scans `src/app/`, writes `.nix-js/entry-client.ts` and renders every
 page on demand. For production, keep using `nix-js-kit build` to generate static
 HTML and the client bundle.
+
+#### Partial attribute interpolation
+
+Partial interpolations inside attribute values (`href="/blog/${slug}"`) are
+handled natively by Nix.js core ≥ 3.3 — the kit detects support via
+`templateFeatures.partialAttributeInterpolation` and does not inject its legacy
+transform (`interpolation: "auto"`, the default). Use `interpolation: "legacy"`
+to force the old rewrite for migrations against older cores (deprecated, warns
+once) or `interpolation: "off"` to never transform. The same option is available
+on `buildClientBundle()` and `transformProjectFiles()`.
 
 ### Adapters
 
