@@ -3,7 +3,7 @@
 [![npm version](https://img.shields.io/npm/v/@deijose/nix-js-kit.svg)](https://www.npmjs.com/package/@deijose/nix-js-kit)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-> Full-stack meta-framework for Nix.js — file-based routing, SSG, SSR, ISR, streaming, islands, actions, content collections, cache adapters, and SPA-like navigation. Zero extra runtime dependencies on the client: Nix.js stays at ~14KB.
+> Full-stack meta-framework for Nix.js — file-based routing, SSG, SSR, ISR, streaming, islands, actions, content collections, cache adapters, and SPA-like navigation. Zero extra runtime dependencies on the client: Nix.js stays at ~15 KB.
 
 ## What is Nix.js Kit?
 
