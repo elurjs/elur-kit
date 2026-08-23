@@ -8,9 +8,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const pkgPath = join(__dirname, "..", "package.json");
 const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
 
-// =============================================================================
 // Fix #5: happy-dom as optional peer dependency
-// =============================================================================
 
 describe("Fix #5: happy-dom optional peer dependency", () => {
   it("happy-dom is NOT in dependencies", () => {

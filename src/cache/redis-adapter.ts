@@ -1,6 +1,4 @@
-// =============================================================================
 // --- Redis / Upstash / Cloudflare KV Cache Adapter (v2.1 — Fix #3) ---
-// =============================================================================
 //
 // Pluggable cache adapter for serverless and distributed deployments.
 // Implements the same CacheAdapter interface as the filesystem adapter, so

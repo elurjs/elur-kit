@@ -1,6 +1,4 @@
-// =============================================================================
 // --- Ephemeral action error store ---
-// =============================================================================
 //
 // Action failures submitted via plain HTML forms (progressive enhancement)
 // need to be relayed back to the page so the user sees validation errors.
@@ -18,7 +16,6 @@
 // and the dev server. For multi-instance deployments the cookie carries the
 // payload directly when it fits (see `encodeActionErrorCookie`); the store is
 // only the overflow path for large payloads.
-// =============================================================================
 
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 

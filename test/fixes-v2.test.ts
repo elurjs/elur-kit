@@ -2,9 +2,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { buildEntrySource } from "../src/island/generate-entry.ts";
 
-// =============================================================================
 // Fix #1: Route-level code-splitting via dynamic import()
-// =============================================================================
 // The generated client entry must use `import()` (dynamic) for each island,
 // not static `import`, so Vite emits separate chunks per island.
 

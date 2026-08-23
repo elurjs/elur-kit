@@ -23,9 +23,7 @@ after(async () => {
   await rm(APP_DIR, { recursive: true, force: true });
 });
 
-// =============================================================================
 // Fix #2: Route Groups + Layout Slots
-// =============================================================================
 
 describe("Fix #2: Route Groups", () => {
   it("route groups do not add URL segments", async () => {

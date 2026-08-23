@@ -1,6 +1,4 @@
-// =============================================================================
 // --- Sitemap generation from route manifest (plan §11.3) ---
-// =============================================================================
 //
 // Generates a sitemap.xml from the scanned routes, excluding:
 //   - API routes

@@ -2,9 +2,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { buildFallbackHtml, buildResolvedChunk } from "../src/middleware/stream-boundary.ts";
 
-// =============================================================================
 // Fix #4: Real Suspense streaming with <template> replacement
-// =============================================================================
 
 describe("Fix #4: Suspense streaming (<template> replacement)", () => {
   it("buildFallbackHtml wraps fallback in a boundary div", () => {

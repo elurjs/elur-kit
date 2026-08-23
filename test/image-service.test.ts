@@ -310,6 +310,6 @@ describe("image(): manifest-driven <picture> markup", () => {
 
 function isSharpAvailableSync(): boolean {
   // isSharpAvailable is async; for the test assertion we just check if the
-  // processImageBatch result says optimized. This helper is a placeholder.
+  // processImageBatch result says optimized.
   return false;
 }

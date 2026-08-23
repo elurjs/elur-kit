@@ -1,6 +1,4 @@
-// =============================================================================
 // --- Cache invalidation hooks (runtime-security §9.4) ---
-// =============================================================================
 //
 // Actions can emit tags/paths to invalidate via a generic context. The cache
 // server listens to these hooks and invalidates the appropriate entries.

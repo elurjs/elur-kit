@@ -1,6 +1,4 @@
-// =============================================================================
 // Benchmark: SSR throughput (plan verification §13)
-// =============================================================================
 //
 // Measures renderToString throughput for a typical page template.
 // Results are printed to stdout and can be captured by CI.

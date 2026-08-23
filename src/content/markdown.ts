@@ -1,6 +1,4 @@
-// =============================================================================
 // --- Markdown → HTML renderer (optional `marked` peer dependency) ---
-// =============================================================================
 //
 // Markdown rendering is delegated to `marked` when available. If `marked` is
 // not installed, a clear error is thrown with installation instructions.
@@ -8,7 +6,6 @@
 // The resulting HTML is treated as trusted author content (same model as
 // Astro). If you render user-generated Markdown, sanitize it yourself before
 // passing it to the renderer.
-// =============================================================================
 
 type MarkedModule = { marked: (src: string) => string };
 let markedLoader: (() => Promise<MarkedModule>) | null | undefined;

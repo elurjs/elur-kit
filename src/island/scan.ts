@@ -2,9 +2,7 @@ import { readdir } from "node:fs/promises";
 import type { Dirent } from "node:fs";
 import { join, relative, sep } from "node:path";
 
-// =============================================================================
 // --- Island scanner ---
-// =============================================================================
 //
 // Walks `src/islands/` and lists every island component module. Each `.ts`
 // file (recursively) is treated as one island whose name is derived from its
@@ -15,7 +13,6 @@ import { join, relative, sep } from "node:path";
 //
 // The name must match the first argument passed to `island(name, ...)` on the
 // server so the client registry can look the component up during hydration.
-// =============================================================================
 
 /** A single island component discovered by the scanner. */
 export interface IslandModule {

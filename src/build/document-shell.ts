@@ -1,14 +1,8 @@
-// =============================================================================
-// --- HTML document shell ---
-// =============================================================================
 //
-// The root `layout.ts` is a plain Nix component (renderable via `_render`).
 // The <!DOCTYPE>, <head> and <body> wrapper — plus the serialized loader data
 // and the client entry — are injected here at build time.
-// =============================================================================
 
 import type { PageMetadata } from "../types.js";
-
 export interface ShellOptions {
   /** Rendered inner HTML that goes inside `#app`. */
   body: string;

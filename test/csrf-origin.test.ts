@@ -1,6 +1,4 @@
-// =============================================================================
 // CSRF / Origin verification tests (plan §1, A-07, testing-roadmap §3.2)
-// =============================================================================
 //
 // Tests that verifyOrigin:
 //   - accepts same-origin requests

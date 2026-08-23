@@ -89,9 +89,7 @@ export function isRedirectResponse(value: unknown): value is RedirectResponse {
   );
 }
 
-// =============================================================================
 // --- Public error sanitization (production-safe 500 responses) ---
-// =============================================================================
 
 /**
  * A stable, publicly safe error description. Never includes stacks, internal

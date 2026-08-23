@@ -1,6 +1,4 @@
-// =============================================================================
 // --- Security response headers (runtime-security §14) ---
-// =============================================================================
 //
 // Applies configurable security headers to responses. Defaults are safe and
 // compatible: X-Content-Type-Options, Referrer-Policy, frame-ancestors.

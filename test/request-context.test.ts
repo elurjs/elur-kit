@@ -1,6 +1,4 @@
-// =============================================================================
 // RequestContext tests (runtime-security §4)
-// =============================================================================
 //
 // Verifies that RequestContext carries all per-request state required by the
 // runtime-security design document:

@@ -1,6 +1,4 @@
-// =============================================================================
 // --- Stream boundary (per-request, real Suspense streaming) ---
-// =============================================================================
 //
 // `streamBoundary()` wraps a promise in a loading fallback. During SSR runtime,
 // the server emits the fallback HTML immediately, then streams a `<template>`
@@ -12,7 +10,6 @@
 //
 // Boundaries are tracked per-request via AsyncLocalStorage to avoid global
 // state leakage between concurrent requests.
-// =============================================================================
 
 import type { NixTemplate } from "@deijose/nix-js";
 import { randomUUID } from "node:crypto";
@@ -139,8 +136,6 @@ export function streamBoundary<T>(options: StreamBoundaryOptions<T>): NixTemplat
       const dispose = options.fallback._render(parent, before);
 
       // Kick off the promise resolution in the background.
-      // In a full streaming implementation, the streaming response collects
-      // all boundaries from the context and writes chunks as they resolve.
       options.promise
         .then((value) => {
           void value;

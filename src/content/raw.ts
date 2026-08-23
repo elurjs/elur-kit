@@ -1,12 +1,9 @@
-// =============================================================================
 // --- raw() helper: inject pre-rendered HTML without escaping ---
-// =============================================================================
 //
 // Nix.js templates escape interpolated values by default. When rendering
 // Markdown or other trusted HTML, we need to bypass that escaping. `raw()`
 // creates a NixTemplate that inserts the HTML string directly, the same
 // pattern used by `island()` for server-side rendering.
-// =============================================================================
 
 import type { NixTemplate } from "@deijose/nix-js";
 

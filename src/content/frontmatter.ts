@@ -1,6 +1,4 @@
-// =============================================================================
 // --- Frontmatter parser (YAML subset, zero dependencies) ---
-// =============================================================================
 //
 // Parses the YAML subset that covers ~95% of real-world frontmatter:
 //   - scalar key/value pairs (strings, numbers, booleans, null)
@@ -15,7 +13,6 @@
 // This is NOT a full YAML parser. It deliberately rejects nested mappings and
 // complex types. If a project needs full YAML, it can install `yaml` as a peer
 // dependency and we can add a fallback later.
-// =============================================================================
 
 export interface ParsedFrontmatter {
   data: Record<string, unknown>;

@@ -1,12 +1,9 @@
-// =============================================================================
 // --- Schema validation (optional `zod` peer dependency) ---
-// =============================================================================
 //
 // Collections can define a schema for their frontmatter. When `zod` is
 // installed, schemas are validated at parse time and errors include the file
 // path and field. When `zod` is not installed, schemas are ignored (the data
 // is returned as-is) so the content layer still works without validation.
-// =============================================================================
 
 export interface SchemaValidator {
   (data: unknown, filePath: string): Record<string, unknown>;

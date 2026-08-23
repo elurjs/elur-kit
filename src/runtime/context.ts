@@ -1,9 +1,7 @@
 import type { ResolvedNixConfig } from "../config/index.js";
 import { randomUUID } from "node:crypto";
 
-// =============================================================================
 // --- RequestContext: unified per-request runtime context ---
-// =============================================================================
 //
 // Every runtime path (SSR server, CLI preview/dev, adapters, Vite plugin)
 // eventually funnels through a single Web handler that receives a Web Request
@@ -18,7 +16,6 @@ import { randomUUID } from "node:crypto";
 //   * response.headers supports multiple Set-Cookie without collapsing them.
 //   * signal aborts when the host disconnects (when the platform allows it).
 //   * Middleware/loaders/actions share the same context or readonly views.
-// =============================================================================
 
 export interface RouteTable {
   pages: import("../router/route-scanner.js").PageRoute[];
@@ -27,9 +24,7 @@ export interface RouteTable {
   error500?: import("../router/route-scanner.js").PageRoute;
 }
 
-// =============================================================================
 // --- CookieJar: read cookies from request, write to response ---
-// =============================================================================
 
 /** Read-only access to request cookies. */
 export interface CookieJar {
@@ -68,9 +63,7 @@ export interface ResponseState {
   cookies: ResponseCookieJar;
 }
 
-// =============================================================================
 // --- Cookie implementation ---
-// =============================================================================
 
 class RequestCookieJar implements CookieJar {
   private cookies: Record<string, string>;
@@ -272,9 +265,7 @@ export class RequestContext {
   }
 }
 
-// =============================================================================
 // --- ResponseBuilder: small helpers for consistent Web Responses ---
-// =============================================================================
 
 export function htmlResponse(body: string, status = 200, headers?: HeadersInit): Response {
   return new Response(body, {
@@ -309,9 +300,7 @@ export function serverError(body: string): Response {
   return textResponse(body, 500);
 }
 
-// =============================================================================
 // --- Content-type guessing (shared by all static-serving paths) ---
-// =============================================================================
 
 export function guessContentType(filePath: string): string {
   switch (filePath.slice(filePath.lastIndexOf(".") + 1).toLowerCase()) {
@@ -335,9 +324,7 @@ export function guessContentType(filePath: string): string {
   }
 }
 
-// =============================================================================
 // --- Static file serving as a Web handler (reuses resolveStaticFile) ---
-// =============================================================================
 
 import { readFile, stat } from "node:fs/promises";
 import { createHash } from "node:crypto";

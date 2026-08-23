@@ -14,9 +14,7 @@ import { loadNixConfig, type ResolvedNixConfig } from "./config/index.js";
 import { createAppManifest, writeAppManifest, writeRouteTypes } from "./manifest/index.js";
 import { validateCapabilities } from "./runtime/capabilities.js";
 
-// =============================================================================
 // --- CLI ---
-// =============================================================================
 //
 // Minimal command-line interface for Nix.js Kit. Supports:
 //   nix-js-kit build   — run a production static build
@@ -26,7 +24,6 @@ import { validateCapabilities } from "./runtime/capabilities.js";
 //
 // This is intentionally small: no generators, no config file parsing, just
 // convention-based defaults overridable via CLI flags.
-// =============================================================================
 
 export interface CliOptions {
   command: "build" | "dev" | "preview" | "start" | "adapter" | "check" | "routes" | "doctor";

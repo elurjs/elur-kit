@@ -1,6 +1,4 @@
-// =============================================================================
 // --- Image pipeline: build-time variant generation with sharp (optional) ---
-// =============================================================================
 //
 // When `sharp` is installed, the pipeline generates WebP/AVIF variants at
 // multiple widths for every image registered during the render pass. Variants
@@ -9,7 +7,6 @@
 //
 // When `sharp` is not installed, the pipeline is a no-op and `image()`
 // emits a plain `<img>` with srcset pointing to manually-provided files.
-// =============================================================================
 
 import { readFile, mkdir, stat } from "node:fs/promises";
 import { join, dirname, extname, basename } from "node:path";

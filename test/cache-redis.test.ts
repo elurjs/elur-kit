@@ -8,9 +8,7 @@ import {
 } from "../src/cache/redis-adapter.ts";
 import { cacheKey } from "../src/cache/adapter.ts";
 
-// =============================================================================
 // Fix #3: Redis / Upstash / Cloudflare KV Cache Adapter
-// =============================================================================
 
 // In-memory mock Redis client for testing.
 function createMockRedis(): RedisClient {

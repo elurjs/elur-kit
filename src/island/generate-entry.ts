@@ -2,9 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, relative, sep } from "node:path";
 import type { IslandModule } from "./scan.js";
 
-// =============================================================================
 // --- Client entry generator ---
-// =============================================================================
 //
 // Turns a list of scanned islands into a client entry module that imports each
 // island and registers it with `hydrateIslands`. This removes the need to hand-
@@ -12,7 +10,6 @@ import type { IslandModule } from "./scan.js";
 //
 // The generated file imports island default exports and passes them to
 // `hydrateIslands` keyed by their registry name.
-// =============================================================================
 
 /** Options for generating the client entry module. */
 export interface GenerateEntryOptions {

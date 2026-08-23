@@ -1,6 +1,4 @@
-// =============================================================================
 // Path traversal fuzz tests (plan §1, A-06, testing-roadmap §3.3)
-// =============================================================================
 //
 // Tests that resolveStaticFile rejects:
 //   - encoded traversal (%2e%2e, %2f, %5c)

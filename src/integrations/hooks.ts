@@ -1,6 +1,4 @@
-// =============================================================================
 // --- Integration hooks for optional packages (plan §11.6) ---
-// =============================================================================
 //
 // These hooks allow optional packages (nix-i18n, nix-js-auth, nix-query,
 // nix-js-testing) to integrate with the Kit runtime without being a
@@ -15,9 +13,7 @@
 
 import type { NixKitIntegration } from "./index.js";
 
-// =============================================================================
 // i18n hooks (nix-i18n)
-// =============================================================================
 
 export interface I18nIntegration {
   /** Extracts the locale from a request (e.g. from URL, cookie, Accept-Language). */
@@ -28,9 +24,7 @@ export interface I18nIntegration {
   translate(key: string, locale: string, params?: Record<string, unknown>): string;
 }
 
-// =============================================================================
 // Auth hooks (nix-js-auth)
-// =============================================================================
 
 export interface AuthIntegration {
   /** Extracts the user/session from a request and populates locals. */
@@ -39,9 +33,7 @@ export interface AuthIntegration {
   seedSSR(locals: Record<string, unknown>): Record<string, unknown>;
 }
 
-// =============================================================================
 // Query hooks (nix-query)
-// =============================================================================
 
 export interface QueryIntegration {
   /** Dehydrates query cache for SSR serialization. */
@@ -52,9 +44,7 @@ export interface QueryIntegration {
   invalidate(tags: readonly string[], keys?: readonly string[]): void | Promise<void>;
 }
 
-// =============================================================================
 // Testing hooks (nix-js-testing)
-// =============================================================================
 
 export interface TestingIntegration {
   /** Creates a test request fixture. */
@@ -65,9 +55,7 @@ export interface TestingIntegration {
   reset(): void;
 }
 
-// =============================================================================
 // Registry
-// =============================================================================
 
 interface IntegrationRegistry {
   i18n?: I18nIntegration;

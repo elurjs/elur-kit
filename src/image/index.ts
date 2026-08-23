@@ -1,6 +1,4 @@
-// =============================================================================
 // --- image() helper: optimized <img> / <picture> without dependencies ---
-// =============================================================================
 //
 // Emits an `<img>` (or `<picture>` when processed variants are available) with:
 //   - `srcset` / `sizes` for responsive images
@@ -12,7 +10,6 @@
 // source for processing and emits `<picture>` with `<source>` per format.
 // When sharp is not installed, it falls back to a plain `<img>` with srcset
 // pointing to the original file.
-// =============================================================================
 
 import { NIX_RENDER_PROTOCOL, type NixTemplate } from "@deijose/nix-js";
 import { getManifestEntry, buildPictureMarkup, type ImageManifest } from "./service.js";

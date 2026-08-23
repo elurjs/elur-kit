@@ -1,11 +1,8 @@
-// =============================================================================
 // --- @deijose/nix-js-kit/runtime — unified Web runtime entry ---
-// =============================================================================
 //
 // Public surface for the unified Web handler, request context and static file
 // serving. Every adapter and CLI runtime path imports from here so behavior
 // stays identical across Node, Bun, Vercel, Netlify and Vite dev.
-// =============================================================================
 
 export {
   RequestContext,

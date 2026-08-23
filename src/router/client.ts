@@ -69,9 +69,7 @@ function hasModifier(event: MouseEvent): boolean {
   return event.metaKey || event.ctrlKey || event.shiftKey || event.altKey;
 }
 
-// =============================================================================
 // --- Prefetch cache ---
-// =============================================================================
 
 const PREFETCH_TTL_MS = 30_000; // 30 seconds
 
@@ -230,9 +228,7 @@ export async function prefetch(pathname: string, search = ""): Promise<void> {
   await fetchPayload(pathname, search);
 }
 
-// =============================================================================
 // --- View Transitions ---
-// =============================================================================
 
 /** Returns true if the user prefers reduced motion. */
 function prefersReducedMotion(): boolean {
@@ -244,9 +240,7 @@ function supportsViewTransitions(): boolean {
   return typeof (document as any).startViewTransition === "function";
 }
 
-// =============================================================================
 // --- Navigation ---
-// =============================================================================
 
 /**
  * Guard against concurrent navigations. When a navigation is in-flight, a new
@@ -516,9 +510,7 @@ function mergeHead(head: string | undefined, fallbackTitle: string | undefined):
   }
 }
 
-// =============================================================================
 // --- Link prefetch observers ---
-// =============================================================================
 
 /** Set of links currently being observed for prefetch. */
 const observedLinks = new WeakSet<HTMLAnchorElement>();
@@ -587,9 +579,7 @@ function setupLinkPrefetch(): void {
   document.addEventListener("nix-js:rendered", observeLinks);
 }
 
-// =============================================================================
 // --- Router bootstrap ---
-// =============================================================================
 
 export function startClientRouter(): void {
   // Static builds emit this marker, so the client never probes the render
@@ -647,9 +637,7 @@ export function startClientRouter(): void {
   setupLinkPrefetch();
 }
 
-// =============================================================================
 // --- Test helpers (not part of the public API) ---
-// =============================================================================
 
 /**
  * Resets all internal router state. Intended for test isolation only.

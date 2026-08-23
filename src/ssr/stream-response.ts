@@ -1,6 +1,4 @@
-// =============================================================================
 // --- Real streaming with ReadableStream (plan §10) ---
-// =============================================================================
 //
 // Creates a Web Response with a ReadableStream that:
 //   1. Sends the document shell + loading fallback immediately.

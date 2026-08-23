@@ -9,17 +9,6 @@ import { consumeImageRegistry, setImageManifest, type ImageFormat } from "../ima
 import { processImageBatch, type ImageManifest } from "../image/service.js";
 import type { RouteParams, GenerateStaticParams } from "../types.js";
 
-// =============================================================================
-// --- SSG build orchestrator ---
-// =============================================================================
-//
-// Takes a scanned route tree and writes static HTML files for every page.
-//
-// Layout support is detected but not yet rendered in v0.1; the page component
-// is rendered directly. The shell carries the serialized loader data so the
-// future client entry can hydrate islands.
-// =============================================================================
-
 export interface BuildConfig {
   /** Absolute path to the app directory (e.g. /project/src/app). */
   appDir: string;

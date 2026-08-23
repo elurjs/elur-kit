@@ -1,6 +1,4 @@
-// =============================================================================
 // Package smoke test (plan §13, testing-roadmap §4.2)
-// =============================================================================
 //
 // Verifies that the published tarball:
 //   1. Can be packed with `bun pm pack`

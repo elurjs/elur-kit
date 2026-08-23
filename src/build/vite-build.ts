@@ -4,9 +4,7 @@ import { join, resolve, dirname, relative } from "node:path";
 import { build as viteBuild, type InlineConfig, type PluginOption } from "vite";
 import { nixJsInterpolationPlugin } from "../vite/interpolation-plugin.js";
 
-// =============================================================================
 // --- Programmatic Vite build orchestration ---
-// =============================================================================
 //
 // Replaces the previous `spawnSync("npx", ["vite", "build", ...])` approach
 // with direct use of the Vite JavaScript API. Benefits:
@@ -16,7 +14,6 @@ import { nixJsInterpolationPlugin } from "../vite/interpolation-plugin.js";
 //   * Structured errors instead of exit-code parsing.
 //   * Atomic output staging: build into a temp directory, then rename to the
 //     final destination so a crashed build never leaves a half-written dist.
-// =============================================================================
 
 export interface ClientBuildOptions {
   /** Project root (absolute). */
@@ -89,9 +86,7 @@ async function loadUserConfig(path: string, _root: string): Promise<InlineConfig
   return (resolved && typeof resolved.then === "function" ? await resolved : resolved) ?? {};
 }
 
-// =============================================================================
 // --- Atomic output staging ---
-// =============================================================================
 
 export interface AtomicStageOptions {
   /** Final destination directory (absolute). */
@@ -185,9 +180,7 @@ function isCrossDevice(err: unknown): boolean {
   return code === "EXDEV";
 }
 
-// =============================================================================
 // --- Public asset copy ---
-// =============================================================================
 
 export interface CopyPublicAssetsOptions {
   /** Absolute path to the public directory. */

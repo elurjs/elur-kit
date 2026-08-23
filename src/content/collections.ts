@@ -1,6 +1,4 @@
-// =============================================================================
 // --- Content collections ---
-// =============================================================================
 //
 // A collection is a directory under `src/content/<name>/` containing `.md`
 // files. Each file has YAML frontmatter (parsed by our own parser) and a
@@ -16,7 +14,6 @@
 // At runtime, `getCollection("blog")` scans the directory, parses frontmatter,
 // validates against the schema (if zod is installed), and returns typed
 // entries. `getEntry("blog", "hello")` returns a single entry by slug.
-// =============================================================================
 
 import { readdir, readFile, stat } from "node:fs/promises";
 import { join, resolve } from "node:path";

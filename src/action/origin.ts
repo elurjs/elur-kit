@@ -1,6 +1,4 @@
-// =============================================================================
 // --- Origin verification (CSRF protection for server actions) ---
-// =============================================================================
 //
 // Server actions accept POST requests from the browser. Without origin
 // verification, any third-party site could submit forged requests to
@@ -12,7 +10,6 @@
 //
 // Requests without `Origin` AND without `Referer` (e.g. curl, server-to-server)
 // are accepted by default for DX, unless `strictOrigin: true` is configured.
-// =============================================================================
 
 export interface OriginCheckOptions {
   /** Extra origins allowed to call actions (e.g. preview deployments). */

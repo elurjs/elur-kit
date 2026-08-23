@@ -3,9 +3,7 @@ import { join, dirname, extname, basename, resolve, sep } from "node:path";
 import { createHash, randomBytes } from "node:crypto";
 import type { ImageFormat } from "./index.js";
 
-// =============================================================================
 // --- ImageService: metadata-driven image processing and manifest ---
-// =============================================================================
 //
 //   * Reads real image dimensions from the source file (sharp metadata).
 //   * Generates hashed variant filenames from a SHA-256 transform key that
@@ -18,7 +16,6 @@ import type { ImageFormat } from "./index.js";
 //   * Supports `strict` mode: fails the build on missing sources or failed
 //     transforms instead of emitting a partially-written variant.
 //   * Falls back gracefully when sharp is not installed.
-// =============================================================================
 
 const ENCODER_VERSION = "sharp-1";
 const NAMING_VERSION = "v1";
@@ -110,9 +107,7 @@ export async function isSharpAvailable(): Promise<boolean> {
   return sharp !== null;
 }
 
-// =============================================================================
 // --- Transform identity (§4.2) ---
-// =============================================================================
 
 /**
  * SHA-256 transform key. Stable for identical content+options and invalidated
@@ -133,9 +128,7 @@ export function transformHash(sourceBuffer: Buffer, width: number, format: Image
     .slice(0, HASH_LENGTH);
 }
 
-// =============================================================================
 // --- Path containment (§9.5) ---
-// =============================================================================
 
 function isSafeRelativePath(value: string): boolean {
   if (value.includes("\0") || value.includes("\\")) return false;
@@ -156,9 +149,7 @@ function assertInside(root: string, candidate: string, label: string): void {
   }
 }
 
-// =============================================================================
 // --- Concurrency: bounded pool + single-flight ---
-// =============================================================================
 
 function createPool(limit: number) {
   let active = 0;
@@ -193,9 +184,7 @@ function createPool(limit: number) {
   };
 }
 
-// =============================================================================
 // --- Atomic writes (§9.6) ---
-// =============================================================================
 
 async function atomicWriteFile(path: string, data: Buffer | string): Promise<void> {
   const temp = `${path}.${process.pid}.${randomBytes(6).toString("hex")}.tmp`;
@@ -217,9 +206,7 @@ async function fileExists(path: string): Promise<boolean> {
   }
 }
 
-// =============================================================================
 // --- Public programmatic API (§3.1 / §3.3) ---
-// =============================================================================
 
 export interface ImageRequest {
   src: string;
@@ -339,9 +326,7 @@ export async function getImage(
   };
 }
 
-// =============================================================================
 // --- Batch processing ---
-// =============================================================================
 
 export async function processImageBatch(
   images: { src: string; widths: number[]; formats?: ImageFormat[] }[],

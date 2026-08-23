@@ -1,6 +1,4 @@
-// =============================================================================
 // --- @deijose/nix-js-kit/content — public API ---
-// =============================================================================
 //
 // Content layer for Nix Kit: Markdown collections with typed frontmatter.
 //
@@ -16,7 +14,6 @@
 //   export const load = async ({ params }) => ({
 //     post: await getEntry("blog", params.slug),
 //   });
-// =============================================================================
 
 export {
   defineCollection,

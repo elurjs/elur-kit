@@ -1,9 +1,7 @@
 import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 
-// =============================================================================
 // --- Route scanner ---
-// =============================================================================
 //
 // Walks src/app/ and maps file conventions to URL paths.
 //
@@ -21,7 +19,6 @@ import { join } from "node:path";
 //
 // Route conflicts (two routes with the same path pattern) cause an error
 // during scanRoutes (plan §11.1).
-// =============================================================================
 
 /** A page route discovered by the scanner. */
 export interface PageRoute {

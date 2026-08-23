@@ -7,9 +7,7 @@
 import { writeFile, mkdir } from "node:fs/promises";
 import { join, dirname } from "node:path";
 
-// ---------------------------------------------------------------------------
 // Types
-// ---------------------------------------------------------------------------
 
 export interface SitemapEntry {
   /** URL path, e.g. "/docs/getting-started/introduction". */
@@ -55,9 +53,7 @@ export interface RobotsRule {
   crawlDelay?: number;
 }
 
-// ---------------------------------------------------------------------------
 // Sitemap generation
-// ---------------------------------------------------------------------------
 
 /**
  * Generates a `sitemap.xml` file from a list of URLs.
@@ -104,9 +100,7 @@ ${entries.join("\n")}
   return filePath;
 }
 
-// ---------------------------------------------------------------------------
 // Robots.txt generation
-// ---------------------------------------------------------------------------
 
 /**
  * Generates a `robots.txt` file.
@@ -161,9 +155,7 @@ export async function generateRobots(config: RobotsConfig): Promise<string> {
   return filePath;
 }
 
-// ---------------------------------------------------------------------------
 // JSON-LD / Structured data
-// ---------------------------------------------------------------------------
 
 export interface JsonLdSchema {
   [key: string]: unknown;
@@ -201,9 +193,7 @@ export function jsonLd(schema: JsonLdSchema | JsonLdSchema[]): string {
   return `<script type="application/ld+json">${safe}</script>`;
 }
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 function escapeXml(str: string): string {
   return str

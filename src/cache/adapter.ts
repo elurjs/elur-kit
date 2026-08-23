@@ -1,6 +1,4 @@
-// =============================================================================
 // --- CacheAdapter: pluggable cache with single-flight, SWR, tags (§9.2) ---
-// =============================================================================
 //
 // Implements the CacheAdapter interface from the runtime-security design:
 //   - SHA-256 keys for normalized identity
@@ -17,9 +15,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, rm, writeFile, readdir, stat } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
-// =============================================================================
 // Types
-// =============================================================================
 
 export interface CacheEntry {
   html: string;
@@ -42,18 +38,14 @@ export interface CacheAdapter {
   invalidateTags(tags: readonly string[]): Promise<void>;
 }
 
-// =============================================================================
 // Helpers
-// =============================================================================
 
 /** Computes a SHA-256 key from a normalized identity string. */
 export function cacheKey(...parts: string[]): string {
   return createHash("sha256").update(parts.join("\n")).digest("hex");
 }
 
-// =============================================================================
 // Filesystem CacheAdapter
-// =============================================================================
 
 export interface FsCacheAdapterOptions {
   cacheDir: string;
@@ -227,9 +219,7 @@ export function createFsCacheAdapter(options: FsCacheAdapterOptions): CacheAdapt
   return { get, set, delete: del, invalidateTags };
 }
 
-// =============================================================================
 // Stale-while-revalidate wrapper
-// =============================================================================
 
 /**
  * Gets a cached entry. If the entry is stale (past revalidate), serves it

@@ -1,6 +1,4 @@
-// =============================================================================
 // --- CLI commands: check, routes, doctor (plan §12.1) ---
-// =============================================================================
 //
 // `check`  — typechecks the project and validates route/config integrity.
 // `routes` — lists all discovered routes and their metadata.
@@ -38,9 +36,7 @@ export function formatError(
   return parts.join("\n");
 }
 
-// =============================================================================
 // check — typecheck + route/config integrity
-// =============================================================================
 
 export async function doCheck(options: CliOptions): Promise<number> {
   console.log("Running typecheck...");
@@ -89,9 +85,7 @@ export async function doCheck(options: CliOptions): Promise<number> {
   return ExitCode.Success;
 }
 
-// =============================================================================
 // routes — list all discovered routes
-// =============================================================================
 
 export async function doRoutes(options: CliOptions): Promise<number> {
   try {
@@ -145,9 +139,7 @@ export async function doRoutes(options: CliOptions): Promise<number> {
   }
 }
 
-// =============================================================================
 // doctor — diagnose common issues
-// =============================================================================
 
 interface DiagnosticResult {
   name: string;
@@ -275,9 +267,7 @@ export async function doDoctor(options: CliOptions): Promise<number> {
   }
 }
 
-// =============================================================================
 // Helpers
-// =============================================================================
 
 async function checkExists(
   name: string,

@@ -10,9 +10,7 @@ import { shouldCachePublic, type CachePolicy } from "../cache/policy.js";
 import { buildSecurityHeaders, applySecurityHeaders } from "./security-headers.js";
 import type { SecurityHeadersConfig } from "../config/index.js";
 
-// =============================================================================
 // --- Unified Web handler ---
-// =============================================================================
 //
 // A single function that turns a Web Request into a Web Response. Every
 // runtime entry point (Node CLI, Bun adapter, Vercel, Netlify, Vite dev)
@@ -28,7 +26,6 @@ import type { SecurityHeadersConfig } from "../config/index.js";
 //
 // The handler is pure: it does not import Node HTTP types and can be used in
 // Bun, Deno, Cloudflare Workers, Vercel Edge, etc.
-// =============================================================================
 
 export interface WebHandlerOptions {
   /** Static file root (absolute path). Usually the build output directory. */

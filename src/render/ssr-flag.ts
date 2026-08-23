@@ -1,6 +1,4 @@
-// =============================================================================
 // --- SSR flag utility ---
-// =============================================================================
 //
 // Nix.js 2.6.0 (published on npm) does not export `_setSSR`/`_isSSR`. The
 // reactivity state lives on `globalThis[Symbol.for("@deijose/nix-js/reactivity-state")]`
@@ -9,7 +7,6 @@
 //
 // This module manipulates that flag directly so the kit does not depend on
 // private exports that may or may not be present in a given nix-js release.
-// =============================================================================
 
 const STATE_KEY = Symbol.for("@deijose/nix-js/reactivity-state");
 

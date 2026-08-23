@@ -1,6 +1,4 @@
-// =============================================================================
 // Cache concurrency and isolation tests (plan §9, A-08, testing-roadmap §3.4)
-// =============================================================================
 //
 // Tests:
 //   - Stampede: concurrent gets only trigger one fill

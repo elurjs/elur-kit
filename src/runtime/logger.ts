@@ -1,6 +1,4 @@
-// =============================================================================
 // --- Structured logger with request ID and Server-Timing (plan §12.3) ---
-// =============================================================================
 //
 // Provides a structured logger that:
 //   - Generates a unique request ID per request.

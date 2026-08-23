@@ -1,9 +1,7 @@
 import type { NixTemplate } from "@deijose/nix-js";
 import { hydrate as hydrateTemplate } from "@deijose/nix-js/hydrate";
 
-// =============================================================================
 // --- Client-side island hydration ---
-// =============================================================================
 
 // Keep track of every active island dispose so we can clean them up before a
 // client-side navigation swaps the whole #app content.

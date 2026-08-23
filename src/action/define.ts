@@ -1,6 +1,4 @@
-// =============================================================================
 // --- defineAction(): typed server action definition (plan §9.2) ---
-// =============================================================================
 //
 // Provides a typed wrapper for server actions with:
 // - optional input schema validation (without requiring Zod)

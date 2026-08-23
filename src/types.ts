@@ -1,6 +1,4 @@
-// =============================================================================
 // --- Public types (v0.1 subset) ---
-// =============================================================================
 
 /** Route params: `[slug]` -> string, `[...slug]` -> string[]. */
 export type RouteParams = Record<string, string | string[]>;

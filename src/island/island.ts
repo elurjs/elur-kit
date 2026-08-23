@@ -1,16 +1,11 @@
 import { NIX_RENDER_PROTOCOL, type NixTemplate, type ServerRenderProtocolContext } from "@deijose/nix-js";
 
-// =============================================================================
 // --- Islands helper ---
-// =============================================================================
 //
 // Marks a component as an island. During server-side rendering it emits a
 // static placeholder with `data-nix-js-island` attributes. The client entry finds
 // these markers and hydrates them with the real component + reactive signals.
 //
-// This is a minimal v0.2 implementation. Later versions will integrate with
-// a Vite plugin for automatic client bundle splitting.
-// =============================================================================
 
 export type IslandDirective = "load" | "idle" | "visible";
 

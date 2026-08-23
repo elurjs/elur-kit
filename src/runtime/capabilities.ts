@@ -1,6 +1,4 @@
-// =============================================================================
 // --- Adapter capabilities contract (§8.5) ---
-// =============================================================================
 //
 // Every runtime host (Node CLI, Vite dev, Node/Bun adapters, Vercel, Netlify)
 // declares an explicit `AdapterCapabilities` object. The framework uses it to
@@ -8,7 +6,6 @@
 // runtime image transforms, background work, body size limits, ISR persistence.
 //
 // Invalid or incompatible capability combinations fail fast during build.
-// =============================================================================
 
 export type FilesystemCapability = "none" | "readonly" | "persistent" | "ephemeral";
 

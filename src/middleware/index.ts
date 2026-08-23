@@ -1,6 +1,4 @@
-// =============================================================================
 // --- Middleware ---
-// =============================================================================
 //
 // Convention: `src/middleware.ts` in the project root exports a default
 // function and an optional `config` with a `matcher` array.
@@ -18,7 +16,6 @@
 // The middleware runs before routing. Return a `Response` to short-circuit
 // (redirect, rewrite, 401, etc.). Return `undefined` or nothing to continue.
 // Use `next()` to pass headers to the loader.
-// =============================================================================
 
 import { matchRoute } from "../ssr/match.js";
 import type { PageRoute } from "../router/route-scanner.js";

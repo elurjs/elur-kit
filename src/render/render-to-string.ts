@@ -2,9 +2,7 @@ import type { NixTemplate } from "@deijose/nix-js";
 import { renderToString as renderCoreTemplate } from "@deijose/nix-js/server";
 import { setSSR } from "./ssr-flag";
 
-// =============================================================================
 // --- Build-time / server rendering ---
-// =============================================================================
 //
 // Nix.js has no `renderToString`: its `html`` pipeline depends on a DOM
 // (`document.createElement("template")`, `innerHTML` parsing, `createTreeWalker`).
@@ -14,7 +12,6 @@ import { setSSR } from "./ssr-flag";
 // happy-dom is used because the Nix.js core test-suite already runs under it,
 // so full-pipeline compatibility (NodeFilter, TreeWalker, template.content) is
 // proven. It is loaded via dynamic import so it never leaks into client code.
-// =============================================================================
 
 /** Globals the Nix.js core reads off `globalThis` during rendering. */
 const MANAGED_GLOBALS = [
