@@ -5,6 +5,14 @@ All notable changes to Nix.js Kit are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.1]
+
+### Changed
+
+- `coreSupportsPartialInterpolation()` and `shouldUseLegacyInterpolation()`
+  are now exported from `@deijose/nix-js-kit/vite` so consumers can resolve
+  the interpolation mode programmatically.
+
 ## [2.2.0]
 
 ### Changed
