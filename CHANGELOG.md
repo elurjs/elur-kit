@@ -5,6 +5,28 @@ All notable changes to Nix.js Kit are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0]
+
+### Changed
+
+- **Interpolation now delegates to the Vite plugin** — when
+  `@deijose/vite-plugin-nix-js` >= 1.1.0 is installed, the kit's legacy
+  interpolation transform is skipped (the plugin's state-machine lexer takes
+  precedence). The kit's transform remains as a fallback for projects that
+  use the kit without the plugin.
+- New `pluginSupportsPartialInterpolation()` function detects the Vite plugin
+  at runtime.
+- `shouldUseLegacyInterpolation("auto")` now returns `false` when the plugin
+  is installed, `true` when neither the plugin nor the core supports partials.
+- `@deijose/vite-plugin-nix-js` added as an optional peer dependency.
+
+### Migration
+
+- Install `@deijose/vite-plugin-nix-js` >= 1.1.0 for the best interpolation
+  support (state-machine lexer, compile-time errors, raw-text tag handling).
+- The kit's legacy transform still works without the plugin but is less
+  powerful (no comment/raw-text handling, no boolean attr validation).
+
 ## [2.2.1]
 
 ### Changed

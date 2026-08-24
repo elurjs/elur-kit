@@ -3,14 +3,15 @@ import type { Plugin } from "vite";
 
 /**
  * How the legacy interpolation transform is handled relative to the installed
- * Nix.js core:
+ * Nix.js core and Vite plugin:
  *
- * - `"auto"` (default): the transform is only applied when the installed core
- *   does NOT support partial attribute interpolation natively.
- * - `"legacy"`: always apply the transform (for migrations), with a one-time
- *   deprecation warning.
- * - `"off"`: never apply the transform. With a core that supports partials
- *   this is the recommended production mode.
+ * - `"auto"` (default): the kit's legacy transform is only applied when the
+ *   Vite plugin (`@deijose/vite-plugin-nix-js` >= 1.1.0) is NOT installed.
+ *   The plugin has a more powerful state-machine lexer and takes precedence.
+ * - `"legacy"`: always apply the kit's transform (for migrations), with a
+ *   one-time deprecation warning.
+ * - `"off"`: never apply the kit's transform. Recommended when the Vite
+ *   plugin is installed.
  */
 export type InterpolationMode = "auto" | "legacy" | "off";
 
@@ -23,14 +24,34 @@ function warnLegacyOnce(): void {
   _warnedLegacy = true;
   console.warn(
     "[nix-js-kit] The legacy interpolation transform is deprecated. " +
-      "Nix.js core now supports partial attribute interpolation natively. " +
-      "Remove `interpolation: \"legacy\"` once migration is complete.",
+    "Install @deijose/vite-plugin-nix-js >= 1.1.0 for compile-time " +
+    "partial attribute interpolation. Remove `interpolation: \"legacy\"` " +
+    "once migration is complete.",
   );
+}
+
+/**
+ * Detects whether the Vite plugin (`@deijose/vite-plugin-nix-js`) is
+ * installed and provides compile-time partial attribute interpolation.
+ */
+export function pluginSupportsPartialInterpolation(): boolean {
+  try {
+    const pkg = require("@deijose/vite-plugin-nix-js/package.json") as {
+      version?: string;
+    };
+    // >= 1.1.0 has the interpolation lexer
+    const [major, minor] = (pkg.version ?? "0.0.0").split(".").map(Number);
+    return major > 1 || (major === 1 && minor >= 1);
+  } catch {
+    return false;
+  }
 }
 
 /**
  * Detects whether the installed Nix.js core supports partial attribute
  * interpolation natively (via the public `templateFeatures` capability).
+ * Note: as of core v3.4.0, this is always false — the lexer moved to the
+ * Vite plugin.
  */
 export function coreSupportsPartialInterpolation(): boolean {
   try {
@@ -44,7 +65,12 @@ export function coreSupportsPartialInterpolation(): boolean {
 }
 
 /**
- * Resolves whether the legacy transform should be applied for the given mode.
+ * Resolves whether the kit's legacy transform should be applied.
+ *
+ * In `"auto"` mode, the kit's transform runs only when neither the Vite
+ * plugin nor the core provides partial interpolation. When the Vite plugin
+ * is installed (>= 1.1.0), it takes precedence and the kit's transform is
+ * skipped to avoid double-processing.
  */
 export function shouldUseLegacyInterpolation(mode: InterpolationMode): boolean {
   if (mode === "off") return false;
@@ -52,6 +78,9 @@ export function shouldUseLegacyInterpolation(mode: InterpolationMode): boolean {
     warnLegacyOnce();
     return true;
   }
+  // auto: skip if the Vite plugin handles it
+  if (pluginSupportsPartialInterpolation()) return false;
+  // fallback: use legacy if core doesn't support it natively
   return !coreSupportsPartialInterpolation();
 }
 
