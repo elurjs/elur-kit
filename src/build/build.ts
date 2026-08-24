@@ -7,6 +7,7 @@ import { renderPage, renderErrorPage } from "../ssr/render.js";
 import { scanActions, actionNames } from "../action/scan.js";
 import { consumeImageRegistry, setImageManifest, type ImageFormat } from "../image/index.js";
 import { processImageBatch, type ImageManifest } from "../image/service.js";
+import { runIntegrationHook, type NixKitIntegration } from "../integrations/index.js";
 import type { RouteParams, GenerateStaticParams } from "../types.js";
 
 export interface BuildConfig {
@@ -53,6 +54,13 @@ export interface BuildConfig {
    * the endpoint (no 404 storms on static hosts like Vercel).
    */
   renderEndpoint?: boolean;
+  /**
+   * Integrations to invoke during the build lifecycle. When provided, the
+   * `build` hook fires after all pages and image variants are generated,
+   * giving integrations a chance to write post-build artifacts (sitemaps,
+   * robots.txt, search indexes, etc.) into the output directory.
+   */
+  integrations?: NixKitIntegration[];
 }
 
 export interface BuildResult {
@@ -261,6 +269,18 @@ export async function build(config: BuildConfig): Promise<BuildResult> {
 
   // Clear the manifest so subsequent builds start fresh.
   setImageManifest(null);
+
+  // Fire the `build` integration hook so integrations can write
+  // post-build artifacts (sitemaps, robots.txt, search indexes, etc.)
+  // into the output directory. This runs after all pages, image variants,
+  // and the manifest are written, but before the atomic staging commit
+  // (when called via the CLI), so integration artifacts survive the swap.
+  if (config.integrations && config.integrations.length > 0) {
+    await runIntegrationHook(config.integrations, "build", [
+      result,
+      { root: config.root ?? config.outDir, command: "build" },
+    ]);
+  }
 
   return result;
 }

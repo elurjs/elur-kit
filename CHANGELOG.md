@@ -5,6 +5,23 @@ All notable changes to Nix.js Kit are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.1]
+
+### Fixed
+
+- **Integration `build` hook never invoked** — the `build` hook was
+  declared in `NixKitIntegration` but never called from `build()`.
+  `runIntegrationHook` was only wired for `"config"` (from
+  `config/index.ts`) and `"routes"` (from `manifest/index.ts`). Now
+  `build()` invokes `runIntegrationHook(integrations, "build", [result,
+  ctx])` at the end of the build pipeline, after all pages, image
+  variants, and the manifest are written. This lets integrations
+  generate post-build artifacts (sitemaps, robots.txt, search indexes)
+  into the output directory. The hook fires before the CLI's atomic
+  staging commit, so integration artifacts survive the swap.
+- **`BuildConfig.integrations`** — new optional field. The CLI's
+  `toBuildConfig()` now passes `resolvedConfig.integrations` through.
+
 ## [2.4.0]
 
 ### Fixed

@@ -244,6 +244,7 @@ function toBuildConfig(options: CliOptions): BuildConfig {
     hydrateImport: options.hydrateImport,
     routerImport: options.routerImport,
     imageFormats: options.resolvedConfig?.images.formats,
+    integrations: options.resolvedConfig?.integrations,
   };
 }
 
