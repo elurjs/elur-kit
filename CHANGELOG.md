@@ -5,6 +5,59 @@ All notable changes to Nix.js Kit are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.0]
+
+### Fixed
+
+- **CLI bundling bug — image registry dual instance** — the CLI bundle
+  (`dist/lib/cli.js`) was inlining its own copy of the image registry
+  (`renderRegistry`, `activeManifest`), separate from the chunk
+  `dist/lib/image/index.js` that user pages import. This caused
+  `consumeImageRegistry()` to always return `[]`, so the two-pass image
+  pipeline silently processed nothing (no manifest, no variants, no
+  `<picture>`). Fixed by extracting the registry state to a dedicated
+  chunk `src/image/registry.ts` and externalizing it in
+  `vite.cli.config.ts` via a custom plugin, so the CLI imports the same
+  physical `./image/registry.js` chunk that `image/index.js` uses.
+- **`raw()` missing `renderServer`** — after removing the happy-dom
+  fallback, the core's DOM-free `renderToString` requires templates to
+  expose `NIX_RENDER_PROTOCOL.renderServer`. `raw()` only had `mount`
+  and `_render` (DOM-dependent), causing "Template does not support
+  server rendering" errors. Fixed by adding `renderServer: () => html`
+  to `raw()`, matching the pattern already used by `image()` and
+  `island()`.
+- **Streaming response test mocks** — updated mock templates in
+  `test/streaming-response.test.ts` to use `renderServer` instead of
+  DOM-dependent `_render`, and removed an invalid `supportsStreaming({})`
+  call that didn't match the `Pick<AdapterCapabilities, "streaming">`
+  parameter type.
+
+### Changed
+
+- **`happy-dom` fully removed** — the kit no longer references happy-dom
+  anywhere. The SSR runtime uses the core's DOM-free `renderToString`
+  (`@deijose/nix-js/server`) directly, with no DOM fallback. Removed
+  from `peerDependenciesMeta`, from both vite build configs
+  (`external`/`globals`), and from `src/render/render-to-string.ts`
+  (the `renderWithDom` fallback and `MANAGED_GLOBALS` injection were
+  deleted). The `test/happy-dom-optional.test.ts` now asserts happy-dom
+  is absent from all dependency fields.
+- **Config file renamed: `nix.config.*` → `nix-js.config.*`** — the
+  generic `nix.config.ts` name was a design error that could collide
+  with other tools. The kit now looks for `nix-js.config.{ts,js,mjs}`
+  first. Legacy `nix.config.*` files are still detected for backward
+  compatibility, but emit a deprecation warning guiding migration.
+  `doDoctor` reports legacy config files as `warn` status.
+
+### Added
+
+- **`src/image/registry.ts`** — new shared singleton module owning the
+  image pipeline's mutable state (`renderRegistry`, `activeManifest`).
+  Exported as `dist/lib/image/registry.js` and added to
+  `tsconfig.lib.json` and `vite.lib.config.ts` entry points. Both the
+  CLI bundle and the library chunk import this physical file, ensuring
+  a single module instance across the build pipeline.
+
 ## [2.3.0]
 
 ### Changed

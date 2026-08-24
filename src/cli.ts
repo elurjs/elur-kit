@@ -225,7 +225,7 @@ Options:
   --hydrate-import <spec>   Import specifier for hydrateIslands in generated entry
   --router-import <spec>    Import specifier for startClientRouter in generated entry
   --client-config <path>    Vite config used to build the client hydration bundle
-  --config <path>           Nix config file (default: nix.config.ts/js/mjs)
+  --config <path>           Nix config file (default: nix-js.config.ts/js/mjs)
   --cache-dir <dir>         Directory for ISR cache (only used by start)
   --default-revalidate <s>  Default ISR revalidate interval in seconds
 `);

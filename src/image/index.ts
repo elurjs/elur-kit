@@ -12,7 +12,13 @@
 // pointing to the original file.
 
 import { NIX_RENDER_PROTOCOL, type NixTemplate } from "@deijose/nix-js";
-import { getManifestEntry, buildPictureMarkup, type ImageManifest } from "./service.js";
+import { getManifestEntry, buildPictureMarkup } from "./service.js";
+import {
+  registerImage,
+  getActiveManifest,
+} from "./registry.js";
+
+export { consumeImageRegistry, setImageManifest, type ImageFormat } from "./registry.js";
 
 export interface ImageOptions {
   /** Source path relative to the public directory, e.g. "/images/hero.jpg". */
@@ -33,55 +39,6 @@ export interface ImageOptions {
   class?: string;
   /** Additional HTML attributes. */
   attributes?: Record<string, string>;
-}
-
-/**
- * Registry of images encountered during a render pass. The build pipeline
- * reads this after rendering to know which images to process with sharp.
- */
-interface RegisteredImage {
-  src: string;
-  widths: number[];
-  formats: ImageFormat[];
-}
-
-export type ImageFormat = "webp" | "avif" | "jpeg" | "png";
-
-const renderRegistry: RegisteredImage[] = [];
-
-/**
- * The active image manifest (if loaded). When set, image() emits real
- * <picture>/<source> markup from the manifest instead of a plain <img>.
- */
-let activeManifest: ImageManifest | null = null;
-
-/**
- * Set the active image manifest. Called by the build pipeline after
- * processing, or by the SSR server on startup.
- */
-export function setImageManifest(manifest: ImageManifest | null): void {
-  activeManifest = manifest;
-}
-
-/**
- * Returns the images registered during the current render pass and clears
- * the registry. Called by the build pipeline after rendering all pages.
- */
-export function consumeImageRegistry(): RegisteredImage[] {
-  const items = [...renderRegistry];
-  renderRegistry.length = 0;
-  return items;
-}
-
-/**
- * Registers an image for build-time processing (if sharp is available).
- */
-function registerImage(src: string, widths: number[]): void {
-  // Avoid duplicates in the same render pass.
-  const existing = renderRegistry.find((r) => r.src === src && r.widths.join(",") === widths.join(","));
-  if (!existing) {
-    renderRegistry.push({ src, widths, formats: ["webp", "avif"] });
-  }
 }
 
 /**
@@ -114,7 +71,8 @@ export function image(opts: ImageOptions): NixTemplate {
 
   // If a manifest is active and has an entry for this src, emit <picture>.
   let html: string;
-  const entry = activeManifest ? getManifestEntry(activeManifest, src) : undefined;
+  const manifest = getActiveManifest();
+  const entry = manifest ? getManifestEntry(manifest, src) : undefined;
   if (entry && entry.variants.length > 0) {
     html = buildPictureMarkup(entry, {
       alt,

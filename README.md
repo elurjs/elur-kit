@@ -183,6 +183,26 @@ Options:
 - **`throw new Response()`** — first-class HTTP control flow from loaders and layout loaders (redirects, 404, etc.).
 - **HMAC-signed action errors** — action error cookies signed with SHA-256, rejects tampered/forged values.
 
+## What's new in v2.4
+
+- **Fixed: image pipeline silently no-op** — the CLI bundle was
+  inlining its own copy of the image registry, so `consumeImageRegistry()`
+  always returned `[]` and the two-pass sharp pipeline never ran (no
+  manifest, no variants, no `<picture>`). The registry state is now in a
+  dedicated shared chunk (`image/registry.js`) that both the CLI and the
+  library import, ensuring a single module instance.
+- **`happy-dom` fully removed** — the kit no longer depends on
+  happy-dom in any form. SSR uses the core's DOM-free
+  `renderToString` (`@deijose/nix-js/server`) directly. The legacy DOM
+  fallback (`renderWithDom`) was deleted along with all `external`/
+  `globals` references in the vite build configs.
+- **`raw()` now supports server rendering** — added
+  `NIX_RENDER_PROTOCOL.renderServer` to `raw()` so it works with the
+  core's DOM-free SSR (previously relied on the happy-dom fallback).
+- **Config file renamed** — `nix.config.ts` → `nix-js.config.ts`. The
+  generic name was a design error that could collide with other tools.
+  Legacy `nix.config.*` files still work but emit a deprecation warning.
+
 ## What's new in v2.3
 
 - **Build-time compiler integration** — the kit now detects
@@ -269,6 +289,8 @@ receive the full transform pipeline.
 - **#5: `happy-dom` optional** — moved from `dependencies` to
   `peerDependenciesMeta.optional`. The SSR runtime loads it via dynamic
   `import()` only when the core renderer needs a DOM fallback.
+  *(Note: fully removed in v2.4 — the core's DOM-free `renderToString`
+  made the fallback unnecessary.)*
 
 ## What's new in v2.0
 
@@ -334,6 +356,7 @@ receive the full transform pipeline.
 | v2.1 | Route-level code-splitting, layout slots, Redis/Cloudflare KV cache adapters, real Suspense streaming, `happy-dom` optional ✅ |
 | v2.2 | Native partial attribute interpolation (`interpolation: "auto"/"legacy"/"off"`), `coreSupportsPartialInterpolation()` / `shouldUseLegacyInterpolation()` exported ✅ |
 | v2.3 | Build-time compiler integration via `@deijose/vite-plugin-nix-js` (optional peer), `pluginSupportsPartialInterpolation()`, legacy interpolation delegates to plugin ✅ |
+| v2.4 | CLI image registry singleton fix, `happy-dom` fully removed, `raw()` SSR support, config renamed to `nix-js.config.*` ✅ |
 
 ## API
 
@@ -1152,7 +1175,7 @@ my-app/
 │   │       └── second-post.md
 │   └── islands/             # interactive components
 ├── middleware.ts            # optional middleware (auth, redirects)
-├── nix.config.ts
+├── nix-js.config.ts
 └── vite.config.ts
 ```
 

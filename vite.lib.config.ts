@@ -33,6 +33,7 @@ export default defineConfig({
                 "content/index": resolve("src/content/index.ts"),
                 "image/index": resolve("src/image/index.ts"),
                 "image/service": resolve("src/image/service.ts"),
+                "image/registry": resolve("src/image/registry.ts"),
                 "seo/index": resolve("src/seo/index.ts"),
                 "config/index": resolve("src/config/index.ts"),
                 "manifest/index": resolve("src/manifest/index.ts"),
@@ -50,7 +51,6 @@ export default defineConfig({
         rollupOptions: {
             external: [
                 /^@deijose\/nix-js(?:\/.*)?$/,
-                "happy-dom",
                 "vite",
                 "marked",
                 "zod",
@@ -68,7 +68,6 @@ export default defineConfig({
                 preserveModules: false,
                 globals: {
                     "@deijose/nix-js": "NixJS",
-                    "happy-dom": "HappyDOM",
                     "vite": "Vite",
                 },
                 // Vite 8 deprecates inlineDynamicImports in favor of

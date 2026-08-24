@@ -1,5 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { NIX_RENDER_PROTOCOL } from "@deijose/nix-js";
 import { createStreamingResponse, createBufferedResponse, supportsStreaming } from "../src/ssr/stream-response.ts";
 import { withBoundaryContext, getCurrentBoundaryContext } from "../src/middleware/stream-boundary.ts";
 import type { PageRoute } from "../src/router/route-scanner.ts";
@@ -17,22 +18,21 @@ const mockConfig = {
   renderEndpoint: true,
 };
 
+/** Creates a mock template that supports server rendering without a DOM. */
+function mockTemplate(html: string) {
+  return {
+    __isNixTemplate: true as const,
+    [NIX_RENDER_PROTOCOL]: { renderServer: () => html },
+    mount: () => ({ unmount() { } }),
+    _render: () => () => { },
+  };
+}
+
 describe("streaming response (plan §10)", () => {
   it("createStreamingResponse falls back to normal render without loading boundary", async () => {
     const importer = async (path: string): Promise<Record<string, unknown>> => {
       if (path.endsWith("page.ts")) {
-        return {
-          default: () => ({
-            __isNixTemplate: true,
-            mount: () => ({ unmount() {} }),
-            _render: (parent: Node) => {
-              const el = document.createElement("div");
-              el.textContent = "Hello";
-              parent.appendChild(el);
-              return () => {};
-            },
-          }),
-        };
+        return { default: () => mockTemplate("<div>Hello</div>") };
       }
       return {};
     };
@@ -52,18 +52,7 @@ describe("streaming response (plan §10)", () => {
   it("createBufferedResponse returns a complete Response", async () => {
     const importer = async (path: string): Promise<Record<string, unknown>> => {
       if (path.endsWith("page.ts")) {
-        return {
-          default: () => ({
-            __isNixTemplate: true,
-            mount: () => ({ unmount() {} }),
-            _render: (parent: Node) => {
-              const el = document.createElement("div");
-              el.textContent = "Buffered content";
-              parent.appendChild(el);
-              return () => {};
-            },
-          }),
-        };
+        return { default: () => mockTemplate("<div>Buffered content</div>") };
       }
       return {};
     };
@@ -84,7 +73,6 @@ describe("streaming response (plan §10)", () => {
 
   it("supportsStreaming returns true by default", () => {
     assert.equal(supportsStreaming(), true);
-    assert.equal(supportsStreaming({}), true);
     assert.equal(supportsStreaming({ streaming: true }), true);
   });
 

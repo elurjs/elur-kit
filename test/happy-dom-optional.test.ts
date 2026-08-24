@@ -8,9 +8,12 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const pkgPath = join(__dirname, "..", "package.json");
 const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
 
-// Fix #5: happy-dom as optional peer dependency
+// happy-dom is no longer a dependency of the kit: the SSR runtime uses the
+// core's DOM-free `renderToString` (`@deijose/nix-js/server`), so the legacy
+// happy-dom fallback was removed. This test guards against accidental
+// re-introduction as a runtime/peer dependency.
 
-describe("Fix #5: happy-dom optional peer dependency", () => {
+describe("happy-dom is not a kit dependency", () => {
   it("happy-dom is NOT in dependencies", () => {
     assert.ok(
       !pkg.dependencies || !("happy-dom" in pkg.dependencies),
@@ -18,15 +21,17 @@ describe("Fix #5: happy-dom optional peer dependency", () => {
     );
   });
 
-  it("happy-dom is in peerDependenciesMeta with optional: true", () => {
+  it("happy-dom is NOT in peerDependencies", () => {
     assert.ok(
-      pkg.peerDependenciesMeta && pkg.peerDependenciesMeta["happy-dom"],
-      "happy-dom must be in peerDependenciesMeta",
+      !pkg.peerDependencies || !("happy-dom" in pkg.peerDependencies),
+      "happy-dom must not be in peerDependencies",
     );
-    assert.equal(
-      pkg.peerDependenciesMeta["happy-dom"].optional,
-      true,
-      "happy-dom must be marked optional: true",
+  });
+
+  it("happy-dom is NOT in peerDependenciesMeta", () => {
+    assert.ok(
+      !pkg.peerDependenciesMeta || !("happy-dom" in pkg.peerDependenciesMeta),
+      "happy-dom must not be in peerDependenciesMeta",
     );
   });
 });

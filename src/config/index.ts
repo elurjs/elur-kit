@@ -209,11 +209,28 @@ function normalizeBase(base: string): string {
   return base === "/" ? base : `${base.replace(/\/+$/, "")}/`;
 }
 
+const PREFERRED_CONFIG_FILES = ["nix-js.config.ts", "nix-js.config.js", "nix-js.config.mjs"];
+// Legacy names kept for backward compatibility. Emit a deprecation warning
+// when a project still uses them so authors migrate to `nix-js.config.*`.
+const LEGACY_CONFIG_FILES = ["nix.config.ts", "nix.config.js", "nix.config.mjs"];
+
 async function findConfigFile(root: string): Promise<string | undefined> {
-  for (const name of ["nix.config.ts", "nix.config.js", "nix.config.mjs"]) {
+  for (const name of PREFERRED_CONFIG_FILES) {
     const path = resolve(root, name);
     try {
       await access(path);
+      return path;
+    } catch {
+    }
+  }
+  for (const name of LEGACY_CONFIG_FILES) {
+    const path = resolve(root, name);
+    try {
+      await access(path);
+      console.warn(
+        `[nix-js-kit] "${name}" is deprecated and will be removed in a future release. ` +
+        `Rename it to "nix-js.config.${name.split(".").slice(1).join(".")}" to keep your config working.`,
+      );
       return path;
     } catch {
     }

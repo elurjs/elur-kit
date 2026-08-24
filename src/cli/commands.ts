@@ -164,25 +164,50 @@ export async function doDoctor(options: CliOptions): Promise<number> {
     results.push(await checkExists("Public directory", options.publicDir, "Create public/ for static assets", "warn"));
   }
 
-  // Check 4: nix.config.ts exists (optional)
-  const configPaths = ["nix.config.ts", "nix.config.js", "nix.config.mjs"];
+  // Check 4: nix-js.config.ts exists (optional)
+  const preferredPaths = ["nix-js.config.ts", "nix-js.config.js", "nix-js.config.mjs"];
+  const legacyPaths = ["nix.config.ts", "nix.config.js", "nix.config.mjs"];
   let configFound = false;
-  for (const p of configPaths) {
+  let foundName: string | undefined;
+  let isLegacy = false;
+  for (const p of preferredPaths) {
     try {
       await access(join(options.root, p));
       configFound = true;
-      results.push({ name: "Config file", status: "ok", message: `Found ${p}` });
+      foundName = p;
       break;
     } catch {
       // continue
     }
   }
   if (!configFound) {
+    for (const p of legacyPaths) {
+      try {
+        await access(join(options.root, p));
+        configFound = true;
+        foundName = p;
+        isLegacy = true;
+        break;
+      } catch {
+        // continue
+      }
+    }
+  }
+  if (configFound && foundName) {
+    results.push({
+      name: "Config file",
+      status: isLegacy ? "warn" : "ok",
+      message: `Found ${foundName}${isLegacy ? " (legacy, rename to nix-js.config.* )" : ""}`,
+      suggestion: isLegacy
+        ? `Rename ${foundName} to nix-js.config.${foundName.split(".").slice(1).join(".")} (deprecated name)`
+        : undefined,
+    });
+  } else {
     results.push({
       name: "Config file",
       status: "warn",
-      message: "No nix.config.ts/js/mjs found",
-      suggestion: "Create nix.config.ts for custom configuration (optional, defaults work)",
+      message: "No nix-js.config.ts/js/mjs found",
+      suggestion: "Create nix-js.config.ts for custom configuration (optional, defaults work)",
     });
   }
 

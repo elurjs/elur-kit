@@ -5,7 +5,7 @@
 // creates a NixTemplate that inserts the HTML string directly, the same
 // pattern used by `island()` for server-side rendering.
 
-import type { NixTemplate } from "@deijose/nix-js";
+import { NIX_RENDER_PROTOCOL, type NixTemplate } from "@deijose/nix-js";
 
 /**
  * Creates a NixTemplate that renders the given HTML string without escaping.
@@ -17,6 +17,9 @@ import type { NixTemplate } from "@deijose/nix-js";
 export function raw(html: string): NixTemplate {
   return {
     __isNixTemplate: true as const,
+    [NIX_RENDER_PROTOCOL]: {
+      renderServer: () => html,
+    },
     mount(container: Element | string) {
       const el = typeof container === "string" ? document.querySelector(container) : container;
       if (!el) throw new Error("[nix-js-kit] raw(): container not found");

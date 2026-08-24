@@ -32,6 +32,7 @@
         "src/image/index.ts",
         "src/image/pipeline.ts",
         "src/image/service.ts",
+        "src/image/registry.ts",
         "src/middleware/index.ts",
         "src/middleware/stream-boundary.ts",
         "src/seo/index.ts",
