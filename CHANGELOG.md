@@ -5,6 +5,17 @@ All notable changes to Nix.js Kit are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.2]
+
+### Fixed
+
+- **`BuildResult.outDir`** — added `outDir` field to `BuildResult` so
+  integration `build` hooks know the actual output directory (the atomic
+  staging temp dir when called via the CLI, not the final `dist/`).
+  Without this, integrations that wrote to `join(context.root, "dist")`
+  had their artifacts wiped by the atomic staging commit. Now integrations
+  can use `result.outDir` to write to the correct directory.
+
 ## [2.4.1]
 
 ### Fixed

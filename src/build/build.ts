@@ -76,6 +76,11 @@ export interface BuildResult {
   generatedEntry?: string;
   /** Number of image variants generated (0 if sharp is not installed). */
   imagesProcessed: number;
+  /** Absolute path to the output directory where build artifacts were written.
+   * When called via the CLI, this is the atomic staging directory (not the
+   * final `dist/`). Integration `build` hooks should write post-build
+   * artifacts here so they survive the atomic swap. */
+  outDir: string;
 }
 
 function urlToFilePath(outDir: string, urlPath: string): string {
@@ -128,7 +133,7 @@ export async function build(config: BuildConfig): Promise<BuildResult> {
   const actions = await scanActions(config.appDir);
   // Only action names are serialized into the HTML shell; full paths stay on the server.
   const publicActions = actionNames(actions);
-  const result: BuildResult = { pages: 0, skipped: [], files: [], islands: [], imagesProcessed: 0 };
+  const result: BuildResult = { pages: 0, skipped: [], files: [], islands: [], imagesProcessed: 0, outDir: config.outDir };
 
   // Scan islands and generate the client entry before rendering pages, so the
   // hydration bundle stays in sync with what the app actually uses.

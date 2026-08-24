@@ -202,6 +202,48 @@ Options:
 - **Config file renamed** — `nix.config.ts` → `nix-js.config.ts`. The
   generic name was a design error that could collide with other tools.
   Legacy `nix.config.*` files still work but emit a deprecation warning.
+- **Integration `build` hook** (v2.4.1+) — the `build` hook in
+  `NixKitIntegration` was declared but never invoked. Now `build()` fires
+  `runIntegrationHook(integrations, "build", [result, ctx])` after all
+  pages, image variants, and the manifest are written. Integrations can
+  generate post-build artifacts (sitemaps, robots.txt, search indexes)
+  into the output directory. `BuildResult.outDir` (v2.4.2) exposes the
+  actual output path (the atomic staging temp dir in CLI mode) so
+  artifacts survive the staging commit.
+
+#### Using the `build` hook for sitemaps
+
+```ts
+// nix-js.config.ts
+import { defineConfig } from "@deijose/nix-js-kit";
+import { generateSitemap, generateRobots } from "@deijose/nix-js-kit/seo";
+import type { NixKitIntegration } from "@deijose/nix-js-kit";
+
+const sitemapIntegration: NixKitIntegration = {
+  name: "sitemap",
+  build: async (result) => {
+    const outDir = (result as { outDir: string }).outDir;
+    await generateSitemap({
+      siteUrl: "https://example.com",
+      outDir,
+      urls: [
+        { url: "/", priority: 1.0, changefreq: "weekly" },
+        { url: "/about", priority: 0.8, changefreq: "monthly" },
+      ],
+    });
+    await generateRobots({ siteUrl: "https://example.com", outDir });
+  },
+};
+
+export default defineConfig({
+  integrations: [sitemapIntegration],
+});
+```
+
+The hook fires **before** the CLI's atomic staging commit, so artifacts
+written to `result.outDir` survive the swap into `dist/`. Do not write
+to `join(context.root, "dist")` directly — that path is replaced by the
+staging swap.
 
 ## What's new in v2.3
 
@@ -357,6 +399,7 @@ receive the full transform pipeline.
 | v2.2 | Native partial attribute interpolation (`interpolation: "auto"/"legacy"/"off"`), `coreSupportsPartialInterpolation()` / `shouldUseLegacyInterpolation()` exported ✅ |
 | v2.3 | Build-time compiler integration via `@deijose/vite-plugin-nix-js` (optional peer), `pluginSupportsPartialInterpolation()`, legacy interpolation delegates to plugin ✅ |
 | v2.4 | CLI image registry singleton fix, `happy-dom` fully removed, `raw()` SSR support, config renamed to `nix-js.config.*` ✅ |
+| v2.4.2 | Integration `build` hook wired into `build()`, `BuildResult.outDir` for post-build artifacts ✅ |
 
 ## API
 

@@ -26,17 +26,17 @@ describe("integration build hook", () => {
     );
 
     let hookCalled = false;
-    let receivedResult: { pages: number } | null = null;
+    let receivedResult: { pages: number; outDir: string } | null = null;
     let receivedContext: { command: string; root: string } | null = null;
 
     const integration: NixKitIntegration = {
       name: "test-build-hook",
       build: async (result, context) => {
         hookCalled = true;
-        receivedResult = result as { pages: number };
+        receivedResult = result as { pages: number; outDir: string };
         receivedContext = context as { command: string; root: string };
-        // Write a post-build artifact (e.g. sitemap.xml) into outDir.
-        await writeFile(join(outDir, "sitemap.xml"), "<urlset></urlset>");
+        // Write a post-build artifact (e.g. sitemap.xml) into the build's outDir.
+        await writeFile(join(receivedResult.outDir, "sitemap.xml"), "<urlset></urlset>");
       },
     };
 
@@ -49,6 +49,7 @@ describe("integration build hook", () => {
 
       assert.ok(hookCalled, "build hook should have been called");
       assert.equal(receivedResult!.pages, 1, "hook should receive the build result with 1 page");
+      assert.equal(receivedResult!.outDir, outDir, "hook should receive the correct outDir");
       assert.equal(receivedContext!.command, "build", "hook context command should be 'build'");
 
       const sitemap = await readFile(join(outDir, "sitemap.xml"), "utf8");
