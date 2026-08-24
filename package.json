@@ -262,8 +262,8 @@
     "tsx": "^4.23.12"
   },
   "peerDependencies": {
-    "@deijose/nix-js": "^3.0.0",
-    "@deijose/vite-plugin-nix-js": "^1.1.0",
+    "@deijose/nix-js": "^3.5.0",
+    "@deijose/vite-plugin-nix-js": "^2.0.2",
     "vite": "^7.0.0 || ^8.0.0"
   },
   "peerDependenciesMeta": {

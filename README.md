@@ -3,7 +3,7 @@
 [![npm version](https://img.shields.io/npm/v/@deijose/nix-js-kit.svg)](https://www.npmjs.com/package/@deijose/nix-js-kit)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-> Full-stack meta-framework for Nix.js — file-based routing, SSG, SSR, ISR, streaming, islands, actions, content collections, cache adapters, and SPA-like navigation. Zero extra runtime dependencies on the client: Nix.js stays at ~15 KB.
+> Full-stack meta-framework for Nix.js — file-based routing, SSG, SSR, ISR, streaming, islands, actions, content collections, cache adapters, and SPA-like navigation. Zero extra runtime dependencies on the client: Nix.js stays at ~15 KB. Optional build-time compiler lowers `html\`\`` templates to imperative DOM code for ~25–44% faster renders.
 
 ## What is Nix.js Kit?
 
@@ -22,10 +22,12 @@ Nix.js Kit is a meta-framework built on top of [Nix.js](https://nix-js.dev/). It
 
 - **Routing**: file-based with dynamic segments, optional catch-all `[[...slug]]`, route conflict detection, safe URL decoding, redirects/rewrites/route headers
 - **Rendering**: SSG, SSR, ISR with explicit cache policy (public/private/dynamic), streaming with `ReadableStream` (**experimental** — fallback buffered por adapter; ver nota de streaming)
+- **Build-time compiler** (optional, recommended): integrates [`@deijose/nix-js-compiler`](https://www.npmjs.com/package/@deijose/nix-js-compiler) via [`@deijose/vite-plugin-nix-js`](https://www.npmjs.com/package/@deijose/vite-plugin-nix-js) to lower `html\`\`` templates to imperative DOM code at build time — eliminates `detectContext`, `buildHTML`, and both `TreeWalker` passes in runtime
+- **Partial attribute interpolation**: `class="btn ${size}"` works out of the box via the Vite plugin's state-machine lexer (or the kit's legacy transform as fallback)
 - **Actions**: typed `defineAction()` with input validation, AbortSignal, idempotency, concurrency modes (latest/queue/parallel)
-- **Cache**: `CacheAdapter` with filesystem storage, SHA-256 keys, atomic writes, single-flight, stale-while-revalidate, tag-based invalidation
+- **Cache**: `CacheAdapter` with filesystem, Redis, and Cloudflare KV storage, SHA-256 keys, atomic writes, single-flight, stale-while-revalidate, tag-based invalidation
 - **Security**: HMAC-signed action error cookies, body limits, CSRF verification, default security headers (CSP, HSTS, X-Frame-Options, etc.), conditional static serving (ETag/Last-Modified)
-- **Content**: per-request scope via `AsyncLocalStorage`, collection name containment, frontmatter parser, Markdown rendering
+- **Content**: per-request scope via `AsyncLocalStorage`, collection name containment, frontmatter parser, Markdown rendering, recursive nested collections
 - **SEO**: sitemap generation from route manifest, sitemap index for large sites, robots.txt, JSON-LD with safe escaping
 - **Integrations**: typed hooks for `nix-i18n`, `nix-js-auth`, `nix-query`, `nix-js-testing` — without adding them as dependencies
 - **CLI**: `dev`, `build`, `preview`, `start`, `check`, `routes`, `doctor`, `adapter`
@@ -36,8 +38,24 @@ Nix.js Kit is a meta-framework built on top of [Nix.js](https://nix-js.dev/). It
 
 ```bash
 npm install @deijose/nix-js @deijose/nix-js-kit
+```
+
+For the best performance, also install the Vite plugin (includes the build-time compiler):
+
+```bash
+npm install @deijose/vite-plugin-nix-js
+```
+
+The plugin is an optional peer dependency. When installed, it activates:
+
+- **Build-time compiler** — lowers `html\`\`` to imperative DOM code
+- **Partial attribute interpolation** — state-machine lexer (replaces the kit's legacy transform)
+- **HMR with state preservation** — signals, stores, forms, routers survive hot updates
+- **Scroll/focus preservation** — restored after re-mount
+
+```bash
 # or
-bun add @deijose/nix-js @deijose/nix-js-kit
+bun add @deijose/nix-js @deijose/nix-js-kit @deijose/vite-plugin-nix-js
 ```
 
 ## Quick example
@@ -151,7 +169,7 @@ Options:
 - **CSRF protection** — `verifyOrigin()` checks `Origin`, `Referer`, `Host`, and `Sec-Fetch-Site` with allow-list and `strictOrigin` mode.
 - **Static serving** — containment-enforced path resolution (rejects traversal, NUL, backslashes, symlinks), ETag/Last-Modified conditional requests, Range/If-Range with 206/416, HEAD sin body, immutable caching for hashed assets.
 - **Security headers** — CSP with nonce support, HSTS (HTTPS only), X-Content-Type-Options, Referrer-Policy, X-Frame-Options, Permissions-Policy.
-- **Content layer** — per-request scope via `AsyncLocalStorage`, collection name containment (no path traversal), frontmatter parser, Markdown rendering.
+- **Content layer** — per-request scope via `AsyncLocalStorage`, collection name containment (no path traversal), frontmatter parser, Markdown rendering, recursive nested collections (`getCollection()` scans subdirectories and derives nested slugs).
 - **SEO** — sitemap generation from route manifest, sitemap index for >50,000 URLs, robots.txt, JSON-LD with safe escaping (`<`, `>`, `&`, U+2028, U+2029).
 - **Image optimization** — manifest-driven `<picture>` with content-addressed hashed variants, `<source>` per format, real dimensions, no upscales, Sharp optional.
 - **Islands** — lazy `import()` per island, null/error isolation, `load`/`idle`/`visible` directives, auto-scan of `src/islands/`.
@@ -164,6 +182,73 @@ Options:
 - **Atomic build** — staging outside `dist/`, Vite JS API (no `npx`), `copyPublicAssets()`, final swap only on success.
 - **`throw new Response()`** — first-class HTTP control flow from loaders and layout loaders (redirects, 404, etc.).
 - **HMAC-signed action errors** — action error cookies signed with SHA-256, rejects tampered/forged values.
+
+## What's new in v2.3
+
+- **Build-time compiler integration** — the kit now detects
+  [`@deijose/vite-plugin-nix-js`](https://www.npmjs.com/package/@deijose/vite-plugin-nix-js)
+  (>= 1.1.0) at runtime and skips its legacy interpolation transform
+  automatically. The plugin's state-machine lexer takes precedence,
+  providing compile-time errors, raw-text tag handling, and boolean
+  attribute validation that the kit's heuristic transform lacked.
+- **`@deijose/vite-plugin-nix-js` as optional peer dependency** —
+  `npm install @deijose/vite-plugin-nix-js` activates the build-time
+  compiler (`@deijose/nix-js-compiler`), HMR with state preservation,
+  and partial attribute interpolation via a state-machine lexer.
+- **`pluginSupportsPartialInterpolation()`** — new exported function
+  detects the Vite plugin at runtime.
+- **`shouldUseLegacyInterpolation("auto")`** — now returns `false`
+  when the plugin is installed, `true` only when neither the plugin
+  nor the core supports partials.
+
+### Using the kit with the Vite plugin (recommended)
+
+```ts
+// vite.config.ts
+import { defineConfig } from "vite";
+import { nixJsKit } from "@deijose/nix-js-kit/vite";
+import nixJsPlugin from "@deijose/vite-plugin-nix-js";
+
+export default defineConfig({
+  plugins: [
+    nixJsKit(),
+    nixJsPlugin(),  // compiler: true by default
+  ],
+});
+```
+
+When both plugins are installed:
+
+| Feature | Kit only | Kit + Vite plugin |
+| --- | --- | --- |
+| Partial attr interpolation | Legacy transform (heuristic) | State-machine lexer (compile-time) |
+| Build-time compiler | No | Yes (`html\`\`` → imperative DOM) |
+| HMR state preservation | No | Yes (signals, stores, forms, routers) |
+| Scroll/focus preservation | No | Yes |
+| SSR | Works (kit handles it) | Works (plugin skips compiler in SSR) |
+
+The Vite plugin detects SSR via `transformOptions.ssr` (Vite 5–7) or
+`this.environment.config.consumer === "server"` (Vite 8) and skips
+the compiler and HMR transforms for SSR modules. Client modules
+receive the full transform pipeline.
+
+## What's new in v2.2
+
+- **Native partial attribute interpolation** — when the installed
+  Nix.js core exposes `templateFeatures.partialAttributeInterpolation`
+  (core >= 3.3), the kit no longer injects the legacy
+  `nixJsInterpolationPlugin` transform (`interpolation: "auto"`, the
+  default). Partial attributes run through the runtime's native
+  normalization, preserving fine-grained reactivity.
+  - New `interpolation: "auto" | "legacy" | "off"` option on
+    `nixJsKit()`, `buildClientBundle()` and `transformProjectFiles()`.
+  - `interpolation: "legacy"` forces the old transform for migrations
+    (deprecated, one-time warning); `interpolation: "off"` disables it.
+  - `transformPartialInterpolations` stays exported for direct
+    consumers and is marked deprecated.
+- **`coreSupportsPartialInterpolation()`** and
+  **`shouldUseLegacyInterpolation()`** exported from
+  `@deijose/nix-js-kit/vite` for programmatic resolution.
 
 ## What's new in v2.1
 
@@ -245,7 +330,10 @@ Options:
 | v1.2 | Interpolation plugin, SPA router, preview SSR fallback ✅ |
 | v1.3 | Security, metadata API, content layer, image optimization, prefetch, View Transitions, middleware ✅ |
 | v2.0 | Core v3 (SSR without Happy DOM, real hydration), atomic build, manifest-driven images, unified Web handler, RequestContext (§4), CSRF/static/cache hardening, CLI commands, structured logger, scaffold, 442 tests, 0 vulnerabilities ✅ |
-| v2.0.2 | Cumplimiento: keyed hydration, streaming chunks/protocols (core), static Range/HEAD, errores sanitizados, imágenes hardening + `getImage`/`ImageService`, capabilities, islands `lazyIsland`, E2E Playwright (16 tests) ⏳ unreleased |
+| v2.0.2 | Cumplimiento: keyed hydration, streaming chunks/protocols (core), static Range/HEAD, errores sanitizados, imágenes hardening + `getImage`/`ImageService`, capabilities, islands `lazyIsland`, E2E Playwright (16 tests) ✅ |
+| v2.1 | Route-level code-splitting, layout slots, Redis/Cloudflare KV cache adapters, real Suspense streaming, `happy-dom` optional ✅ |
+| v2.2 | Native partial attribute interpolation (`interpolation: "auto"/"legacy"/"off"`), `coreSupportsPartialInterpolation()` / `shouldUseLegacyInterpolation()` exported ✅ |
+| v2.3 | Build-time compiler integration via `@deijose/vite-plugin-nix-js` (optional peer), `pluginSupportsPartialInterpolation()`, legacy interpolation delegates to plugin ✅ |
 
 ## API
 
@@ -621,15 +709,78 @@ The plugin scans `src/app/`, writes `.nix-js/entry-client.ts` and renders every
 page on demand. For production, keep using `nix-js-kit build` to generate static
 HTML and the client bundle.
 
+#### Using with the build-time compiler (recommended)
+
+For the best performance, install
+[`@deijose/vite-plugin-nix-js`](https://www.npmjs.com/package/@deijose/vite-plugin-nix-js)
+and add it to your Vite config alongside the kit plugin:
+
+```ts
+import { defineConfig } from "vite";
+import { nixJsKit } from "@deijose/nix-js-kit/vite";
+import nixJsPlugin from "@deijose/vite-plugin-nix-js";
+
+export default defineConfig({
+  plugins: [
+    nixJsKit(),
+    nixJsPlugin(),  // compiler: true by default
+  ],
+});
+```
+
+The Vite plugin activates:
+
+- **Build-time compiler** — lowers `html\`\`` templates to imperative DOM
+  code (`firstChild`/`nextSibling` navigation, inline `setAttribute`,
+  grouped effects, event delegation). Eliminates `detectContext`,
+  `buildHTML`, and both `TreeWalker` passes in runtime.
+- **Partial attribute interpolation** — state-machine lexer rewrites
+  `class="btn ${size}"` to `class=${__nixCompose("btn ", size)}` at
+  build time. Takes precedence over the kit's legacy transform.
+- **HMR with state preservation** — signals, stores, forms, and
+  routers declared at module scope survive hot updates.
+- **Scroll/focus preservation** — scroll position and focused element
+  are restored after re-mount.
+
+The plugin is SSR-safe: it detects SSR via `transformOptions.ssr`
+(Vite 5–7) or `this.environment.config.consumer === "server"` (Vite 8)
+and skips the compiler and HMR transforms for SSR modules. Client
+modules receive the full transform pipeline.
+
+To disable the compiler (keep HMR and interpolation):
+
+```ts
+nixJsPlugin({ compiler: false })
+```
+
 #### Partial attribute interpolation
 
-Partial interpolations inside attribute values (`href="/blog/${slug}"`) are
-handled natively by Nix.js core ≥ 3.3 — the kit detects support via
-`templateFeatures.partialAttributeInterpolation` and does not inject its legacy
-transform (`interpolation: "auto"`, the default). Use `interpolation: "legacy"`
-to force the old rewrite for migrations against older cores (deprecated, warns
-once) or `interpolation: "off"` to never transform. The same option is available
-on `buildClientBundle()` and `transformProjectFiles()`.
+Partial interpolations inside attribute values (`href="/blog/${slug}"`)
+are handled in three ways, in priority order:
+
+1. **Vite plugin** (recommended) — when
+   `@deijose/vite-plugin-nix-js` >= 1.1.0 is installed, its
+   state-machine lexer rewrites partial interpolations at build time
+   with compile-time error detection, raw-text tag handling, and
+   boolean attribute validation. The kit detects the plugin via
+   `pluginSupportsPartialInterpolation()` and skips its own transform.
+2. **Core native** — when the Nix.js core exposes
+   `templateFeatures.partialAttributeInterpolation` (core >= 3.3),
+   the runtime normalizes partial attributes natively.
+3. **Kit legacy transform** — fallback for projects without the
+   plugin and with older cores. Heuristic HTML tag walker, less
+   powerful than the plugin's lexer.
+
+Control the behavior with the `interpolation` option on `nixJsKit()`:
+
+```ts
+nixJsKit({ interpolation: "auto" })   // default — plugin > core > legacy
+nixJsKit({ interpolation: "legacy" }) // force legacy transform (deprecated)
+nixJsKit({ interpolation: "off" })    // never transform
+```
+
+The same option is available on `buildClientBundle()` and
+`transformProjectFiles()`.
 
 ### Adapters
 
