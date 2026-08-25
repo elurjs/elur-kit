@@ -133,7 +133,17 @@ async function hydrate(marker: IslandMarker, registry: IslandRegistry): Promise<
     if (template === null || template === false || template === undefined) return;
     const prevDispose = (marker.el as any).__nix_js_island_dispose;
     if (typeof prevDispose === "function") prevDispose();
-    const handle = hydrateTemplate(template, marker.el, { mismatch: "warn-remount" });
+
+    // Islands with directive "only" or options.ssr:false have no SSR-rendered
+    // DOM inside the marker — only fallback HTML or nothing. hydrateTemplate
+    // assumes the SSR DOM is already present and walks it for hydration markers
+    // (<!--nix-N-->, data-nix-e-*). When there's nothing to walk, it silently
+    // does nothing (no contexts to match → empty loop → no mount). So we detect
+    // the absence of hydration markers and do a fresh _render mount instead.
+    const hasSSRMarkers = marker.el.innerHTML.includes("<!--nix-");
+    const handle = hasSSRMarkers
+      ? hydrateTemplate(template, marker.el, { mismatch: "warn-remount" })
+      : freshMount(template, marker.el);
 
     const wrappedDispose = () => {
       handle.unmount();
@@ -159,6 +169,17 @@ function reportIslandError(marker: IslandMarker, error: unknown): void {
 }
 
 /**
+ * Mounts a template fresh into a container (no hydration).
+ * Used for islands with no SSR DOM (directive "only" or ssr:false) where
+ * hydrateTemplate can't work — there's nothing to hydrate against.
+ */
+function freshMount(template: NixTemplate, container: Element): { unmount: () => void } {
+  container.replaceChildren();
+  const dispose = template._render(container, null);
+  return { unmount: dispose };
+}
+
+/**
  * Hydrates all islands on the page using the provided registry.
  *
  * @param registry Map from island name to component factory.
@@ -180,7 +201,9 @@ export function hydrateIslands(registry: IslandRegistry): void {
   const markers = collectMarkers();
 
   for (const marker of markers) {
-    if (marker.directive === "load") {
+    if (marker.directive === "load" || marker.directive === "only") {
+      // "only" is client-only (no SSR) but hydrates immediately on the
+      // client, just like "load" — the difference is purely server-side.
       void hydrate(marker, registry);
       continue;
     }

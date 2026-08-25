@@ -5,6 +5,7 @@ import { html, signal } from "@deijose/nix-js";
 import { island, type IslandComponent } from "../src/island/island.ts";
 import { isSSR } from "../src/render/ssr-flag.ts";
 import { renderToString } from "../src/render/render-to-string.ts";
+import { hydrateIslands, cleanupHydratedIslands } from "../src/island/hydrate.ts";
 
 // --- Tests for the hybrid client-only island fix (v2.4.3) ---
 //
@@ -241,6 +242,79 @@ describe("island client _render path", () => {
       const marker = container.querySelector('[data-nix-js-island="C"]');
       assert.equal(marker?.innerHTML, "loading");
     } finally {
+      restore();
+    }
+  });
+});
+
+describe("island directive \"only\" client hydration (v2.4.4 regression fix)", () => {
+  // Regression: v2.4.3 added "only" to the SSR side but forgot the hydrator.
+  // hydrateIslands only handled "load"/"idle"/"visible" — markers with
+  // data-directive="only" were never hydrated, leaving fallback HTML forever.
+
+  it("hydrates directive 'only' islands immediately on the client", async () => {
+    const window = new Window({ url: "http://localhost/" });
+    const restore = installDomGlobals(window);
+    try {
+      // SSR output: empty marker (component skipped, no fallback)
+      const out = await renderToString(() =>
+        island("Counter", () => html`<button>Click</button>`, {}, "only"),
+      );
+      document.body.innerHTML = out;
+
+      // Before hydration: marker is empty
+      assert.equal(
+        document.querySelector('[data-nix-js-island="Counter"]')?.innerHTML,
+        "",
+        "marker empty before hydration",
+      );
+
+      hydrateIslands({
+        Counter: () => html`<button>Click</button>`,
+      } as never);
+
+      // "only" should hydrate immediately like "load" — no scheduling wait.
+      // Give it a microtask for the async hydrate() to resolve.
+      await new Promise((r) => setTimeout(r, 10));
+
+      assert.equal(
+        document.querySelector('[data-nix-js-island="Counter"] button')?.textContent,
+        "Click",
+        "component hydrated into the marker",
+      );
+    } finally {
+      cleanupHydratedIslands();
+      restore();
+    }
+  });
+
+  it("hydrates directive 'only' with fallback, replacing fallback with component", async () => {
+    const window = new Window({ url: "http://localhost/" });
+    const restore = installDomGlobals(window);
+    try {
+      const out = await renderToString(() =>
+        island("Widget", () => html`<p>live</p>`, {}, "only", { fallback: "<p>loading</p>" }),
+      );
+      document.body.innerHTML = out;
+
+      // Before: fallback visible
+      assert.equal(
+        document.querySelector('[data-nix-js-island="Widget"]')?.textContent,
+        "loading",
+      );
+
+      hydrateIslands({
+        Widget: () => html`<p>live</p>`,
+      } as never);
+      await new Promise((r) => setTimeout(r, 10));
+
+      // After: component replaced fallback
+      assert.equal(
+        document.querySelector('[data-nix-js-island="Widget"]')?.textContent,
+        "live",
+      );
+    } finally {
+      cleanupHydratedIslands();
       restore();
     }
   });

@@ -5,6 +5,27 @@ All notable changes to Nix.js Kit are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.4]
+
+### Fixed
+
+- **`island()` directive `"only"` never hydrated on the client** — v2.4.3
+  added `"only"` to the SSR side (skip rendering) but the client hydrator
+  (`hydrateIslands`) only had branches for `"load"`, `"idle"`, and
+  `"visible"`. Markers with `data-directive="only"` were silently skipped
+  — the component never mounted, leaving the fallback HTML (or empty
+  marker) permanently. Now `"only"` hydrates immediately like `"load"`.
+- **`hydrateTemplate` did nothing for islands without SSR DOM** —
+  `hydrateTemplate` from the core walks existing DOM for hydration
+  markers (`<!--nix-N-->`, `data-nix-e-*`). Islands with `"only"` or
+  `ssr: false` have no SSR DOM in the marker (only fallback HTML or
+  nothing), so `hydrateTemplate` either silently did nothing (templates
+  with no bindings) or threw a mismatch and remounted (templates with
+  bindings). The hydrator now detects the absence of `<!--nix-` markers
+  and does a fresh `_render` mount instead of `hydrateTemplate`, which
+  is the correct operation when there's no SSR DOM to hydrate against.
+  This also fixes the same issue for `ssr: false` with any directive.
+
 ## [2.4.3]
 
 ### Fixed
