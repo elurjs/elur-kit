@@ -1,5 +1,6 @@
 import type { NixTemplate } from "@deijose/nix-js";
 import { hydrate as hydrateTemplate } from "@deijose/nix-js/hydrate";
+import type { IslandDirective } from "./island.js";
 
 // --- Client-side island hydration ---
 
@@ -12,6 +13,10 @@ const _islandSchedules = new Set<() => void>();
 // corresponding interactive components over them. This runs in the browser.
 
 export type IslandComponent<TProps = unknown> = (props: TProps) => NixTemplate | null | false | undefined;
+
+// Re-exported from island.ts so the client entry and the server helper share a
+// single source of truth for the directive union (now includes "only").
+export type { IslandDirective } from "./island.js";
 
 /** Lazy island loader in a discriminated form (no probe required to detect). */
 export interface IslandLoader<TProps = unknown> {
@@ -33,8 +38,6 @@ export type IslandRegistryEntry<TProps = unknown> =
   | (() => Promise<IslandComponent<TProps>>);
 
 export type IslandRegistry = Record<string, IslandRegistryEntry<any>>;
-
-export type IslandDirective = "load" | "idle" | "visible";
 
 /**
  * Wraps a lazy island loader in the discriminated `{ load }` form.

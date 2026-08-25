@@ -15,10 +15,11 @@ export type {
 } from "./types.js";
 
 export { renderToString } from "./render/render-to-string.js";
+export { isSSR } from "./render/ssr-flag.js";
 export { documentShell, buildHeadTags, type ShellOptions } from "./build/document-shell.js";
 export { build, scanRoutes, type BuildConfig, type BuildResult } from "./build/build.js";
 export type { PageRoute, ScannedRoutes, ApiRoute } from "./router/route-scanner.js";
-export { island, type IslandComponent, type IslandDirective } from "./island/island.js";
+export { island, type IslandComponent, type IslandDirective, type IslandOptions } from "./island/island.js";
 export { hydrateIslands, type IslandRegistry } from "./island/hydrate.js";
 export { scanIslands, type IslandModule } from "./island/scan.js";
 export {

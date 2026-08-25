@@ -5,6 +5,48 @@ All notable changes to Nix.js Kit are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.3]
+
+### Fixed
+
+- **`island()` crashed for client-only components after happy-dom removal**
+  — since v2.4.0 removed the happy-dom SSR fallback, `island()` always
+  executed the component during SSR. Any island accessing browser-only
+  globals (`document`, `window`, `navigator`, ...) in its body crashed with
+  `ReferenceError: document is not defined`, breaking carousels, charts, and
+  any third-party widget that touches the DOM. The kit now provides two
+  opt-out mechanisms mirroring the industry standard (Astro `client:only`,
+  Next.js `dynamic(..., { ssr: false })`):
+  - `directive: "only"` — shortcut for client-only with `load` scheduling.
+    The component is never called during SSR; only the fallback is rendered.
+  - `options: { ssr: false }` — client-only with any directive
+    (`load`/`idle`/`visible`), combinable with `options.fallback`.
+  SSR errors are never silently swallowed: they propagate wrapped with the
+  island name and three concrete remediation paths (`"only"`, `{ ssr: false }`,
+  `isSSR()`), matching Astro and Next.js behavior.
+
+### Added
+
+- **`IslandOptions`** — new optional 5th parameter to `island()` with:
+  - `ssr?: boolean` (default `true`, forced `false` when `directive: "only"`)
+  - `fallback?: NixTemplate | string` — HTML rendered inside the island
+    marker when SSR is skipped or the component returns `null`/`false`.
+    Accepts a reactive `NixTemplate` (with signals) or a plain string.
+- **`island()` `fallback` for null components** — when an SSR-safe component
+  returns `null`/`false`/`undefined`, the `fallback` option is now rendered
+  instead of an empty marker.
+- **`isSSR()` exported from the main entry** — reads the Nix.js reactivity
+  SSR flag. Use it to guard environment reads (`window.matchMedia`,
+  `localStorage`, `navigator`) in SSR-safe components. Note: `isSSR()` is
+  NOT a replacement for `"only"`/`ssr: false` — it cannot make
+  `document.querySelectorAll` of the component's own children work, because
+  the DOM is not inserted when the function body runs. For DOM queries of
+  own children, use `NixComponent.onMount()` + `ref`.
+- **`IslandDirective` now includes `"only"`** — the type union is
+  `"load" | "idle" | "visible" | "only"`. The duplicate type definition in
+  `hydrate.ts` was replaced with a re-export from `island.ts` for a single
+  source of truth.
+
 ## [2.4.2]
 
 ### Fixed

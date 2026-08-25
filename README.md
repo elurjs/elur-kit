@@ -210,6 +210,21 @@ Options:
   into the output directory. `BuildResult.outDir` (v2.4.2) exposes the
   actual output path (the atomic staging temp dir in CLI mode) so
   artifacts survive the staging commit.
+- **Client-only islands** (v2.4.3) — `island()` no longer crashes for
+  components that access `document`/`window`/`navigator` in their body
+  (carousels, charts, third-party widgets). Two opt-out mechanisms,
+  mirroring Astro `client:only` and Next.js `dynamic(..., { ssr: false })`:
+  - `directive: "only"` — skip SSR entirely, hydrate on `load`.
+  - `options: { ssr: false }` — skip SSR with any directive
+    (`load`/`idle`/`visible`).
+  - `options: { fallback }` — HTML rendered inside the island marker
+    when SSR is skipped or the component returns `null`. Accepts a
+    `NixTemplate` (reactive) or a plain string.
+  - `isSSR()` — exported guard for environment reads
+    (`window.matchMedia`, `localStorage`, `navigator`). See
+    [Islands](#islands) for the limitation on `document.querySelectorAll`.
+  SSR errors are never silently swallowed — they propagate wrapped with
+  the island name and remediation hints.
 
 #### Using the `build` hook for sitemaps
 
@@ -400,6 +415,7 @@ receive the full transform pipeline.
 | v2.3 | Build-time compiler integration via `@deijose/vite-plugin-nix-js` (optional peer), `pluginSupportsPartialInterpolation()`, legacy interpolation delegates to plugin ✅ |
 | v2.4 | CLI image registry singleton fix, `happy-dom` fully removed, `raw()` SSR support, config renamed to `nix-js.config.*` ✅ |
 | v2.4.2 | Integration `build` hook wired into `build()`, `BuildResult.outDir` for post-build artifacts ✅ |
+| v2.4.3 | Client-only islands (`directive: "only"`, `options: { ssr: false, fallback }`), `isSSR()` export, SSR error wrapping ✅ |
 
 ## API
 
@@ -494,11 +510,97 @@ whose registry name is its path relative to `islandsDir`
 
 Directives:
 
-| Directive | Hydration trigger |
-| --- | --- |
-| `load` | Immediately |
-| `idle` | `requestIdleCallback` |
-| `visible` | `IntersectionObserver` |
+| Directive | Hydration trigger | SSR? |
+| --- | --- | --- |
+| `load` | Immediately | Yes (component runs on server) |
+| `idle` | `requestIdleCallback` | Yes (component runs on server) |
+| `visible` | `IntersectionObserver` | Yes (component runs on server) |
+| `only` | Immediately | **No** — client-only, component never runs on server |
+
+#### Client-only islands (`directive: "only"` / `ssr: false`)
+
+Components that access browser-only globals (`document`, `window`,
+`navigator`, `localStorage`, ...) in their body — carousels, charts,
+third-party widgets — cannot run on the server. Use `directive: "only"`
+(shortcut, hydrates on `load`) or `options: { ssr: false }` (combines
+with any directive) to skip SSR entirely:
+
+```ts
+import { html, island } from "@deijose/nix-js-kit";
+
+// Client-only, hydrates on load, empty fallback
+island("Carousel", Carousel, { slides: [...] }, "only")
+
+// Client-only + fallback HTML (string or NixTemplate)
+island("Carousel", Carousel, { slides: [...] }, "only", {
+  fallback: "<div class=\"skeleton\" />",
+})
+
+// Client-only + hydrate when visible (more flexible than "only")
+island("Chart", Chart, { data }, "visible", { ssr: false })
+```
+
+When SSR is skipped, only `options.fallback` is rendered inside the
+island marker. The client hydrates from scratch.
+
+#### `fallback` option
+
+`options.fallback` accepts a plain string or a `NixTemplate` (reactive,
+with signals). It is rendered when:
+
+- SSR is skipped (`"only"` or `ssr: false`), or
+- The component returns `null` / `false` / `undefined` during SSR.
+
+```ts
+island("Widget", Widget, { id: 1 }, "load", {
+  fallback: html`<p class="placeholder">Loading…</p>`,
+})
+```
+
+#### `isSSR()` — environment reads
+
+For components that only need *environment* reads (`window.matchMedia`,
+`localStorage`, `navigator.userAgent`), guard the access with `isSSR()`
+instead of skipping SSR entirely — this preserves the SSR fallback HTML:
+
+```ts
+import { html, signal } from "@deijose/nix-js";
+import { isSSR } from "@deijose/nix-js-kit";
+
+function ThemeToggle() {
+  const prefersDark = isSSR() ? false : window.matchMedia("(prefers-color-scheme: dark)").matches;
+  const dark = signal(prefersDark);
+  return html`<button @click=${() => (dark.value = !dark.value)}>${() => (dark.value ? "🌙" : "☀")}</button>`;
+}
+
+island("ThemeToggle", ThemeToggle, {}, "load")  // SSR works, no "only" needed
+```
+
+:::warning Limitation
+`isSSR()` is **not** a replacement for `"only"` / `ssr: false`. It only
+works for environment reads. `document.querySelectorAll(".slide")` of
+the component's own children will **not** work with `isSSR()` because
+the DOM is not inserted when the function body runs (neither on the
+server nor during hydration). For DOM queries of own children, use
+`NixComponent.onMount()` + `ref` — `onMount` runs after the DOM is
+inserted, the equivalent of React's `useEffect`.
+:::
+
+#### SSR errors are not silenced
+
+If an island component throws during SSR (with a directive other than
+`"only"` and `ssr` not set to `false`), the error propagates wrapped
+with the island name and remediation hints — it is never silently
+swallowed. This matches Astro and Next.js, which never `try/catch` to
+"auto-detect" client-only components:
+
+```
+[nix-js-kit] Island "Carousel" threw during SSR: document is not defined
+  If the component accesses browser-only globals (document, window, etc.),
+  use directive: "only" or options: { ssr: false } to skip server rendering.
+  For environment reads (matchMedia, localStorage, navigator) you may guard
+  the access with isSSR() from "@deijose/nix-js-kit".
+```
 
 ### `build(config)`
 
