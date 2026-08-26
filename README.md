@@ -416,6 +416,7 @@ receive the full transform pipeline.
 | v2.4 | CLI image registry singleton fix, `happy-dom` fully removed, `raw()` SSR support, config renamed to `nix-js.config.*` ✅ |
 | v2.4.2 | Integration `build` hook wired into `build()`, `BuildResult.outDir` for post-build artifacts ✅ |
 | v2.4.3 | Client-only islands (`directive: "only"`, `options: { ssr: false, fallback }`), `isSSR()` export, SSR error wrapping ✅ |
+| v2.4.4 | Fix: `"only"` directive now hydrates immediately like `"load"`. Fix: islands without SSR DOM use fresh `_render` mount instead of `hydrateTemplate` ✅ |
 
 ## API
 
