@@ -255,12 +255,12 @@ export async function getWithSWR(
             tags: entry.tags,
             version: entry.version,
           }).catch((err) => {
-            console.error("[nix-js-kit] background cache write failed:", err);
+            console.error("[elur-kit] background cache write failed:", err);
           });
         }
       },
       (err) => {
-        console.error("[nix-js-kit] background revalidation failed:", err);
+        console.error("[elur-kit] background revalidation failed:", err);
       },
     );
     return { entry, stale: true };

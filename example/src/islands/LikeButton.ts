@@ -1,4 +1,4 @@
-import { html, signal } from "@deijose/nix-js";
+import { html, signal } from "@elurjs/core";
 
 export interface LikeButtonProps {
   postId: string;

@@ -7,7 +7,7 @@ export interface AboutData {
 
 export const load: PageDataLoad<AboutData> = async () => {
   return {
-    title: "About Nix Kit",
-    mission: "A full-stack meta-framework for Nix.js with zero virtual DOM.",
+    title: "About Elur Kit",
+    mission: "A full-stack framework for Elur with zero virtual DOM.",
   };
 };

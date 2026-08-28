@@ -1,11 +1,11 @@
-import { html } from "@deijose/nix-js";
-import type { PageProps, GenerateStaticParams } from "@deijose/nix-js-kit";
+import { html } from "@elurjs/core";
+import type { PageProps, GenerateStaticParams } from "@elurjs/kit";
 import type { PostData } from "./page.data.ts";
 
 export const generateStaticParams: GenerateStaticParams = async () => {
   return [
     { slug: "hello-world" },
-    { slug: "nix-js-kit" },
+    { slug: "elur-kit" },
   ];
 };
 

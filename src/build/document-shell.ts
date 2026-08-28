@@ -25,18 +25,18 @@ export interface ShellOptions {
    * rendered as-is inside `<head>`.
    */
   headLinks?: string[];
-  /** Loader data serialized into `<script id="nix-js-data">`. */
+  /** Loader data serialized into `<script id="elur-data">`. */
   data?: unknown;
-  /** Per-page action names serialized into `<script id="nix-js-actions">`. */
+  /** Per-page action names serialized into `<script id="elur-actions">`. */
   actions?: Record<string, string[]>;
-  /** Path to the client entry module, e.g. `/_nix-js/entry-client.js`. */
+  /** Path to the client entry module, e.g. `/_elur/entry-client.js`. */
   clientEntry?: string;
   /** Page metadata emitted as `<meta>`, `<link>` and OG/Twitter tags in `<head>`. */
   metadata?: PageMetadata;
   /**
-   * Whether the SSR render endpoint (`/__nix-js/render`) is available at
+   * Whether the SSR render endpoint (`/__elur-js/render`) is available at
    * runtime. Defaults to `true`. When `false` (static deployments), the shell
-   * emits `<meta name="nix-js:render-endpoint" content="off" />` so the client
+   * emits `<meta name="elur:render-endpoint" content="off" />` so the client
    * router skips probing the endpoint entirely — preventing a storm of 404
    * requests on fully static sites.
    */
@@ -65,61 +65,61 @@ function serializeData(data: unknown): string {
 
 /**
  * Builds the `<head>` tags for a `PageMetadata` object. Every tag is marked with
- * `data-nix-js-head` so the client-side router can replace them on navigation
+ * `data-elur-head` so the client-side router can replace them on navigation
  * without touching charset/viewport or user-supplied `headScripts`.
  */
 export function buildHeadTags(metadata: PageMetadata, fallbackTitle: string): string {
   const tags: string[] = [];
   const title = metadata.title ?? fallbackTitle;
   if (metadata.title) {
-    tags.push(`<title data-nix-js-head>${escapeHtml(title)}</title>`);
+    tags.push(`<title data-elur-head>${escapeHtml(title)}</title>`);
   }
 
   if (metadata.description) {
-    tags.push(`<meta data-nix-js-head name="description" content="${escapeHtml(metadata.description)}" />`);
+    tags.push(`<meta data-elur-head name="description" content="${escapeHtml(metadata.description)}" />`);
   }
 
   if (metadata.canonical) {
-    tags.push(`<link data-nix-js-head rel="canonical" href="${escapeHtml(metadata.canonical)}" />`);
+    tags.push(`<link data-elur-head rel="canonical" href="${escapeHtml(metadata.canonical)}" />`);
   }
 
   if (metadata.robots) {
-    tags.push(`<meta data-nix-js-head name="robots" content="${escapeHtml(metadata.robots)}" />`);
+    tags.push(`<meta data-elur-head name="robots" content="${escapeHtml(metadata.robots)}" />`);
   }
 
   const og = metadata.openGraph;
   if (og) {
-    if (og.type) tags.push(`<meta data-nix-js-head property="og:type" content="${escapeHtml(og.type)}" />`);
-    tags.push(`<meta data-nix-js-head property="og:title" content="${escapeHtml(og.title ?? title)}" />`);
+    if (og.type) tags.push(`<meta data-elur-head property="og:type" content="${escapeHtml(og.type)}" />`);
+    tags.push(`<meta data-elur-head property="og:title" content="${escapeHtml(og.title ?? title)}" />`);
     if (og.description ?? metadata.description) {
-      tags.push(`<meta data-nix-js-head property="og:description" content="${escapeHtml(og.description ?? metadata.description!)}" />`);
+      tags.push(`<meta data-elur-head property="og:description" content="${escapeHtml(og.description ?? metadata.description!)}" />`);
     }
     if (og.url ?? metadata.canonical) {
-      tags.push(`<meta data-nix-js-head property="og:url" content="${escapeHtml(og.url ?? metadata.canonical!)}" />`);
+      tags.push(`<meta data-elur-head property="og:url" content="${escapeHtml(og.url ?? metadata.canonical!)}" />`);
     }
-    if (og.image) tags.push(`<meta data-nix-js-head property="og:image" content="${escapeHtml(og.image)}" />`);
-    if (og.image && og.imageAlt) tags.push(`<meta data-nix-js-head property="og:image:alt" content="${escapeHtml(og.imageAlt)}" />`);
-    if (og.image && og.imageWidth) tags.push(`<meta data-nix-js-head property="og:image:width" content="${String(og.imageWidth)}" />`);
-    if (og.image && og.imageHeight) tags.push(`<meta data-nix-js-head property="og:image:height" content="${String(og.imageHeight)}" />`);
-    if (og.image && og.imageType) tags.push(`<meta data-nix-js-head property="og:image:type" content="${escapeHtml(og.imageType)}" />`);
-    if (og.siteName) tags.push(`<meta data-nix-js-head property="og:site_name" content="${escapeHtml(og.siteName)}" />`);
-    if (og.locale) tags.push(`<meta data-nix-js-head property="og:locale" content="${escapeHtml(og.locale)}" />`);
+    if (og.image) tags.push(`<meta data-elur-head property="og:image" content="${escapeHtml(og.image)}" />`);
+    if (og.image && og.imageAlt) tags.push(`<meta data-elur-head property="og:image:alt" content="${escapeHtml(og.imageAlt)}" />`);
+    if (og.image && og.imageWidth) tags.push(`<meta data-elur-head property="og:image:width" content="${String(og.imageWidth)}" />`);
+    if (og.image && og.imageHeight) tags.push(`<meta data-elur-head property="og:image:height" content="${String(og.imageHeight)}" />`);
+    if (og.image && og.imageType) tags.push(`<meta data-elur-head property="og:image:type" content="${escapeHtml(og.imageType)}" />`);
+    if (og.siteName) tags.push(`<meta data-elur-head property="og:site_name" content="${escapeHtml(og.siteName)}" />`);
+    if (og.locale) tags.push(`<meta data-elur-head property="og:locale" content="${escapeHtml(og.locale)}" />`);
   }
 
   const tw = metadata.twitter;
   if (tw) {
-    if (tw.card) tags.push(`<meta data-nix-js-head name="twitter:card" content="${escapeHtml(tw.card)}" />`);
-    if (tw.title ?? title) tags.push(`<meta data-nix-js-head name="twitter:title" content="${escapeHtml(tw.title ?? title)}" />`);
+    if (tw.card) tags.push(`<meta data-elur-head name="twitter:card" content="${escapeHtml(tw.card)}" />`);
+    if (tw.title ?? title) tags.push(`<meta data-elur-head name="twitter:title" content="${escapeHtml(tw.title ?? title)}" />`);
     if (tw.description ?? metadata.description) {
-      tags.push(`<meta data-nix-js-head name="twitter:description" content="${escapeHtml(tw.description ?? metadata.description!)}" />`);
+      tags.push(`<meta data-elur-head name="twitter:description" content="${escapeHtml(tw.description ?? metadata.description!)}" />`);
     }
-    if (tw.image) tags.push(`<meta data-nix-js-head name="twitter:image" content="${escapeHtml(tw.image)}" />`);
-    if (tw.image && tw.imageAlt) tags.push(`<meta data-nix-js-head name="twitter:image:alt" content="${escapeHtml(tw.imageAlt)}" />`);
+    if (tw.image) tags.push(`<meta data-elur-head name="twitter:image" content="${escapeHtml(tw.image)}" />`);
+    if (tw.image && tw.imageAlt) tags.push(`<meta data-elur-head name="twitter:image:alt" content="${escapeHtml(tw.imageAlt)}" />`);
   }
 
   if (metadata.other) {
     for (const [name, content] of Object.entries(metadata.other)) {
-      tags.push(`<meta data-nix-js-head name="${escapeHtml(name)}" content="${escapeHtml(content)}" />`);
+      tags.push(`<meta data-elur-head name="${escapeHtml(name)}" content="${escapeHtml(content)}" />`);
     }
   }
 
@@ -128,15 +128,15 @@ export function buildHeadTags(metadata: PageMetadata, fallbackTitle: string): st
 
 /** Wraps rendered body HTML into a full HTML document. */
 export function documentShell(opts: ShellOptions): string {
-  const { body, title = "Nix.js Kit App", lang = "es", data, actions, clientEntry, htmlAttributes, headScripts, headLinks, metadata } = opts;
+  const { body, title = "Elur Kit App", lang = "es", data, actions, clientEntry, htmlAttributes, headScripts, headLinks, metadata } = opts;
 
   const dataScript =
     data !== undefined
-      ? `\n    <script type="application/json" id="nix-js-data">${serializeData(data)}</script>`
+      ? `\n    <script type="application/json" id="elur-data">${serializeData(data)}</script>`
       : "";
 
   const actionsScript = actions && Object.keys(actions).length > 0
-    ? `\n    <script type="application/json" id="nix-js-actions">${serializeData(actions)}</script>`
+    ? `\n    <script type="application/json" id="elur-actions">${serializeData(actions)}</script>`
     : "";
 
   const entryScript = clientEntry
@@ -178,7 +178,7 @@ export function documentShell(opts: ShellOptions): string {
 
   const renderEndpointMeta =
     opts.renderEndpoint === false
-      ? '\n    <meta name="nix-js:render-endpoint" content="off" />'
+      ? '\n    <meta name="elur:render-endpoint" content="off" />'
       : "";
 
   return `<!DOCTYPE html>

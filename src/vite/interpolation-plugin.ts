@@ -3,10 +3,10 @@ import type { Plugin } from "vite";
 
 /**
  * How the legacy interpolation transform is handled relative to the installed
- * Nix.js core and Vite plugin:
+ * Elur core and Vite plugin:
  *
  * - `"auto"` (default): the kit's legacy transform is only applied when the
- *   Vite plugin (`@deijose/vite-plugin-nix-js` >= 1.1.0) is NOT installed.
+ *   Vite plugin (`@elurjs/vite-plugin-elur` >= 1.1.0) is NOT installed.
  *   The plugin has a more powerful state-machine lexer and takes precedence.
  * - `"legacy"`: always apply the kit's transform (for migrations), with a
  *   one-time deprecation warning.
@@ -23,20 +23,20 @@ function warnLegacyOnce(): void {
   if (_warnedLegacy) return;
   _warnedLegacy = true;
   console.warn(
-    "[nix-js-kit] The legacy interpolation transform is deprecated. " +
-    "Install @deijose/vite-plugin-nix-js >= 1.1.0 for compile-time " +
+    "[elur-kit] The legacy interpolation transform is deprecated. " +
+    "Install @elurjs/vite-plugin-elur >= 1.1.0 for compile-time " +
     "partial attribute interpolation. Remove `interpolation: \"legacy\"` " +
     "once migration is complete.",
   );
 }
 
 /**
- * Detects whether the Vite plugin (`@deijose/vite-plugin-nix-js`) is
+ * Detects whether the Vite plugin (`@elurjs/vite-plugin-elur`) is
  * installed and provides compile-time partial attribute interpolation.
  */
 export function pluginSupportsPartialInterpolation(): boolean {
   try {
-    const pkg = require("@deijose/vite-plugin-nix-js/package.json") as {
+    const pkg = require("@elurjs/vite-plugin-elur/package.json") as {
       version?: string;
     };
     // >= 1.1.0 has the interpolation lexer
@@ -48,14 +48,14 @@ export function pluginSupportsPartialInterpolation(): boolean {
 }
 
 /**
- * Detects whether the installed Nix.js core supports partial attribute
+ * Detects whether the installed Elur core supports partial attribute
  * interpolation natively (via the public `templateFeatures` capability).
  * Note: as of core v3.4.0, this is always false — the lexer moved to the
  * Vite plugin.
  */
 export function coreSupportsPartialInterpolation(): boolean {
   try {
-    const core = require("@deijose/nix-js") as {
+    const core = require("@elurjs/core") as {
       templateFeatures?: { partialAttributeInterpolation?: boolean };
     };
     return core?.templateFeatures?.partialAttributeInterpolation === true;
@@ -85,10 +85,10 @@ export function shouldUseLegacyInterpolation(mode: InterpolationMode): boolean {
 }
 
 /**
- * Transforms Nix.js `html\`\`` templates so that attributes with partial
+ * Transforms Elur `html\`\`` templates so that attributes with partial
  * interpolation become a single interpolation expression.
  *
- * Nix.js requires every dynamic attribute to be a single interpolation covering
+ * Elur requires every dynamic attribute to be a single interpolation covering
  * the whole value. This plugin rewrites patterns such as:
  *
  *   html\`<a href="/blog/${slug}">...</a>\`
@@ -99,7 +99,7 @@ export function shouldUseLegacyInterpolation(mode: InterpolationMode): boolean {
  *
  * Only files inside the app and islands directories are processed.
  *
- * @deprecated Nix.js core supports partial attribute interpolation natively.
+ * @deprecated Elur core supports partial attribute interpolation natively.
  *   Keep this transform only for migrations against older cores
  *   (`interpolation: "legacy"`).
  */
@@ -369,7 +369,7 @@ function transformTemplateContent(content: string): string {
       if (quote === '"' || quote === "'") {
         const { end, inside, hasInterp } = scanQuotedValue(content, i, quote);
         if (hasInterp) {
-          // Skip values that are a single full interpolation: Nix.js handles
+          // Skip values that are a single full interpolation: Elur handles
           // `attr="${expr}"` natively, so only partial interpolations need the
           // rewrite.
           const first = scanInterpolation(inside, 0);
@@ -378,7 +378,7 @@ function transformTemplateContent(content: string): string {
             first === inside.length &&
             !inside.slice(2, first - 1).includes("${");
           if (!fullValue) {
-            // Nix.js needs the interpolation to start right after "=" (no space),
+            // Elur needs the interpolation to start right after "=" (no space),
             // so the whitespace before the original value is dropped.
             out += ws + name + eqWs + "=" + "${" + valueToExpression(inside) + "}";
             i = end;
@@ -411,7 +411,7 @@ function transformTemplateContent(content: string): string {
 }
 
 /**
- * @deprecated Use the native partial attribute interpolation of Nix.js core
+ * @deprecated Use the native partial attribute interpolation of Elur core
  *   (core >= 3.3). Kept for legacy migrations and direct consumers.
  */
 export function transformPartialInterpolations(source: string): string {
@@ -475,11 +475,11 @@ export function transformPartialInterpolations(source: string): string {
   return result;
 }
 
-export function nixJsInterpolationPlugin(options: InterpolationPluginOptions = {}): Plugin {
+export function elurJsInterpolationPlugin(options: InterpolationPluginOptions = {}): Plugin {
   const appDir = options.appDir ?? "src/app";
   const islandsDir = options.islandsDir ?? "src/islands";
   return {
-    name: "nix-js-kit-interpolation",
+    name: "elur-kit-interpolation",
     enforce: "pre",
     transform(code, id) {
       if (!id.endsWith(".ts") && !id.endsWith(".js")) return;

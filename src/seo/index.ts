@@ -60,10 +60,10 @@ export interface RobotsRule {
  *
  * @example
  * ```ts
- * import { generateSitemap } from "@deijose/nix-js-kit/seo";
+ * import { generateSitemap } from "@elurjs/kit/seo";
  *
  * await generateSitemap({
- *   siteUrl: "https://nix-js-kit.dev",
+ *   siteUrl: "https://elur-kit.dev",
  *   outDir: "./dist",
  *   urls: [
  *     "/",
@@ -107,12 +107,12 @@ ${entries.join("\n")}
  *
  * @example
  * ```ts
- * import { generateRobots } from "@deijose/nix-js-kit/seo";
+ * import { generateRobots } from "@elurjs/kit/seo";
  *
  * await generateRobots({
- *   siteUrl: "https://nix-js-kit.dev",
+ *   siteUrl: "https://elur-kit.dev",
  *   outDir: "./dist",
- *   disallow: ["/api/", "/_nix-js/"],
+ *   disallow: ["/api/", "/_elur/"],
  * });
  * ```
  */
@@ -166,7 +166,7 @@ export interface JsonLdSchema {
  *
  * @example
  * ```ts
- * import { jsonLd } from "@deijose/nix-js-kit/seo";
+ * import { jsonLd } from "@elurjs/kit/seo";
  *
  * const schema = jsonLd({
  *   "@context": "https://schema.org",

@@ -49,13 +49,13 @@ export default defineConfig({
 
         lib: {
             entry: resolve("src/cli.ts"),
-            name: "NixJSKitCli",
+            name: "ElurJSKitCli",
             formats: ["es", "cjs"],
             fileName: (format) => format === "cjs" ? "cli.cjs" : "cli.js",
         },
 
         rollupOptions: {
-            external: /^@deijose\/nix-js(?:\/.*)?$/,
+            external: /^@elurjs\/core(?:\/.*)?$/,
             output: {
                 codeSplitting: false,
             },

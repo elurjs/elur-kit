@@ -5,7 +5,7 @@ import { rm, mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
-const APP_DIR = join(tmpdir(), `nix-slots-test-${Date.now()}`);
+const APP_DIR = join(tmpdir(), `elur-slots-test-${Date.now()}`);
 
 async function setupApp(baseDir: string, structure: Record<string, string>): Promise<void> {
   for (const [relPath, content] of Object.entries(structure)) {

@@ -19,7 +19,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const KIT_ROOT = join(__dirname, "..");
-const EXTRACT_DIR = join(tmpdir(), `nix-smoke-${Date.now()}`);
+const EXTRACT_DIR = join(tmpdir(), `elur-smoke-${Date.now()}`);
 
 describe("package smoke test (plan §13)", () => {
   let tarballPath: string;
@@ -92,7 +92,7 @@ describe("package smoke test (plan §13)", () => {
   it("tarball contains bin", () => {
     const binPath = join(EXTRACT_DIR, "package", "bin");
     assert.ok(existsSync(binPath), "bin/ should be in tarball");
-    assert.ok(existsSync(join(binPath, "nix-js-kit.js")), "CLI entry should exist");
+    assert.ok(existsSync(join(binPath, "elur-kit.js")), "CLI entry should exist");
   });
 
   it("tarball contains README and CHANGELOG", () => {

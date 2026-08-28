@@ -1,16 +1,16 @@
-// --- @deijose/nix-js-kit/content — public API ---
+// --- @elurjs/kit/content — public API ---
 //
-// Content layer for Nix Kit: Markdown collections with typed frontmatter.
+// Content layer for Elur Kit: Markdown collections with typed frontmatter.
 //
 // Usage:
 //   // src/content/config.ts
-//   import { defineCollection } from "@deijose/nix-js-kit/content";
+//   import { defineCollection } from "@elurjs/kit/content";
 //   export const collections = {
 //     blog: defineCollection({ schema: z.object({ title: z.string() }) }),
 //   };
 //
 //   // src/app/blog/[slug]/page.data.ts
-//   import { getEntry } from "@deijose/nix-js-kit/content";
+//   import { getEntry } from "@elurjs/kit/content";
 //   export const load = async ({ params }) => ({
 //     post: await getEntry("blog", params.slug),
 //   });

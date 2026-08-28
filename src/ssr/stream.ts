@@ -1,4 +1,4 @@
-import type { NixTemplate } from "@deijose/nix-js";
+import type { ElurTemplate } from "@elurjs/core";
 import { renderToString } from "../render/render-to-string.js";
 import { documentShell } from "../build/document-shell.js";
 import type { PageRoute, ScannedRoutes } from "../router/route-scanner.js";
@@ -33,20 +33,20 @@ function buildConcretePath(
 
 function streamingScript(page: string, search: string): string {
   const src = `
-    async function __nixJsStreamRender() {
+    async function __elurJsStreamRender() {
       try {
-        const url = "/__nix-js/render?page=" + encodeURIComponent(${JSON.stringify(page)}) + "&search=" + encodeURIComponent(${JSON.stringify(search)});
+        const url = "/__elur-js/render?page=" + encodeURIComponent(${JSON.stringify(page)}) + "&search=" + encodeURIComponent(${JSON.stringify(search)});
         const res = await fetch(url);
         if (!res.ok) throw new Error("Streaming render failed: " + res.status);
         const html = await res.text();
         const app = document.getElementById("app");
         if (app) app.innerHTML = html;
-        document.dispatchEvent(new CustomEvent("nix-js:rendered"));
+        document.dispatchEvent(new CustomEvent("elur:rendered"));
       } catch (err) {
-        console.error("[nix-js-kit] streaming render failed", err);
+        console.error("[elur-kit] streaming render failed", err);
       }
     }
-    __nixJsStreamRender();
+    __elurJsStreamRender();
   `;
   return `<script type="module">${src}</script>`;
 }
@@ -62,12 +62,12 @@ export async function renderStreamingPage(options: StreamingPageOptions): Promis
   }
 
   const { default: Loading } = (await importer(route.loadingPath)) as {
-    default: () => NixTemplate;
+    default: () => ElurTemplate;
   };
 
   const loadingBody = await renderToString(() => Loading());
   const concretePath = buildConcretePath(route.path, params);
-  const body = `<div id="nix-js-loading">${loadingBody}</div>${streamingScript(concretePath, searchParams.toString())}`;
+  const body = `<div id="elur-loading">${loadingBody}</div>${streamingScript(concretePath, searchParams.toString())}`;
 
   // Apply <html> attributes and head scripts (e.g. data-theme and the no-flash
   // theme script) from the root layout loader so the shell paints correctly
@@ -100,7 +100,7 @@ export async function renderStreamingPage(options: StreamingPageOptions): Promis
     title: "Loading...",
     lang: config.lang,
     body,
-    data: { __nix_js_streaming: true, page: route.path },
+    data: { __elur_js_streaming: true, page: route.path },
     actions,
     htmlAttributes,
     headScripts,

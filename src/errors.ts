@@ -1,12 +1,12 @@
 /**
  * Represents a failed action result. Returned by `fail()` from server actions.
  *
- * The `__nix_js_action_failure` marker is set on the instance so the server can
+ * The `__elur_js_action_failure` marker is set on the instance so the server can
  * detect it even when the value crosses a bundling boundary (e.g. the CLI is
  * bundled separately from the user's action modules).
  */
 export class ActionFailure<TData = unknown> {
-  readonly __nix_js_action_failure = true;
+  readonly __elur_js_action_failure = true;
   constructor(
     public status: number,
     public data: TData,
@@ -17,7 +17,7 @@ export class ActionFailure<TData = unknown> {
  * Represents a redirect returned by a server action. Returned by `redirect()`.
  */
 export class RedirectResponse {
-  readonly __nix_js_action_redirect = true;
+  readonly __elur_js_action_redirect = true;
   constructor(
     public status: number,
     public location: string,
@@ -73,7 +73,7 @@ export function isActionFailure(value: unknown): value is ActionFailure {
   return (
     typeof value === "object" &&
     value !== null &&
-    (value as { __nix_js_action_failure?: unknown }).__nix_js_action_failure === true
+    (value as { __elur_js_action_failure?: unknown }).__elur_js_action_failure === true
   );
 }
 
@@ -85,7 +85,7 @@ export function isRedirectResponse(value: unknown): value is RedirectResponse {
   return (
     typeof value === "object" &&
     value !== null &&
-    (value as { __nix_js_action_redirect?: unknown }).__nix_js_action_redirect === true
+    (value as { __elur_js_action_redirect?: unknown }).__elur_js_action_redirect === true
   );
 }
 

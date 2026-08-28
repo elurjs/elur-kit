@@ -11,25 +11,25 @@
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "paths": {
-      "@deijose/nix-js-kit": [
+      "@elurjs/kit": [
         "./src/index.ts"
       ],
-      "@deijose/nix-js-kit/island": [
+      "@elurjs/kit/island": [
         "./src/island/index.ts"
       ],
-      "@deijose/nix-js-kit/cli": [
+      "@elurjs/kit/cli": [
         "./src/cli.ts"
       ],
-      "@deijose/nix-js-kit/vite": [
+      "@elurjs/kit/vite": [
         "./src/vite/index.ts"
       ],
-      "@deijose/nix-js-kit/router": [
+      "@elurjs/kit/router": [
         "./src/router/client.ts"
       ],
-      "@deijose/nix-js-kit/content": [
+      "@elurjs/kit/content": [
         "./src/content/index.ts"
       ],
-      "@deijose/nix-js-kit/image": [
+      "@elurjs/kit/image": [
         "./src/image/index.ts"
       ]
     },

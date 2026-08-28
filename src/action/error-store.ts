@@ -3,12 +3,12 @@
 // Action failures submitted via plain HTML forms (progressive enhancement)
 // need to be relayed back to the page so the user sees validation errors.
 //
-// Previously the failure data was serialized into a `?__nix_js_action_error=`
+// Previously the failure data was serialized into a `?__elur_js_action_error=`
 // query param on the redirect. That leaks errors into browser history,
 // server logs and third-party Referer headers.
 //
 // Now we stash the failure in a short-lived in-memory store keyed by a random
-// id, set a small cookie `__nix_js_action_error=<id>` (Max-Age=15s, SameSite=Lax),
+// id, set a small cookie `__elur_js_action_error=<id>` (Max-Age=15s, SameSite=Lax),
 // and the next render reads the cookie, fetches the payload, exposes it as
 // `props.form`, and clears the entry.
 //
@@ -19,15 +19,15 @@
 
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 
-const COOKIE_NAME = "__nix_js_action_error";
+const COOKIE_NAME = "__elur_js_action_error";
 const MAX_COOKIE_SIZE = 3500; // bytes; leaves headroom under the 4KB cookie limit
 const TTL_MS = 15_000;
 
 // HMAC key for signing action error cookies. In production this should be
-// set via NIX_JS_ACTION_SECRET env var; otherwise we derive a per-process
+// set via ELUR_JS_ACTION_SECRET env var; otherwise we derive a per-process
 // key (sufficient for single-process dev/preview, but NOT for multi-instance).
 const ACTION_SECRET =
-  process.env.NIX_JS_ACTION_SECRET ?? randomBytes(32).toString("hex");
+  process.env.ELUR_JS_ACTION_SECRET ?? randomBytes(32).toString("hex");
 
 interface StoredError {
   data: unknown;

@@ -1,13 +1,13 @@
 import { defineConfig } from "vite";
-import { nixJsKit } from "@deijose/nix-js-kit/vite";
+import { elurJsKit } from "@elurjs/kit/vite";
 
 export default defineConfig({
   plugins: [
-    nixJsKit({
+    elurJsKit({
       appDir: "src/app",
       islandsDir: "src/islands",
-      generatedEntry: ".nix-js/entry-client.ts",
-      clientEntry: "/_nix-js/entry-client.js",
+      generatedEntry: ".elur/entry-client.ts",
+      clientEntry: "/_elur/entry-client.js",
       lang: "es",
     }),
   ],

@@ -65,7 +65,7 @@ export type DefinedActionFn<TInput, TOutput> = (
 export interface DefinedAction<TInput, TOutput> {
   (input: TInput, ctx: ActionContext): Promise<TOutput | ActionFailure<TOutput>>;
   /** Metadata for the action (used by the runtime/manifest). */
-  __nixAction: {
+  __elurAction: {
     name: string;
     concurrency: ActionConcurrencyMode;
     idempotent: boolean;
@@ -79,7 +79,7 @@ export interface DefinedAction<TInput, TOutput> {
  * invalidation metadata.
  *
  * ```ts
- * import { defineAction, fail } from "@deijose/nix-js-kit/action";
+ * import { defineAction, fail } from "@elurjs/kit/action";
  *
  * export const submitContact = defineAction({
  *   input: { parse: (v) => v as { name: string; email: string } },
@@ -157,7 +157,7 @@ export function defineAction<TInput = unknown, TOutput = unknown>(
   };
 
   // Attach metadata.
-  (fn as DefinedAction<TInput, TOutput>).__nixAction = {
+  (fn as DefinedAction<TInput, TOutput>).__elurAction = {
     name: handler.name || "anonymous",
     concurrency,
     idempotent,

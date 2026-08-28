@@ -77,7 +77,7 @@ describe("client router: prefetch cache", () => {
     const ok = await navigateTo("/about", "", true);
     assert.equal(ok, true);
     assert.ok(fetchedUrls.length > 0, "should have fetched the render endpoint");
-    assert.ok(fetchedUrls[0].includes("/__nix-js/render"), "should call the render endpoint");
+    assert.ok(fetchedUrls[0].includes("/__elur-js/render"), "should call the render endpoint");
     assert.equal(window.document.getElementById("app")?.innerHTML, "<p>new content</p>");
     assert.equal(window.document.title, "New Page");
   });
@@ -103,11 +103,11 @@ describe("client router: prefetch cache", () => {
     assert.equal(ok, false);
   });
 
-  it("mergeHead replaces data-nix-js-head tags", async () => {
+  it("mergeHead replaces data-elur-head tags", async () => {
     window.document.head.innerHTML = `
       <meta charset="utf-8" />
-      <meta data-nix-js-head name="description" content="old" />
-      <title data-nix-js-head>Old Title</title>
+      <meta data-elur-head name="description" content="old" />
+      <title data-elur-head>Old Title</title>
     `;
     window.document.body.innerHTML = '<div id="app"><p>content</p></div>';
 
@@ -116,15 +116,15 @@ describe("client router: prefetch cache", () => {
       json: async () => ({
         title: "New Title",
         body: "<p>new</p>",
-        head: '<title data-nix-js-head>New Title</title><meta data-nix-js-head name="description" content="new desc" />',
+        head: '<title data-elur-head>New Title</title><meta data-elur-head name="description" content="new desc" />',
       }),
     }) as Response) as typeof fetch;
 
     const { navigateTo } = await import("../src/router/client.ts");
     await navigateTo("/page", "", true);
 
-    // Old data-nix-js-head tags should be removed, new ones inserted.
-    const metaTags = window.document.querySelectorAll('meta[data-nix-js-head]');
+    // Old data-elur-head tags should be removed, new ones inserted.
+    const metaTags = window.document.querySelectorAll('meta[data-elur-head]');
     assert.equal(metaTags.length, 1);
     assert.equal(metaTags[0].getAttribute("content"), "new desc");
     assert.equal(window.document.title, "New Title");
@@ -135,8 +135,8 @@ describe("client router: prefetch cache", () => {
 
     let fetchCount = 0;
     globalThis.fetch = (async (input: any, init?: any) => {
-      // Ignore probe requests (they use X-Nix-Probe header).
-      if (init?.headers?.["X-Nix-Probe"]) {
+      // Ignore probe requests (they use X-Elur-Probe header).
+      if (init?.headers?.["X-Elur-Probe"]) {
         return { ok: true, json: async () => ({ body: "" }) } as Response;
       }
       fetchCount++;
@@ -166,7 +166,7 @@ describe("client router: prefetch cache", () => {
       ok: true,
       json: async () => ({
         body: "<p>new</p>",
-        clearActionErrorCookie: "__nix_js_action_error=; Path=/; Max-Age=0",
+        clearActionErrorCookie: "__elur_js_action_error=; Path=/; Max-Age=0",
       }),
     }) as Response) as typeof fetch;
 
@@ -195,6 +195,6 @@ describe("client router: prefetch cache", () => {
     await navigateTo("/page", "", true);
 
     assert.ok(cookieWrite, "router should write the clear cookie");
-    assert.ok(cookieWrite!.startsWith("__nix_js_action_error="), `expected clear cookie, got ${cookieWrite}`);
+    assert.ok(cookieWrite!.startsWith("__elur_js_action_error="), `expected clear cookie, got ${cookieWrite}`);
   });
 });

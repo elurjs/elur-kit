@@ -7,7 +7,7 @@ import { resolveStaticFile } from "../src/runtime/static.ts";
 
 describe("resolveStaticFile", () => {
   it("resolves files and clean URLs inside the static root", async () => {
-    const root = await mkdtemp(join(tmpdir(), "nix-static-"));
+    const root = await mkdtemp(join(tmpdir(), "elur-static-"));
     try {
       await mkdir(join(root, "about"));
       await writeFile(join(root, "about/index.html"), "about");
@@ -18,7 +18,7 @@ describe("resolveStaticFile", () => {
   });
 
   it("rejects traversal, encoded traversal, backslashes and null bytes", async () => {
-    const root = await mkdtemp(join(tmpdir(), "nix-static-"));
+    const root = await mkdtemp(join(tmpdir(), "elur-static-"));
     try {
       for (const path of [
         "/../secret.txt",
@@ -36,7 +36,7 @@ describe("resolveStaticFile", () => {
   });
 
   it("rejects symlinks that escape the static root", async () => {
-    const parent = await mkdtemp(join(tmpdir(), "nix-static-"));
+    const parent = await mkdtemp(join(tmpdir(), "elur-static-"));
     const root = join(parent, "public");
     try {
       await mkdir(root);

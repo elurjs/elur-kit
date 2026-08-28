@@ -1,13 +1,13 @@
-# Nix.js Kit
+# Elur Kit
 
-[![npm version](https://img.shields.io/npm/v/@deijose/nix-js-kit.svg)](https://www.npmjs.com/package/@deijose/nix-js-kit)
+[![npm version](https://img.shields.io/npm/v/@elurjs/kit.svg)](https://www.npmjs.com/package/@elurjs/kit)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-> Full-stack meta-framework for Nix.js — file-based routing, SSG, SSR, ISR, streaming, islands, actions, content collections, cache adapters, and SPA-like navigation. Zero extra runtime dependencies on the client: Nix.js stays at ~15 KB. Optional build-time compiler lowers `html\`\`` templates to imperative DOM code for ~25–44% faster renders.
+> Full-stack framework for Elur — file-based routing, SSG, SSR, ISR, streaming, islands, actions, content collections, cache adapters, and SPA-like navigation. Zero extra runtime dependencies on the client: Elur stays at ~15 KB. Optional build-time compiler lowers `html\`\`` templates to imperative DOM code for ~25–44% faster renders.
 
-## What is Nix.js Kit?
+## What is Elur Kit?
 
-Nix.js Kit is a meta-framework built on top of [Nix.js](https://nix-js.dev/). It brings conventions similar to Next.js App Router / Astro / SvelteKit to Nix.js:
+Elur Kit is a framework built on top of [Elur](https://elur.dev/). It brings conventions similar to Next.js App Router / Astro / SvelteKit to Elur:
 
 - `src/app/page.ts` for pages
 - `src/app/page.data.ts` for loaders
@@ -22,14 +22,14 @@ Nix.js Kit is a meta-framework built on top of [Nix.js](https://nix-js.dev/). It
 
 - **Routing**: file-based with dynamic segments, optional catch-all `[[...slug]]`, route conflict detection, safe URL decoding, redirects/rewrites/route headers
 - **Rendering**: SSG, SSR, ISR with explicit cache policy (public/private/dynamic), streaming with `ReadableStream` (**experimental** — fallback buffered por adapter; ver nota de streaming)
-- **Build-time compiler** (optional, recommended): integrates [`@deijose/nix-js-compiler`](https://www.npmjs.com/package/@deijose/nix-js-compiler) via [`@deijose/vite-plugin-nix-js`](https://www.npmjs.com/package/@deijose/vite-plugin-nix-js) to lower `html\`\`` templates to imperative DOM code at build time — eliminates `detectContext`, `buildHTML`, and both `TreeWalker` passes in runtime
+- **Build-time compiler** (optional, recommended): integrates [`@elurjs/core-compiler`](https://www.npmjs.com/package/@elurjs/core-compiler) via [`@elurjs/vite-plugin-elur`](https://www.npmjs.com/package/@elurjs/vite-plugin-elur) to lower `html\`\`` templates to imperative DOM code at build time — eliminates `detectContext`, `buildHTML`, and both `TreeWalker` passes in runtime
 - **Partial attribute interpolation**: `class="btn ${size}"` works out of the box via the Vite plugin's state-machine lexer (or the kit's legacy transform as fallback)
 - **Actions**: typed `defineAction()` with input validation, AbortSignal, idempotency, concurrency modes (latest/queue/parallel)
 - **Cache**: `CacheAdapter` with filesystem, Redis, and Cloudflare KV storage, SHA-256 keys, atomic writes, single-flight, stale-while-revalidate, tag-based invalidation
 - **Security**: HMAC-signed action error cookies, body limits, CSRF verification, default security headers (CSP, HSTS, X-Frame-Options, etc.), conditional static serving (ETag/Last-Modified)
 - **Content**: per-request scope via `AsyncLocalStorage`, collection name containment, frontmatter parser, Markdown rendering, recursive nested collections
 - **SEO**: sitemap generation from route manifest, sitemap index for large sites, robots.txt, JSON-LD with safe escaping
-- **Integrations**: typed hooks for `nix-i18n`, `nix-js-auth`, `nix-query`, `nix-js-testing` — without adding them as dependencies
+- **Integrations**: typed hooks for `elur-i18n`, `elur-auth`, `elur-query`, `elur-testing` — without adding them as dependencies
 - **CLI**: `dev`, `build`, `preview`, `start`, `check`, `routes`, `doctor`, `adapter`
 - **Observability**: structured logger with request ID, Server-Timing, sensitive data redaction
 - **Adapters**: Node, Bun, Vercel, Netlify with capability-based deployment
@@ -37,13 +37,13 @@ Nix.js Kit is a meta-framework built on top of [Nix.js](https://nix-js.dev/). It
 ## Installation
 
 ```bash
-npm install @deijose/nix-js @deijose/nix-js-kit
+npm install @elurjs/core @elurjs/kit
 ```
 
 For the best performance, also install the Vite plugin (includes the build-time compiler):
 
 ```bash
-npm install @deijose/vite-plugin-nix-js
+npm install @elurjs/vite-plugin-elur
 ```
 
 The plugin is an optional peer dependency. When installed, it activates:
@@ -55,24 +55,24 @@ The plugin is an optional peer dependency. When installed, it activates:
 
 ```bash
 # or
-bun add @deijose/nix-js @deijose/nix-js-kit @deijose/vite-plugin-nix-js
+bun add @elurjs/core @elurjs/kit @elurjs/vite-plugin-elur
 ```
 
 ## Quick example
 
 ```ts
 // src/app/page.data.ts
-import type { PageDataLoad } from "@deijose/nix-js-kit";
+import type { PageDataLoad } from "@elurjs/kit";
 
 export const load: PageDataLoad = async () => {
-  return { title: "Hello Nix.js Kit" };
+  return { title: "Hello Elur Kit" };
 };
 ```
 
 ```ts
 // src/app/page.ts
-import { html, signal } from "@deijose/nix-js";
-import type { PageProps } from "@deijose/nix-js-kit";
+import { html, signal } from "@elurjs/core";
+import type { PageProps } from "@elurjs/kit";
 import { load } from "./page.data.ts";
 
 export default function HomePage({ data }: PageProps<typeof load>) {
@@ -89,35 +89,35 @@ export default function HomePage({ data }: PageProps<typeof load>) {
 }
 ```
 
-At build time, `nix-js-kit` runs the loader and renders the page to static HTML using `renderToString`.
+At build time, `elur-kit` runs the loader and renders the page to static HTML using `renderToString`.
 
 ## CLI
 
-After installing, the `nix-js-kit` binary is available in your project:
+After installing, the `elur-kit` binary is available in your project:
 
 ```bash
-nix-js-kit build
-nix-js-kit dev
-nix-js-kit preview
-nix-js-kit start
-nix-js-kit adapter vercel
-nix-js-kit adapter netlify
-nix-js-kit adapter bun
-nix-js-kit adapter node
+elur-kit build
+elur-kit dev
+elur-kit preview
+elur-kit start
+elur-kit adapter vercel
+elur-kit adapter netlify
+elur-kit adapter bun
+elur-kit adapter node
 ```
 
 By default it looks for `src/app/` and `src/islands/` and writes to `dist/`:
 
 ```bash
-nix-js-kit build
+elur-kit build
 # → dist/index.html
-# → dist/_nix-js/entry-client.js   (after bundling the generated entry)
+# → dist/_elur/entry-client.js   (after bundling the generated entry)
 ```
 
 Run the dev server with rebuild-on-change:
 
 ```bash
-nix-js-kit dev
+elur-kit dev
 ```
 
 If you have a `vite.client.config.ts`, the client hydration bundle is built automatically. You can still pass an explicit config with `--client-config <path>`.
@@ -125,21 +125,21 @@ If you have a `vite.client.config.ts`, the client hydration bundle is built auto
 Serve the production build:
 
 ```bash
-nix-js-kit build
-nix-js-kit preview
+elur-kit build
+elur-kit preview
 ```
 
 Run the SSR server (renders pages on demand):
 
 ```bash
-nix-js-kit build          # generate or update the client bundle
-nix-js-kit start
+elur-kit build          # generate or update the client bundle
+elur-kit start
 ```
 
 Enable ISR with a cache directory and default TTL:
 
 ```bash
-nix-js-kit start --cache-dir .nix-js/cache --default-revalidate 60
+elur-kit start --cache-dir .elur/cache --default-revalidate 60
 ```
 
 Options:
@@ -153,7 +153,7 @@ Options:
 | `-p, --port <number>` | `3000` | Server port |
 | `-h, --host <address>` | `127.0.0.1` | Server host |
 | `-l, --lang <lang>` | `es` | HTML `lang` attribute |
-| `--hydrate-import <spec>` | `@deijose/nix-js-kit/island` | Import path for `hydrateIslands` in generated entry |
+| `--hydrate-import <spec>` | `@elurjs/kit/island` | Import path for `hydrateIslands` in generated entry |
 | `--client-config <path>` | `vite.client.config.ts` (auto-detected) | Vite config used to build the client bundle in dev mode |
 
 ## Core features (v2.0)
@@ -175,7 +175,7 @@ Options:
 - **Islands** — lazy `import()` per island, null/error isolation, `load`/`idle`/`visible` directives, auto-scan of `src/islands/`.
 - **Client router** — AbortController + navigation token (no races), head/assets merge, aria-live announcer, canonical URL, View Transitions with reduced-motion fallback.
 - **Middleware** — `src/middleware.ts` with path matchers, `next()` carries params/locals, cleanup in `finally`, runs in dev/preview/adapters.
-- **Integrations** — typed hooks for `nix-i18n`, `nix-js-auth`, `nix-query`, `nix-js-testing` without adding them as dependencies.
+- **Integrations** — typed hooks for `elur-i18n`, `elur-auth`, `elur-query`, `elur-testing` without adding them as dependencies.
 - **CLI** — `dev`, `build`, `preview`, `start`, `check`, `routes`, `doctor`, `adapter` with reliable exit codes.
 - **Observability** — structured logger with request ID, Server-Timing, sensitive data redaction (cookies, auth, tokens).
 - **Adapters** — Node, Bun, Vercel, Netlify with relocatable paths (`import.meta.url`) and capability-based deployment.
@@ -193,17 +193,17 @@ Options:
   library import, ensuring a single module instance.
 - **`happy-dom` fully removed** — the kit no longer depends on
   happy-dom in any form. SSR uses the core's DOM-free
-  `renderToString` (`@deijose/nix-js/server`) directly. The legacy DOM
+  `renderToString` (`@elurjs/core/server`) directly. The legacy DOM
   fallback (`renderWithDom`) was deleted along with all `external`/
   `globals` references in the vite build configs.
 - **`raw()` now supports server rendering** — added
-  `NIX_RENDER_PROTOCOL.renderServer` to `raw()` so it works with the
+  `ELUR_RENDER_PROTOCOL.renderServer` to `raw()` so it works with the
   core's DOM-free SSR (previously relied on the happy-dom fallback).
-- **Config file renamed** — `nix.config.ts` → `nix-js.config.ts`. The
+- **Config file renamed** — `elur.config.ts` → `elur.config.ts`. The
   generic name was a design error that could collide with other tools.
-  Legacy `nix.config.*` files still work but emit a deprecation warning.
+  Legacy `elur.config.*` files still work but emit a deprecation warning.
 - **Integration `build` hook** (v2.4.1+) — the `build` hook in
-  `NixKitIntegration` was declared but never invoked. Now `build()` fires
+  `ElurKitIntegration` was declared but never invoked. Now `build()` fires
   `runIntegrationHook(integrations, "build", [result, ctx])` after all
   pages, image variants, and the manifest are written. Integrations can
   generate post-build artifacts (sitemaps, robots.txt, search indexes)
@@ -219,7 +219,7 @@ Options:
     (`load`/`idle`/`visible`).
   - `options: { fallback }` — HTML rendered inside the island marker
     when SSR is skipped or the component returns `null`. Accepts a
-    `NixTemplate` (reactive) or a plain string.
+    `ElurTemplate` (reactive) or a plain string.
   - `isSSR()` — exported guard for environment reads
     (`window.matchMedia`, `localStorage`, `navigator`). See
     [Islands](#islands) for the limitation on `document.querySelectorAll`.
@@ -229,12 +229,12 @@ Options:
 #### Using the `build` hook for sitemaps
 
 ```ts
-// nix-js.config.ts
-import { defineConfig } from "@deijose/nix-js-kit";
-import { generateSitemap, generateRobots } from "@deijose/nix-js-kit/seo";
-import type { NixKitIntegration } from "@deijose/nix-js-kit";
+// elur.config.ts
+import { defineConfig } from "@elurjs/kit";
+import { generateSitemap, generateRobots } from "@elurjs/kit/seo";
+import type { ElurKitIntegration } from "@elurjs/kit";
 
-const sitemapIntegration: NixKitIntegration = {
+const sitemapIntegration: ElurKitIntegration = {
   name: "sitemap",
   build: async (result) => {
     const outDir = (result as { outDir: string }).outDir;
@@ -263,14 +263,14 @@ staging swap.
 ## What's new in v2.3
 
 - **Build-time compiler integration** — the kit now detects
-  [`@deijose/vite-plugin-nix-js`](https://www.npmjs.com/package/@deijose/vite-plugin-nix-js)
+  [`@elurjs/vite-plugin-elur`](https://www.npmjs.com/package/@elurjs/vite-plugin-elur)
   (>= 1.1.0) at runtime and skips its legacy interpolation transform
   automatically. The plugin's state-machine lexer takes precedence,
   providing compile-time errors, raw-text tag handling, and boolean
   attribute validation that the kit's heuristic transform lacked.
-- **`@deijose/vite-plugin-nix-js` as optional peer dependency** —
-  `npm install @deijose/vite-plugin-nix-js` activates the build-time
-  compiler (`@deijose/nix-js-compiler`), HMR with state preservation,
+- **`@elurjs/vite-plugin-elur` as optional peer dependency** —
+  `npm install @elurjs/vite-plugin-elur` activates the build-time
+  compiler (`@elurjs/core-compiler`), HMR with state preservation,
   and partial attribute interpolation via a state-machine lexer.
 - **`pluginSupportsPartialInterpolation()`** — new exported function
   detects the Vite plugin at runtime.
@@ -283,13 +283,13 @@ staging swap.
 ```ts
 // vite.config.ts
 import { defineConfig } from "vite";
-import { nixJsKit } from "@deijose/nix-js-kit/vite";
-import nixJsPlugin from "@deijose/vite-plugin-nix-js";
+import { elurJsKit } from "@elurjs/kit/vite";
+import elurJsPlugin from "@elurjs/vite-plugin-elur";
 
 export default defineConfig({
   plugins: [
-    nixJsKit(),
-    nixJsPlugin(),  // compiler: true by default
+    elurJsKit(),
+    elurJsPlugin(),  // compiler: true by default
   ],
 });
 ```
@@ -312,20 +312,20 @@ receive the full transform pipeline.
 ## What's new in v2.2
 
 - **Native partial attribute interpolation** — when the installed
-  Nix.js core exposes `templateFeatures.partialAttributeInterpolation`
+  Elur core exposes `templateFeatures.partialAttributeInterpolation`
   (core >= 3.3), the kit no longer injects the legacy
-  `nixJsInterpolationPlugin` transform (`interpolation: "auto"`, the
+  `elurJsInterpolationPlugin` transform (`interpolation: "auto"`, the
   default). Partial attributes run through the runtime's native
   normalization, preserving fine-grained reactivity.
   - New `interpolation: "auto" | "legacy" | "off"` option on
-    `nixJsKit()`, `buildClientBundle()` and `transformProjectFiles()`.
+    `elurJsKit()`, `buildClientBundle()` and `transformProjectFiles()`.
   - `interpolation: "legacy"` forces the old transform for migrations
     (deprecated, one-time warning); `interpolation: "off"` disables it.
   - `transformPartialInterpolations` stays exported for direct
     consumers and is marked deprecated.
 - **`coreSupportsPartialInterpolation()`** and
   **`shouldUseLegacyInterpolation()`** exported from
-  `@deijose/nix-js-kit/vite` for programmatic resolution.
+  `@elurjs/kit/vite` for programmatic resolution.
 
 ## What's new in v2.1
 
@@ -352,9 +352,9 @@ receive the full transform pipeline.
 ## What's new in v2.0
 
 - **Breaking: Node >=20.19.0** — dropped Node 18 support. Vite 7/8 and the core engine require Node 20.19+.
-- **Breaking: Core v3** — `@deijose/nix-js` peer dependency upgraded to `^3.0.0`. New subpaths `@deijose/nix-js/server` and `@deijose/nix-js/hydrate` for SSR without DOM simulation and real hydration over existing DOM.
+- **Breaking: Core v3** — `@elurjs/core` peer dependency upgraded to `^3.0.0`. New subpaths `@elurjs/core/server` and `@elurjs/core/hydrate` for SSR without DOM simulation and real hydration over existing DOM.
 - **Breaking: Image pipeline** — `image()` now emits `<picture>` from a content-addressed manifest. No more broken `srcset` URLs. Sharp is optional.
-- **Breaking: Config** — `defineConfig()` from `@deijose/nix-js-kit/config`. No `__dirname` in ESM configs.
+- **Breaking: Config** — `defineConfig()` from `@elurjs/kit/config`. No `__dirname` in ESM configs.
 - **Breaking: Build** — atomic staging, Vite JS API, `copyPublicAssets()`. No partial output on failure.
 - **Breaking: Adapters** — relocatable paths via `import.meta.url`. No absolute paths embedded.
 - **Security: Path traversal** — `resolveStaticFile()` rejects encoded traversal, NUL, backslashes, Unicode normalization, symlink escape.
@@ -366,7 +366,7 @@ receive the full transform pipeline.
 - **Security: Static ranges (v2.0.2)** — `Range`/`If-Range` with 206/416 and uniform HEAD responses.
 - **DX: CLI** — `check`, `routes`, `doctor` commands with reliable exit codes.
 - **DX: Logger** — structured logger with request ID, Server-Timing, redaction.
-- **DX: Scaffold** — `create-nix-app` with `template-kit` option.
+- **DX: Scaffold** — `create-elur-app` with `template-kit` option.
 - **Images (v2.0.2)** — SHA-256 transform keys, path containment, atomic writes, single-flight, `images.strict`, `getImage()` and `ImageService`.
 - **Capabilities (v2.0.2)** — `AdapterCapabilities` per host with build-time `validateCapabilities()`.
 - **Islands (v2.0.2)** — discriminated `{ load }` lazy loaders + `lazyIsland()`; loader detection never probes the component.
@@ -385,8 +385,8 @@ receive the full transform pipeline.
 
 ## What's new in v1.2
 
-- **Automatic attribute interpolation** — no more manual workarounds for `href="/blog/${slug}"`. When the installed Nix.js core supports partial attribute interpolation natively (`templateFeatures.partialAttributeInterpolation`, core ≥ 3.3), the kit skips its legacy transform and lets the runtime handle the syntax — with reactivity preserved. On older cores the legacy rewrite still applies automatically (`interpolation: "auto"`), and `interpolation: "legacy"` forces it for migrations (deprecated; emits a one-time warning).
-- **Client router in the bundle** — the SPA router lives in the generated client entry (`/_nix-js/entry-client.js`) instead of being inlined into every page, keeping the HTML clean and the routing code cacheable.
+- **Automatic attribute interpolation** — no more manual workarounds for `href="/blog/${slug}"`. When the installed Elur core supports partial attribute interpolation natively (`templateFeatures.partialAttributeInterpolation`, core ≥ 3.3), the kit skips its legacy transform and lets the runtime handle the syntax — with reactivity preserved. On older cores the legacy rewrite still applies automatically (`interpolation: "auto"`), and `interpolation: "legacy"` forces it for migrations (deprecated; emits a one-time warning).
+- **Client router in the bundle** — the SPA router lives in the generated client entry (`/_elur/entry-client.js`) instead of being inlined into every page, keeping the HTML clean and the routing code cacheable.
 - **SSR fallback in preview** — `preview` now renders dynamic routes on demand when a static file is missing, so slugs work even without `generateStaticParams`.
 - **Auto client bundle build** — when `vite.client.config.ts` is present, `build` and `dev` build the hydration bundle automatically; no `--client-config` flag is required.
 - **No server paths in HTML** — the serialized action registry only exposes action names per page (`{"/contact":["subscribe"]}`), never file system paths or implementation details.
@@ -412,8 +412,8 @@ receive the full transform pipeline.
 | v2.0.2 | Cumplimiento: keyed hydration, streaming chunks/protocols (core), static Range/HEAD, errores sanitizados, imágenes hardening + `getImage`/`ImageService`, capabilities, islands `lazyIsland`, E2E Playwright (16 tests) ✅ |
 | v2.1 | Route-level code-splitting, layout slots, Redis/Cloudflare KV cache adapters, real Suspense streaming, `happy-dom` optional ✅ |
 | v2.2 | Native partial attribute interpolation (`interpolation: "auto"/"legacy"/"off"`), `coreSupportsPartialInterpolation()` / `shouldUseLegacyInterpolation()` exported ✅ |
-| v2.3 | Build-time compiler integration via `@deijose/vite-plugin-nix-js` (optional peer), `pluginSupportsPartialInterpolation()`, legacy interpolation delegates to plugin ✅ |
-| v2.4 | CLI image registry singleton fix, `happy-dom` fully removed, `raw()` SSR support, config renamed to `nix-js.config.*` ✅ |
+| v2.3 | Build-time compiler integration via `@elurjs/vite-plugin-elur` (optional peer), `pluginSupportsPartialInterpolation()`, legacy interpolation delegates to plugin ✅ |
+| v2.4 | CLI image registry singleton fix, `happy-dom` fully removed, `raw()` SSR support, config renamed to `elur.config.*` ✅ |
 | v2.4.2 | Integration `build` hook wired into `build()`, `BuildResult.outDir` for post-build artifacts ✅ |
 | v2.4.3 | Client-only islands (`directive: "only"`, `options: { ssr: false, fallback }`), `isSSR()` export, SSR error wrapping ✅ |
 | v2.4.4 | Fix: `"only"` directive now hydrates immediately like `"load"`. Fix: islands without SSR DOM use fresh `_render` mount instead of `hydrateTemplate` ✅ |
@@ -422,10 +422,10 @@ receive the full transform pipeline.
 
 ### `renderToString(factory)`
 
-Renders a Nix.js template to an HTML string in Node.js.
+Renders a Elur template to an HTML string in Node.js.
 
 ```ts
-import { renderToString } from "@deijose/nix-js-kit";
+import { renderToString } from "@elurjs/kit";
 import HomePage from "./src/app/page";
 
 const body = await renderToString(() => HomePage({ data: { title: "Hi" } }));
@@ -433,16 +433,16 @@ const body = await renderToString(() => HomePage({ data: { title: "Hi" } }));
 
 ### `documentShell(options)`
 
-Wraps rendered HTML in a full document shell with `<script id="nix-js-data">`.
+Wraps rendered HTML in a full document shell with `<script id="elur-data">`.
 
 ```ts
-import { documentShell } from "@deijose/nix-js-kit";
+import { documentShell } from "@elurjs/kit";
 
 const html = documentShell({
   title: "My Page",
   body,
   data: { title: "My Page" },
-  clientEntry: "/_nix-js/entry-client.js",
+  clientEntry: "/_elur/entry-client.js",
 });
 ```
 
@@ -452,7 +452,7 @@ Create an interactive component in `src/islands/`:
 
 ```ts
 // src/islands/LikeButton.ts
-import { html, signal } from "@deijose/nix-js";
+import { html, signal } from "@elurjs/core";
 
 export default function LikeButton({ postId }: { postId: string }) {
   const liked = signal(false);
@@ -468,7 +468,7 @@ Mark it as an island in a page:
 
 ```ts
 // src/app/page.ts
-import { html, island } from "@deijose/nix-js-kit";
+import { html, island } from "@elurjs/kit";
 import LikeButton from "../islands/LikeButton";
 
 export default function HomePage() {
@@ -485,7 +485,7 @@ Hydrate it on the client. You can write the entry by hand:
 
 ```ts
 // src/entry-client.ts
-import { hydrateIslands } from "@deijose/nix-js-kit/island";
+import { hydrateIslands } from "@elurjs/kit/island";
 import LikeButton from "./islands/LikeButton";
 
 hydrateIslands({ LikeButton });
@@ -496,7 +496,7 @@ can tell eager components from lazy loaders **without invoking them** (no probe
 side effects):
 
 ```ts
-import { lazyIsland, hydrateIslands } from "@deijose/nix-js-kit/island";
+import { lazyIsland, hydrateIslands } from "@elurjs/kit/island";
 
 const registry = {
   LikeButton: lazyIsland(() => import("./islands/LikeButton").then((m) => m.default)),
@@ -527,12 +527,12 @@ third-party widgets — cannot run on the server. Use `directive: "only"`
 with any directive) to skip SSR entirely:
 
 ```ts
-import { html, island } from "@deijose/nix-js-kit";
+import { html, island } from "@elurjs/kit";
 
 // Client-only, hydrates on load, empty fallback
 island("Carousel", Carousel, { slides: [...] }, "only")
 
-// Client-only + fallback HTML (string or NixTemplate)
+// Client-only + fallback HTML (string or ElurTemplate)
 island("Carousel", Carousel, { slides: [...] }, "only", {
   fallback: "<div class=\"skeleton\" />",
 })
@@ -546,7 +546,7 @@ island marker. The client hydrates from scratch.
 
 #### `fallback` option
 
-`options.fallback` accepts a plain string or a `NixTemplate` (reactive,
+`options.fallback` accepts a plain string or a `ElurTemplate` (reactive,
 with signals). It is rendered when:
 
 - SSR is skipped (`"only"` or `ssr: false`), or
@@ -565,8 +565,8 @@ For components that only need *environment* reads (`window.matchMedia`,
 instead of skipping SSR entirely — this preserves the SSR fallback HTML:
 
 ```ts
-import { html, signal } from "@deijose/nix-js";
-import { isSSR } from "@deijose/nix-js-kit";
+import { html, signal } from "@elurjs/core";
+import { isSSR } from "@elurjs/kit";
 
 function ThemeToggle() {
   const prefersDark = isSSR() ? false : window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -583,7 +583,7 @@ works for environment reads. `document.querySelectorAll(".slide")` of
 the component's own children will **not** work with `isSSR()` because
 the DOM is not inserted when the function body runs (neither on the
 server nor during hydration). For DOM queries of own children, use
-`NixComponent.onMount()` + `ref` — `onMount` runs after the DOM is
+`ElurComponent.onMount()` + `ref` — `onMount` runs after the DOM is
 inserted, the equivalent of React's `useEffect`.
 :::
 
@@ -596,28 +596,28 @@ swallowed. This matches Astro and Next.js, which never `try/catch` to
 "auto-detect" client-only components:
 
 ```
-[nix-js-kit] Island "Carousel" threw during SSR: document is not defined
+[elur-kit] Island "Carousel" threw during SSR: document is not defined
   If the component accesses browser-only globals (document, window, etc.),
   use directive: "only" or options: { ssr: false } to skip server rendering.
   For environment reads (matchMedia, localStorage, navigator) you may guard
-  the access with isSSR() from "@deijose/nix-js-kit".
+  the access with isSSR() from "@elurjs/kit".
 ```
 
 ### `build(config)`
 
 Scans `src/app/` and generates the full static site in `dist/`. You can call it
-from code or use the `nix-js-kit build` CLI (see [CLI](#cli)).
+from code or use the `elur-kit build` CLI (see [CLI](#cli)).
 
 ```ts
-import { build } from "@deijose/nix-js-kit";
+import { build } from "@elurjs/kit";
 
 await build({
   appDir: "./src/app",
   outDir: "./dist",
-  clientEntry: "/_nix-js/entry-client.js",
+  clientEntry: "/_elur/entry-client.js",
   // Optional: auto-generate the hydration entry from src/islands/
   islandsDir: "./src/islands",
-  generatedEntry: "./.nix-js/entry-client.ts",
+  generatedEntry: "./.elur/entry-client.ts",
 });
 ```
 
@@ -644,12 +644,12 @@ static HTML file to generate:
 
 ```ts
 // src/app/blog/[slug]/page.ts
-import { html } from "@deijose/nix-js";
-import type { PageProps, GenerateStaticParams } from "@deijose/nix-js-kit";
+import { html } from "@elurjs/core";
+import type { PageProps, GenerateStaticParams } from "@elurjs/kit";
 import { load } from "./page.data.ts";
 
 export const generateStaticParams: GenerateStaticParams = async () => {
-  return [{ slug: "hello-world" }, { slug: "nix-js-kit" }];
+  return [{ slug: "hello-world" }, { slug: "elur-kit" }];
 };
 
 export default function BlogPostPage({ data, params }: PageProps<typeof load>) {
@@ -664,18 +664,18 @@ export default function BlogPostPage({ data, params }: PageProps<typeof load>) {
 
 ```ts
 // src/app/blog/[slug]/page.data.ts
-import type { PageDataLoad } from "@deijose/nix-js-kit";
+import type { PageDataLoad } from "@elurjs/kit";
 
 export const load: PageDataLoad = async ({ params }) => {
   return { title: `Post: ${params.slug}` };
 };
 ```
 
-Running `nix-js-kit build` then produces:
+Running `elur-kit build` then produces:
 
 ```
 dist/blog/hello-world/index.html
-dist/blog/nix-js-kit/index.html
+dist/blog/elur-kit/index.html
 ```
 
 Catch-all routes use a string array for the spread param:
@@ -690,7 +690,7 @@ export const generateStaticParams = async () => {
 
 Create a `page.action.ts` file next to a `page.ts` and export async functions.
 They run on the server and can be called from the client with `callAction()` or
-`nixJsAction()`:
+`elurJsAction()`:
 
 ```ts
 // src/app/contact/page.action.ts
@@ -702,9 +702,9 @@ export async function submitContact(data: { name: string; email: string }) {
 
 ```ts
 // src/app/contact/page.ts or any island
-import { nixJsAction } from "@deijose/nix-js-kit/action";
+import { elurJsAction } from "@elurjs/kit/action";
 
-const contact = nixJsAction("submitContact", { page: "/contact" });
+const contact = elurJsAction("submitContact", { page: "/contact" });
 
 // inside a template
 html`
@@ -723,7 +723,7 @@ html`
 `
 ```
 
-`nixJsAction` returns a reactive handle with:
+`elurJsAction` returns a reactive handle with:
 
 - `submit(input)` — calls the action and updates the signals.
 - `pending` — signal that is `true` while the action is running.
@@ -737,7 +737,7 @@ framework falls back to searching all scanned actions by name.
 For lower-level control, use `callAction` directly:
 
 ```ts
-import { callAction } from "@deijose/nix-js-kit/action";
+import { callAction } from "@elurjs/kit/action";
 
 const result = await callAction("submitContact", { name: "Ada", email: "ada@example.com" }, { page: "/contact" });
 ```
@@ -745,12 +745,12 @@ const result = await callAction("submitContact", { name: "Ada", email: "ada@exam
 #### Progressive enhancement
 
 Actions also work without JavaScript. Add hidden fields to a plain HTML form
-and POST to `/__nix-js/actions`:
+and POST to `/__elur/actions`:
 
 ```html
-<form action="/__nix-js/actions" method="POST">
-  <input type="hidden" name="__nix_js_action_name" value="submitContact" />
-  <input type="hidden" name="__nix_js_action_page" value="/contact" />
+<form action="/__elur/actions" method="POST">
+  <input type="hidden" name="__elur_js_action_name" value="submitContact" />
+  <input type="hidden" name="__elur_js_action_page" value="/contact" />
   <input name="name" />
   <input name="email" />
   <button type="submit">Send</button>
@@ -761,7 +761,7 @@ The server runs the action and redirects back to the referring page (or to the
 string returned by the action). If the client sends `Accept: application/json`,
 the result is returned as JSON instead.
 
-The framework exposes the `POST /__nix-js/actions` endpoint in every server mode
+The framework exposes the `POST /__elur/actions` endpoint in every server mode
 (`dev`, `preview`, `start` and all deployment adapters). The action name is
 resolved against the scanned `page.action.ts` modules and its return value is
 serialized as JSON.
@@ -791,7 +791,7 @@ the response when a route is missing or when a page fails to render:
 
 ```ts
 // src/app/404.page.ts
-import { html } from "@deijose/nix-js";
+import { html } from "@elurjs/core";
 
 export default function NotFoundPage() {
   return html`
@@ -806,7 +806,7 @@ export default function NotFoundPage() {
 
 ```ts
 // src/app/500.page.ts
-import { html } from "@deijose/nix-js";
+import { html } from "@elurjs/core";
 
 export default function ErrorPage() {
   return html`
@@ -821,34 +821,34 @@ export default function ErrorPage() {
 
 The framework renders these pages:
 
-- During `nix-js-kit build` as `dist/404.html` and `dist/500.html`.
-- During `nix-js-kit start` and in the Vite plugin for unmatched routes and render errors.
+- During `elur-kit build` as `dist/404.html` and `dist/500.html`.
+- During `elur-kit start` and in the Vite plugin for unmatched routes and render errors.
 - In every deployment adapter (`vercel`, `netlify`, `bun`, `node`) for unmatched routes and SSR render failures.
 
 Error pages receive the same `PageProps` as regular pages and can export their own `404.page.data.ts` or `500.page.data.ts` loaders.
 
 ### SSR runtime
 
-`nix-js-kit start` runs a Node HTTP server that renders pages on demand,
+`elur-kit start` runs a Node HTTP server that renders pages on demand,
 matching the request URL against the scanned routes and running loaders with
 params and search params. Static files are served from the output directory
 first, so the client bundle and other assets keep working:
 
 ```bash
-nix-js-kit build          # build the client bundle and any static files
-nix-js-kit start          # SSR server on http://127.0.0.1:3000
+elur-kit build          # build the client bundle and any static files
+elur-kit start          # SSR server on http://127.0.0.1:3000
 ```
 
 You can also use the lower-level API to embed the SSR server in a custom Node
 app:
 
 ```ts
-import { createSsrServer } from "@deijose/nix-js-kit";
+import { createSsrServer } from "@elurjs/kit";
 
 const ssr = await createSsrServer({
   appDir: "./src/app",
   publicDir: "./dist",
-  clientEntry: "/_nix-js/entry-client.js",
+  clientEntry: "/_elur/entry-client.js",
   port: 3000,
 });
 await ssr.listen();
@@ -861,10 +861,10 @@ and automatic island entry generation:
 
 ```ts
 import { defineConfig } from "vite";
-import { nixJsKit } from "@deijose/nix-js-kit/vite";
+import { elurJsKit } from "@elurjs/kit/vite";
 
 export default defineConfig({
-  plugins: [nixJsKit()],
+  plugins: [elurJsKit()],
 });
 ```
 
@@ -874,25 +874,25 @@ Then run the Vite dev server:
 npx vite
 ```
 
-The plugin scans `src/app/`, writes `.nix-js/entry-client.ts` and renders every
-page on demand. For production, keep using `nix-js-kit build` to generate static
+The plugin scans `src/app/`, writes `.elur/entry-client.ts` and renders every
+page on demand. For production, keep using `elur-kit build` to generate static
 HTML and the client bundle.
 
 #### Using with the build-time compiler (recommended)
 
 For the best performance, install
-[`@deijose/vite-plugin-nix-js`](https://www.npmjs.com/package/@deijose/vite-plugin-nix-js)
+[`@elurjs/vite-plugin-elur`](https://www.npmjs.com/package/@elurjs/vite-plugin-elur)
 and add it to your Vite config alongside the kit plugin:
 
 ```ts
 import { defineConfig } from "vite";
-import { nixJsKit } from "@deijose/nix-js-kit/vite";
-import nixJsPlugin from "@deijose/vite-plugin-nix-js";
+import { elurJsKit } from "@elurjs/kit/vite";
+import elurJsPlugin from "@elurjs/vite-plugin-elur";
 
 export default defineConfig({
   plugins: [
-    nixJsKit(),
-    nixJsPlugin(),  // compiler: true by default
+    elurJsKit(),
+    elurJsPlugin(),  // compiler: true by default
   ],
 });
 ```
@@ -904,7 +904,7 @@ The Vite plugin activates:
   grouped effects, event delegation). Eliminates `detectContext`,
   `buildHTML`, and both `TreeWalker` passes in runtime.
 - **Partial attribute interpolation** — state-machine lexer rewrites
-  `class="btn ${size}"` to `class=${__nixCompose("btn ", size)}` at
+  `class="btn ${size}"` to `class=${__elurCompose("btn ", size)}` at
   build time. Takes precedence over the kit's legacy transform.
 - **HMR with state preservation** — signals, stores, forms, and
   routers declared at module scope survive hot updates.
@@ -919,7 +919,7 @@ modules receive the full transform pipeline.
 To disable the compiler (keep HMR and interpolation):
 
 ```ts
-nixJsPlugin({ compiler: false })
+elurJsPlugin({ compiler: false })
 ```
 
 #### Partial attribute interpolation
@@ -928,24 +928,24 @@ Partial interpolations inside attribute values (`href="/blog/${slug}"`)
 are handled in three ways, in priority order:
 
 1. **Vite plugin** (recommended) — when
-   `@deijose/vite-plugin-nix-js` >= 1.1.0 is installed, its
+   `@elurjs/vite-plugin-elur` >= 1.1.0 is installed, its
    state-machine lexer rewrites partial interpolations at build time
    with compile-time error detection, raw-text tag handling, and
    boolean attribute validation. The kit detects the plugin via
    `pluginSupportsPartialInterpolation()` and skips its own transform.
-2. **Core native** — when the Nix.js core exposes
+2. **Core native** — when the Elur core exposes
    `templateFeatures.partialAttributeInterpolation` (core >= 3.3),
    the runtime normalizes partial attributes natively.
 3. **Kit legacy transform** — fallback for projects without the
    plugin and with older cores. Heuristic HTML tag walker, less
    powerful than the plugin's lexer.
 
-Control the behavior with the `interpolation` option on `nixJsKit()`:
+Control the behavior with the `interpolation` option on `elurJsKit()`:
 
 ```ts
-nixJsKit({ interpolation: "auto" })   // default — plugin > core > legacy
-nixJsKit({ interpolation: "legacy" }) // force legacy transform (deprecated)
-nixJsKit({ interpolation: "off" })    // never transform
+elurJsKit({ interpolation: "auto" })   // default — plugin > core > legacy
+elurJsKit({ interpolation: "legacy" }) // force legacy transform (deprecated)
+elurJsKit({ interpolation: "off" })    // never transform
 ```
 
 The same option is available on `buildClientBundle()` and
@@ -957,27 +957,27 @@ Deploy to Vercel with the built-in adapter. First build the site, then generate
 the Vercel output:
 
 ```bash
-nix-js-kit build
-nix-js-kit adapter vercel
+elur-kit build
+elur-kit adapter vercel
 ```
 
 This produces a `.vercel/output` directory that includes:
 
 - `static/` — the static files from `dist/`.
-- `functions/__nix-js-kit.func/index.js` — a bundled SSR function for unmatched routes.
+- `functions/__elur-kit.func/index.js` — a bundled SSR function for unmatched routes.
 - `config.json` — Vercel Build Output API v3 routing config.
 
 You can also use the adapter programmatically:
 
 ```ts
-import { vercelAdapter } from "@deijose/nix-js-kit/adapters/vercel";
+import { vercelAdapter } from "@elurjs/kit/adapters/vercel";
 
 await vercelAdapter.build({
   root: process.cwd(),
   appDir: "src/app",
   islandsDir: "src/islands",
   outDir: "dist",
-  clientEntry: "/_nix-js/entry-client.js",
+  clientEntry: "/_elur/entry-client.js",
   lang: "es",
 });
 ```
@@ -987,26 +987,26 @@ await vercelAdapter.build({
 Deploy to Netlify with the built-in adapter:
 
 ```bash
-nix-js-kit build
-nix-js-kit adapter netlify
+elur-kit build
+elur-kit adapter netlify
 ```
 
 This produces:
 
-- `netlify/functions/__nix-js-kit.mjs` — bundled SSR function for Netlify Functions v2.
+- `netlify/functions/__elur-kit.mjs` — bundled SSR function for Netlify Functions v2.
 - `netlify.toml` — redirects unmatched routes to the function.
 
 The static files stay in `dist/` and are served directly by Netlify. Programmatic usage:
 
 ```ts
-import { netlifyAdapter } from "@deijose/nix-js-kit/adapters/netlify";
+import { netlifyAdapter } from "@elurjs/kit/adapters/netlify";
 
 await netlifyAdapter.build({
   root: process.cwd(),
   appDir: "src/app",
   islandsDir: "src/islands",
   outDir: "dist",
-  clientEntry: "/_nix-js/entry-client.js",
+  clientEntry: "/_elur/entry-client.js",
   lang: "es",
 });
 ```
@@ -1016,27 +1016,27 @@ await netlifyAdapter.build({
 Run a production server with Bun:
 
 ```bash
-nix-js-kit build
-nix-js-kit adapter bun
-bun run .nix-js/bun-server.ts
+elur-kit build
+elur-kit adapter bun
+bun run .elur/bun-server.ts
 ```
 
 This generates:
 
-- `.nix-js/bun-index.ts` — SSR handler entry.
-- `.nix-js/bun-server.ts` — Bun server that serves `dist/` static files and renders pages on demand.
+- `.elur/bun-index.ts` — SSR handler entry.
+- `.elur/bun-server.ts` — Bun server that serves `dist/` static files and renders pages on demand.
 
 The server respects the `PORT` environment variable (default `3000`). Programmatic usage:
 
 ```ts
-import { bunAdapter } from "@deijose/nix-js-kit/adapters/bun";
+import { bunAdapter } from "@elurjs/kit/adapters/bun";
 
 await bunAdapter.build({
   root: process.cwd(),
   appDir: "src/app",
   islandsDir: "src/islands",
   outDir: "dist",
-  clientEntry: "/_nix-js/entry-client.js",
+  clientEntry: "/_elur/entry-client.js",
   lang: "es",
 });
 ```
@@ -1046,22 +1046,22 @@ await bunAdapter.build({
 Run a production server with Node (>=20.19.0):
 
 ```bash
-nix-js-kit build
-nix-js-kit adapter node
-node .nix-js/node-server.mjs
+elur-kit build
+elur-kit adapter node
+node .elur/node-server.mjs
 ```
 
-This generates a single bundled `.nix-js/node-server.mjs` that serves `dist/` static files and renders pages on demand. The server respects the `PORT` environment variable (default `3000`). Programmatic usage:
+This generates a single bundled `.elur/node-server.mjs` that serves `dist/` static files and renders pages on demand. The server respects the `PORT` environment variable (default `3000`). Programmatic usage:
 
 ```ts
-import { nodeAdapter } from "@deijose/nix-js-kit/adapters/node";
+import { nodeAdapter } from "@elurjs/kit/adapters/node";
 
 await nodeAdapter.build({
   root: process.cwd(),
   appDir: "src/app",
   islandsDir: "src/islands",
   outDir: "dist",
-  clientEntry: "/_nix-js/entry-client.js",
+  clientEntry: "/_elur/entry-client.js",
   lang: "es",
 });
 ```
@@ -1076,18 +1076,18 @@ with `hydrateIslands`. Point your bundler (Vite/Rollup) at the generated file:
 await build({
   appDir: "./src/app",
   outDir: "./dist",
-  clientEntry: "/_nix-js/entry-client.js",
+  clientEntry: "/_elur/entry-client.js",
   islandsDir: "./src/islands",
-  generatedEntry: "./.nix-js/entry-client.ts",
+  generatedEntry: "./.elur/entry-client.ts",
 });
 ```
 
 Given `src/islands/LikeButton.ts` and `src/islands/nav/MobileMenu.ts`, the
-generated `.nix-js/entry-client.ts` looks like:
+generated `.elur/entry-client.ts` looks like:
 
 ```ts
-// AUTO-GENERATED by @deijose/nix-js-kit. Do not edit.
-import { hydrateIslands } from "@deijose/nix-js-kit/island";
+// AUTO-GENERATED by @elurjs/kit. Do not edit.
+import { hydrateIslands } from "@elurjs/kit/island";
 import LikeButton_0 from "../src/islands/LikeButton";
 import MobileMenu_1 from "../src/islands/nav/MobileMenu";
 
@@ -1108,22 +1108,22 @@ result.generatedEntry; // absolute path to the generated entry
 You can also call the lower-level helpers directly:
 
 ```ts
-import { scanIslands, generateClientEntry } from "@deijose/nix-js-kit";
+import { scanIslands, generateClientEntry } from "@elurjs/kit";
 
 const islands = await scanIslands("./src/islands");
-await generateClientEntry({ islands, outFile: "./.nix-js/entry-client.ts" });
+await generateClientEntry({ islands, outFile: "./.elur/entry-client.ts" });
 ```
 
 ### Metadata API
 
 Pages can export a `generateMetadata` function or return a `metadata` field
 from loaders. The framework generates `<title>`, `<meta>`, `<link>`, OpenGraph
-and Twitter card tags, all marked with `data-nix-js-head` so the SPA router
+and Twitter card tags, all marked with `data-elur-head` so the SPA router
 can swap them on navigation.
 
 ```ts
 // src/app/blog/[slug]/page.ts
-import type { PageMetadata } from "@deijose/nix-js-kit";
+import type { PageMetadata } from "@elurjs/kit";
 
 export const generateMetadata = async ({ params }): Promise<PageMetadata> => {
   return {
@@ -1152,7 +1152,7 @@ Typed Markdown collections with YAML frontmatter. Define collections in
 
 ```ts
 // src/content/config.ts
-import { defineCollection } from "@deijose/nix-js-kit/content";
+import { defineCollection } from "@elurjs/kit/content";
 
 export const collections = {
   blog: defineCollection({ /* schema: z.object({ title: z.string() }) */ }),
@@ -1161,7 +1161,7 @@ export const collections = {
 
 ```ts
 // src/app/blog/[slug]/page.data.ts
-import { getEntry } from "@deijose/nix-js-kit/content";
+import { getEntry } from "@elurjs/kit/content";
 
 export const load = async ({ params }) => {
   const post = await getEntry("blog", params.slug);
@@ -1172,8 +1172,8 @@ export const load = async ({ params }) => {
 
 ```ts
 // src/app/blog/[slug]/page.ts
-import { raw } from "@deijose/nix-js-kit/content";
-import { renderEntryHTML } from "@deijose/nix-js-kit/content";
+import { raw } from "@elurjs/kit/content";
+import { renderEntryHTML } from "@elurjs/kit/content";
 
 export default function BlogPost({ data }) {
   return html`
@@ -1195,7 +1195,7 @@ The `image()` helper emits responsive `<img>` tags with `srcset`, `sizes`,
 lazy loading, and CLS-preventing `width`/`height`:
 
 ```ts
-import { image } from "@deijose/nix-js-kit";
+import { image } from "@elurjs/kit";
 
 export default function HeroPage() {
   return html`
@@ -1231,7 +1231,7 @@ The image pipeline (v2.0.2) is hardened:
 Programmatic API:
 
 ```ts
-import { getImage, createImageService } from "@deijose/nix-js-kit/image";
+import { getImage, createImageService } from "@elurjs/kit/image";
 
 const meta = await getImage(
   { src: "/images/hero.jpg", alt: "Hero", widths: [640, 1280], formats: ["avif", "webp"] },
@@ -1260,7 +1260,7 @@ interface AdapterCapabilities {
 
 - `DEFAULT_CAPABILITIES` (Node/Bun), `SERVERLESS_CAPABILITIES` (Vercel/Netlify),
   `EDGE_CAPABILITIES` and `createCapabilities()` are exported from
-  `@deijose/nix-js-kit/runtime`.
+  `@elurjs/kit/runtime`.
 - `validateCapabilities(caps, { isr, images, streaming })` is checked by the
   CLI `adapter` command so incompatible host+feature combinations fail at build.
 
@@ -1270,7 +1270,7 @@ Create `src/middleware.ts` to run logic before every request (auth, redirects,
 header injection):
 
 ```ts
-import type { Middleware } from "@deijose/nix-js-kit";
+import type { Middleware } from "@elurjs/kit";
 
 const middleware: Middleware = (request) => {
   if (!request.headers.get("Cookie")?.includes("session=")) {
@@ -1321,7 +1321,7 @@ my-app/
 │   │       └── second-post.md
 │   └── islands/             # interactive components
 ├── middleware.ts            # optional middleware (auth, redirects)
-├── nix-js.config.ts
+├── elur.config.ts
 └── vite.config.ts
 ```
 

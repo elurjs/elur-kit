@@ -49,7 +49,7 @@ describe("handleActionRequest", () => {
   }
 
   it("executes a JSON action with page scope", async () => {
-    const request = new Request("http://localhost/__nix-js/actions", {
+    const request = new Request("http://localhost/__elur-js/actions", {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify({ name: "greet", page: "/", args: ["Ada"] }),
@@ -60,7 +60,7 @@ describe("handleActionRequest", () => {
   });
 
   it("executes a JSON action with object args", async () => {
-    const request = new Request("http://localhost/__nix-js/actions", {
+    const request = new Request("http://localhost/__elur-js/actions", {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify({ name: "subscribe", page: "/", args: [{ email: "ada@example.com" }] }),
@@ -71,12 +71,12 @@ describe("handleActionRequest", () => {
   });
 
   it("returns a redirect for form POSTs", async () => {
-    const request = new Request("http://localhost/__nix-js/actions", {
+    const request = new Request("http://localhost/__elur-js/actions", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded", Referer: "http://localhost/" },
       body: new URLSearchParams({
-        __nix_js_action_name: "subscribe",
-        __nix_js_action_page: "/",
+        __elur_js_action_name: "subscribe",
+        __elur_js_action_page: "/",
         email: "ada@example.com",
       }).toString(),
     });
@@ -87,32 +87,32 @@ describe("handleActionRequest", () => {
 
   it("returns a JSON ActionFailure payload", async () => {
     const badAction = async () => fail(400, { field: "email", message: "Invalid email" });
-    const request = new Request("http://localhost/__nix-js/actions", {
+    const request = new Request("http://localhost/__elur-js/actions", {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify({ name: "bad", args: [] }),
     });
     const response = await handleActionRequest(request, async () => badAction);
     assert.equal(response.status, 400);
-    const body = (await response.json()) as { __nix_js_action_failure: boolean; status: number; data: unknown };
-    assert.equal(body.__nix_js_action_failure, true);
+    const body = (await response.json()) as { __elur_js_action_failure: boolean; status: number; data: unknown };
+    assert.equal(body.__elur_js_action_failure, true);
     assert.equal(body.status, 400);
     assert.deepEqual(body.data, { field: "email", message: "Invalid email" });
   });
 
   it("redirects with ActionFailure data in a cookie for form POSTs", async () => {
     const badAction = async () => fail(400, { field: "email", message: "Invalid email" });
-    const request = new Request("http://localhost/__nix-js/actions", {
+    const request = new Request("http://localhost/__elur-js/actions", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded", Referer: "http://localhost/contact" },
-      body: new URLSearchParams({ __nix_js_action_name: "bad", __nix_js_action_page: "/" }).toString(),
+      body: new URLSearchParams({ __elur_js_action_name: "bad", __elur_js_action_page: "/" }).toString(),
     });
     const response = await handleActionRequest(request, async () => badAction);
     assert.equal(response.status, 303);
     const location = response.headers.get("Location");
     assert.equal(location, "/contact");
     // No query param — errors must not leak into the URL.
-    assert.ok(!location?.includes("__nix_js_action_error"), "should not put error in URL");
+    assert.ok(!location?.includes("__elur_js_action_error"), "should not put error in URL");
     // Error is relayed via a Set-Cookie header.
     const setCookie = response.headers.get("Set-Cookie");
     assert.ok(setCookie, "should set a cookie");
@@ -123,25 +123,25 @@ describe("handleActionRequest", () => {
 
   it("returns a JSON redirect payload for JSON requests", async () => {
     const redirectAction = async () => redirect(303, "/login");
-    const request = new Request("http://localhost/__nix-js/actions", {
+    const request = new Request("http://localhost/__elur-js/actions", {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify({ name: "redirect", args: [] }),
     });
     const response = await handleActionRequest(request, async () => redirectAction);
     assert.equal(response.status, 200);
-    const body = (await response.json()) as { __nix_js_action_redirect: boolean; status: number; location: string };
-    assert.equal(body.__nix_js_action_redirect, true);
+    const body = (await response.json()) as { __elur_js_action_redirect: boolean; status: number; location: string };
+    assert.equal(body.__elur_js_action_redirect, true);
     assert.equal(body.status, 303);
     assert.equal(body.location, "/login");
   });
 
   it("returns an HTTP redirect for form POSTs", async () => {
     const redirectAction = async () => redirect(303, "/login");
-    const request = new Request("http://localhost/__nix-js/actions", {
+    const request = new Request("http://localhost/__elur-js/actions", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded", Referer: "http://localhost/" },
-      body: new URLSearchParams({ __nix_js_action_name: "redirect", __nix_js_action_page: "/" }).toString(),
+      body: new URLSearchParams({ __elur_js_action_name: "redirect", __elur_js_action_page: "/" }).toString(),
     });
     const response = await handleActionRequest(request, async () => redirectAction);
     assert.equal(response.status, 303);
@@ -151,7 +151,7 @@ describe("handleActionRequest", () => {
 
 describe("verifyOrigin (CSRF protection)", () => {
   it("allows same-origin requests via Origin header", () => {
-    const request = new Request("http://localhost:3000/__nix-js/actions", {
+    const request = new Request("http://localhost:3000/__elur-js/actions", {
       method: "POST",
       headers: { Origin: "http://localhost:3000" },
     });
@@ -159,7 +159,7 @@ describe("verifyOrigin (CSRF protection)", () => {
   });
 
   it("allows same-origin requests via Referer fallback", () => {
-    const request = new Request("http://localhost:3000/__nix-js/actions", {
+    const request = new Request("http://localhost:3000/__elur-js/actions", {
       method: "POST",
       headers: { Referer: "http://localhost:3000/contact" },
     });
@@ -167,7 +167,7 @@ describe("verifyOrigin (CSRF protection)", () => {
   });
 
   it("rejects cross-origin requests", () => {
-    const request = new Request("http://localhost:3000/__nix-js/actions", {
+    const request = new Request("http://localhost:3000/__elur-js/actions", {
       method: "POST",
       headers: { Origin: "https://evil.example.com" },
     });
@@ -177,7 +177,7 @@ describe("verifyOrigin (CSRF protection)", () => {
   });
 
   it("rejects a malformed Origin even when Referer is same-origin", () => {
-    const request = new Request("http://localhost:3000/__nix-js/actions", {
+    const request = new Request("http://localhost:3000/__elur-js/actions", {
       method: "POST",
       headers: {
         Origin: "http://[invalid-url]",
@@ -188,7 +188,7 @@ describe("verifyOrigin (CSRF protection)", () => {
   });
 
   it("rejects a different protocol on the same host", () => {
-    const request = new Request("https://localhost:3000/__nix-js/actions", {
+    const request = new Request("https://localhost:3000/__elur-js/actions", {
       method: "POST",
       headers: { Origin: "http://localhost:3000" },
     });
@@ -196,14 +196,14 @@ describe("verifyOrigin (CSRF protection)", () => {
   });
 
   it("allows requests without Origin and Referer by default", () => {
-    const request = new Request("http://localhost:3000/__nix-js/actions", {
+    const request = new Request("http://localhost:3000/__elur-js/actions", {
       method: "POST",
     });
     assert.equal(verifyOrigin(request), undefined);
   });
 
   it("rejects requests without Origin and Referer when strictOrigin is true", () => {
-    const request = new Request("http://localhost:3000/__nix-js/actions", {
+    const request = new Request("http://localhost:3000/__elur-js/actions", {
       method: "POST",
     });
     const error = verifyOrigin(request, { strictOrigin: true });
@@ -211,7 +211,7 @@ describe("verifyOrigin (CSRF protection)", () => {
   });
 
   it("allows allow-listed origins", () => {
-    const request = new Request("http://localhost:3000/__nix-js/actions", {
+    const request = new Request("http://localhost:3000/__elur-js/actions", {
       method: "POST",
       headers: { Origin: "https://preview.example.com" },
     });
@@ -225,7 +225,7 @@ describe("verifyOrigin (CSRF protection)", () => {
 describe("handleActionRequest CSRF integration", () => {
   it("rejects cross-origin POSTs with 403", async () => {
     const action = async () => "ok";
-    const request = new Request("http://localhost:3000/__nix-js/actions", {
+    const request = new Request("http://localhost:3000/__elur-js/actions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -300,7 +300,7 @@ describe("handleActionRequest body limits (§8.2)", () => {
   it("rejects oversized JSON bodies with 413", async () => {
     const largeArgs = ["x".repeat(10_000)];
     const body = JSON.stringify({ name: "greet", page: "/", args: largeArgs });
-    const request = new Request("http://localhost:3000/__nix-js/actions", {
+    const request = new Request("http://localhost:3000/__elur-js/actions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -316,8 +316,8 @@ describe("handleActionRequest body limits (§8.2)", () => {
   });
 
   it("rejects oversized form bodies with 413", async () => {
-    const body = "__nix_js_action_name=greet&__nix_js_action_page=/&data=" + "x".repeat(10_000);
-    const request = new Request("http://localhost:3000/__nix-js/actions", {
+    const body = "__elur_js_action_name=greet&__elur_js_action_page=/&data=" + "x".repeat(10_000);
+    const request = new Request("http://localhost:3000/__elur-js/actions", {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
@@ -334,7 +334,7 @@ describe("handleActionRequest body limits (§8.2)", () => {
 
   it("accepts bodies within the limit", async () => {
     const body = JSON.stringify({ name: "greet", page: "/", args: ["Ada"] });
-    const request = new Request("http://localhost:3000/__nix-js/actions", {
+    const request = new Request("http://localhost:3000/__elur-js/actions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

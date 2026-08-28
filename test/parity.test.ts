@@ -16,7 +16,7 @@ const root = resolve(__dirname, "fixtures/minimal");
 const appDir = resolve(root, "src/app");
 const outDir = resolve(root, "dist");
 const islandsDir = resolve(root, "src/islands");
-const generatedDir = resolve(root, ".nix-js");
+const generatedDir = resolve(root, ".elur");
 
 const ROUTES = ["/", "/api/posts", "/does-not-exist"];
 
@@ -83,7 +83,7 @@ function nodeAdapterProbe(): RuntimeProbe {
 }
 
 function stripMarkers(html: string): string {
-  return html.replace(/<!--nix-\d+-->/g, "").replace(/<!--nix-end-\d+-->/g, "");
+  return html.replace(/<!--elur-\d+-->/g, "").replace(/<!--elur-end-\d+-->/g, "");
 }
 
 describe("cross-runtime parity (§8.2)", () => {
@@ -103,7 +103,7 @@ describe("cross-runtime parity (§8.2)", () => {
     const handler = createWebHandler(
       routes,
       actions,
-      { staticRoot: outDir, lang: "es", clientEntry: "/_nix-js/entry-client.js", renderEndpoint: true },
+      { staticRoot: outDir, lang: "es", clientEntry: "/_elur/entry-client.js", renderEndpoint: true },
     );
     probesArr.push(toProbe(handler));
 
@@ -113,7 +113,7 @@ describe("cross-runtime parity (§8.2)", () => {
       appDir: "src/app",
       outDir: "dist",
       islandsDir: "src/islands",
-      clientEntry: "/_nix-js/entry-client.js",
+      clientEntry: "/_elur/entry-client.js",
       lang: "es",
       hydrateImport: "../../../src/island/index.ts",
     });
@@ -137,7 +137,7 @@ describe("cross-runtime parity (§8.2)", () => {
       root,
       appDir,
       publicDir: outDir,
-      clientEntry: "/_nix-js/entry-client.js",
+      clientEntry: "/_elur/entry-client.js",
       lang: "es",
       port: 3472,
       host: "127.0.0.1",

@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import type { CliOptions } from "../src/cli.ts";
 
-const TEST_ROOT = join(tmpdir(), `nix-cli-test-${Date.now()}`);
+const TEST_ROOT = join(tmpdir(), `elur-cli-test-${Date.now()}`);
 
 before(async () => {
   await mkdir(join(TEST_ROOT, "src", "app", "blog", "[slug]"), { recursive: true });
@@ -31,8 +31,8 @@ function makeOptions(root: string, overrides: Partial<CliOptions> = {}): CliOpti
     islandsDir: join(root, "src", "islands"),
     outDir: join(root, "dist"),
     publicDir: join(root, "public"),
-    generatedEntry: join(root, ".nix-js", "entry-client.ts"),
-    clientEntry: "/_nix-js/entry-client.js",
+    generatedEntry: join(root, ".elur", "entry-client.ts"),
+    clientEntry: "/_elur/entry-client.js",
     port: 3000,
     host: "127.0.0.1",
     lang: "en",
@@ -47,7 +47,7 @@ describe("CLI: routes command (plan §12.1)", () => {
   });
 
   it("returns route conflict error on duplicate routes", async () => {
-    const conflictRoot = join(tmpdir(), `nix-cli-conflict-${Date.now()}`);
+    const conflictRoot = join(tmpdir(), `elur-cli-conflict-${Date.now()}`);
     await mkdir(join(conflictRoot, "page"), { recursive: true });
     await mkdir(join(conflictRoot, "(group)", "page"), { recursive: true });
     await writeFile(join(conflictRoot, "page", "page.ts"), "export default () => null;");
@@ -68,7 +68,7 @@ describe("CLI: doctor command (plan §12.1)", () => {
   });
 
   it("reports missing app directory", async () => {
-    const emptyRoot = join(tmpdir(), `nix-cli-empty-${Date.now()}`);
+    const emptyRoot = join(tmpdir(), `elur-cli-empty-${Date.now()}`);
     await mkdir(emptyRoot, { recursive: true });
     const code = await doDoctor(makeOptions(emptyRoot));
     assert.equal(code, ExitCode.GenericError, "should error when app dir is missing");

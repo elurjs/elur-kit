@@ -4,7 +4,7 @@ import { toPublicErrorInfo, publicErrorResponse } from "../src/errors.ts";
 
 describe("public error sanitization (§8.4)", () => {
   it("never leaks the internal error message by default", () => {
-    const error = new Error("Sensitive path: /home/user/.nix-js/secret/stack trace");
+    const error = new Error("Sensitive path: /home/user/.elur/secret/stack trace");
     const info = toPublicErrorInfo(error);
     assert.equal(info.message, "Internal Server Error");
     assert.equal(info.code, "INTERNAL_SERVER_ERROR");

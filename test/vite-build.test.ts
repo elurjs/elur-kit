@@ -117,7 +117,7 @@ describe("vite-build: programmatic client bundle", () => {
       "utf8",
     );
     // Create a tiny entry file in the temp dir so Vite can resolve it.
-    await writeFile(join(tempBase, "entry.ts"), 'console.log("nix-js-kit client entry");', "utf8");
+    await writeFile(join(tempBase, "entry.ts"), 'console.log("elur-kit client entry");', "utf8");
   });
 
   after(async () => {

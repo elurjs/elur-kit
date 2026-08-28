@@ -1,4 +1,4 @@
-import { html } from "@deijose/nix-js";
+import { html } from "@elurjs/core";
 import { island } from "../../../src/index.ts";
 import type { PageProps } from "../../../src/index.ts";
 import LikeButton from "../islands/LikeButton.ts";

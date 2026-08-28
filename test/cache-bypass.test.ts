@@ -40,13 +40,13 @@ describe("cache bypass policy (runtime-security §9.1)", () => {
 
   it("isResultCacheable rejects HTML with action error markers", () => {
     function isResultCacheable(result: { revalidate?: number; html: string }): boolean {
-      if (result.html.includes("__nix_js_action_error")) return false;
+      if (result.html.includes("__elur_js_action_error")) return false;
       if (result.revalidate === undefined) return false;
       return true;
     }
 
     assert.equal(
-      isResultCacheable({ html: "<html>__nix_js_action_error</html>", revalidate: 60 }),
+      isResultCacheable({ html: "<html>__elur_js_action_error</html>", revalidate: 60 }),
       false,
       "HTML with action error marker should not be cached",
     );

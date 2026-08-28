@@ -9,9 +9,9 @@ import { dirname, resolve } from "node:path";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const appDir = resolve(__dirname, "fixtures/minimal/src/app");
 
-/** Strip Nix.js hydration markers so content assertions work with marker-enabled SSR. */
+/** Strip Elur hydration markers so content assertions work with marker-enabled SSR. */
 function stripMarkers(html: string): string {
-  return html.replace(/<!--nix-\d+-->/g, "").replace(/<!--nix-end-\d+-->/g, "");
+  return html.replace(/<!--elur-\d+-->/g, "").replace(/<!--elur-end-\d+-->/g, "");
 }
 
 describe("renderPage", () => {
@@ -21,12 +21,12 @@ describe("renderPage", () => {
     const home = routes.pages.find((p) => p.path === "/")!;
     const { html } = await renderPage({
       route: home,
-      config: { clientEntry: "/_nix-js/entry-client.js", lang: "es" },
+      config: { clientEntry: "/_elur/entry-client.js", lang: "es" },
       actions,
     });
     assert.ok(stripMarkers(html).includes("<h1>Hello from test</h1>"), "should render loader data");
-    assert.ok(html.includes('id="nix-js-data"'), "should serialize loader data");
-    assert.ok(html.includes('id="nix-js-actions"'), "should include actions registry");
+    assert.ok(html.includes('id="elur-data"'), "should serialize loader data");
+    assert.ok(html.includes('id="elur-actions"'), "should include actions registry");
   });
 
   it("renders dynamic route params", async () => {
@@ -36,7 +36,7 @@ describe("renderPage", () => {
     const { html } = await renderPage({
       route: blog,
       params: { slug: "hello-world" },
-      config: { clientEntry: "/_nix-js/entry-client.js", lang: "es" },
+      config: { clientEntry: "/_elur/entry-client.js", lang: "es" },
       actions,
     });
     assert.ok(stripMarkers(html).includes("<h1>Post: hello-world</h1>"), "should render dynamic loader data");

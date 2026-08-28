@@ -11,24 +11,24 @@
 // Boundaries are tracked per-request via AsyncLocalStorage to avoid global
 // state leakage between concurrent requests.
 
-import type { NixTemplate } from "@deijose/nix-js";
+import type { ElurTemplate } from "@elurjs/core";
 import { randomUUID } from "node:crypto";
 import { AsyncLocalStorage } from "node:async_hooks";
 
 export interface StreamBoundaryOptions<T> {
   /** Fallback content shown while the promise resolves. */
-  fallback: NixTemplate;
-  /** Promise that resolves to a NixTemplate. */
+  fallback: ElurTemplate;
+  /** Promise that resolves to a ElurTemplate. */
   promise: Promise<T>;
-  /** Renders the resolved value to a NixTemplate. */
-  children: (value: T) => NixTemplate;
+  /** Renders the resolved value to a ElurTemplate. */
+  children: (value: T) => ElurTemplate;
 }
 
 /** Per-request boundary registry. */
 interface BoundaryContext {
   boundaries: Map<string, {
     promise: Promise<unknown>;
-    children: (value: unknown) => NixTemplate;
+    children: (value: unknown) => ElurTemplate;
   }>;
 }
 
@@ -59,7 +59,7 @@ export function withBoundaryContext<T>(fn: () => T): T {
  * (v2.1 — Fix #4: real Suspense streaming with `<template>` replacement)
  */
 export function buildFallbackHtml(boundaryId: string, fallbackHtml: string): string {
-  return `<div id="${boundaryId}" style="display:contents" data-nix-js-boundary="${boundaryId}">${fallbackHtml}</div>`;
+  return `<div id="${boundaryId}" style="display:contents" data-elur-boundary="${boundaryId}">${fallbackHtml}</div>`;
 }
 
 /**
@@ -80,7 +80,7 @@ export function buildResolvedChunk(boundaryId: string, resolvedHtml: string): st
     `var t=document.getElementById(${JSON.stringify(boundaryId + "-tpl")});` +
     `var f=document.getElementById(${JSON.stringify(boundaryId)});` +
     `if(t&&f){f.replaceWith(t.content.cloneNode(true));}` +
-    `document.dispatchEvent(new CustomEvent("nix-js:rendered"));` +
+    `document.dispatchEvent(new CustomEvent("elur:rendered"));` +
     `})();</script>`;
 }
 
@@ -91,23 +91,23 @@ export function buildResolvedChunk(boundaryId: string, resolvedHtml: string): st
  *
  * The boundary ID is deterministic per-request via crypto.randomUUID().
  */
-export function streamBoundary<T>(options: StreamBoundaryOptions<T>): NixTemplate {
-  const id = `nix-js-stream-${randomUUID().slice(0, 8)}`;
+export function streamBoundary<T>(options: StreamBoundaryOptions<T>): ElurTemplate {
+  const id = `elur-stream-${randomUUID().slice(0, 8)}`;
   const ctx = boundaryALS.getStore();
 
   // In SSR mode with a boundary context, register the promise for later.
   if (ctx) {
     ctx.boundaries.set(id, {
       promise: options.promise,
-      children: options.children as (value: unknown) => NixTemplate,
+      children: options.children as (value: unknown) => ElurTemplate,
     });
   }
 
   return {
-    __isNixTemplate: true as const,
+    __isElurTemplate: true as const,
     mount(container: Element | string) {
       const el = typeof container === "string" ? document.querySelector(container) : container;
-      if (!el) throw new Error("[nix-js-kit] streamBoundary(): container not found");
+      if (!el) throw new Error("[elur-kit] streamBoundary(): container not found");
       // Render fallback initially.
       const handle = options.fallback.mount(el);
       // Attempt to resolve and swap (works in both SSR and client).
@@ -117,14 +117,14 @@ export function streamBoundary<T>(options: StreamBoundaryOptions<T>): NixTemplat
           el.innerHTML = "";
           const childHandle = content.mount(el);
           // Store the new handle for cleanup.
-          (handle as any).__nixChildHandle = childHandle;
+          (handle as any).__elurChildHandle = childHandle;
         })
         .catch((err) => {
-          console.error(`[nix-js-kit] streamBoundary ${id} failed:`, err);
+          console.error(`[elur-kit] streamBoundary ${id} failed:`, err);
         });
       return {
         unmount() {
-          const childHandle = (handle as any).__nixChildHandle;
+          const childHandle = (handle as any).__elurChildHandle;
           if (childHandle?.unmount) childHandle.unmount();
           handle.unmount();
         },
@@ -141,10 +141,10 @@ export function streamBoundary<T>(options: StreamBoundaryOptions<T>): NixTemplat
           void value;
         })
         .catch((err) => {
-          console.error(`[nix-js-kit] streamBoundary ${id} failed:`, err);
+          console.error(`[elur-kit] streamBoundary ${id} failed:`, err);
         });
 
       return dispose;
     },
-  } as unknown as NixTemplate;
+  } as unknown as ElurTemplate;
 }

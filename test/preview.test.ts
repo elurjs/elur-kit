@@ -11,10 +11,10 @@ const root = resolve(__dirname, "fixtures/minimal");
 const appDir = resolve(root, "src/app");
 const outDir = resolve(root, "dist");
 const islandsDir = resolve(root, "src/islands");
-const generatedDir = resolve(root, ".nix-js");
+const generatedDir = resolve(root, ".elur");
 
 function stripMarkers(html: string): string {
-  return html.replace(/<!--nix-\d+-->/g, "").replace(/<!--nix-end-\d+-->/g, "");
+  return html.replace(/<!--elur-\d+-->/g, "").replace(/<!--elur-end-\d+-->/g, "");
 }
 
 describe("preview server", () => {
@@ -39,12 +39,12 @@ describe("preview server", () => {
       appDir,
       outDir,
       islandsDir,
-      clientEntry: "/_nix-js/entry-client.js",
+      clientEntry: "/_elur/entry-client.js",
       lang: "es",
       hydrateImport: "../../../src/island/index.ts",
       port: 3463,
       host: "127.0.0.1",
-      generatedEntry: ".nix-js/entry-client.ts",
+      generatedEntry: ".elur/entry-client.ts",
     });
 
     try {
@@ -53,7 +53,7 @@ describe("preview server", () => {
       const body = await page.text();
       assert.ok(stripMarkers(body).includes("<h1>Hello from test</h1>"), "Preview should serve built home page");
 
-      const action = await fetch("http://127.0.0.1:3463/__nix-js/actions", {
+      const action = await fetch("http://127.0.0.1:3463/__elur-js/actions", {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify({ name: "greet", page: "/", args: ["Ada"] }),

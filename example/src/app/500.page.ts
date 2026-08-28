@@ -1,4 +1,4 @@
-import { html } from "@deijose/nix-js";
+import { html } from "@elurjs/core";
 
 export default function ErrorPage() {
   return html`

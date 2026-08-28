@@ -1,4 +1,4 @@
-// --- @deijose/nix-js-kit/cache — pluggable cache adapters (§9.2) ---
+// --- @elurjs/kit/cache — pluggable cache adapters (§9.2) ---
 
 export {
   type CacheAdapter,

@@ -11,7 +11,7 @@
 // fallback that buffers the full response and returns it as a single
 // Response (no streaming).
 
-import type { NixTemplate } from "@deijose/nix-js";
+import type { ElurTemplate } from "@elurjs/core";
 import { renderToString } from "../render/render-to-string.js";
 import { documentShell } from "../build/document-shell.js";
 import type { PageRoute } from "../router/route-scanner.js";
@@ -61,18 +61,18 @@ export async function createStreamingResponse(
   }
 
   // Load the loading boundary component.
-  const loadingMod = (await importer(route.loadingPath)) as { default: () => NixTemplate };
+  const loadingMod = (await importer(route.loadingPath)) as { default: () => ElurTemplate };
   const loadingHtml = await renderToString(loadingMod.default);
 
   // Deterministic boundary ID for the swap.
-  const boundaryId = `nix-js-stream-${randomUUID().slice(0, 8)}`;
+  const boundaryId = `elur-stream-${randomUUID().slice(0, 8)}`;
 
   // Build the shell with the loading fallback.
   const shellHtml = documentShell({
     title: "Loading...",
     lang: config.lang,
     body: `<div id="${boundaryId}">${loadingHtml}</div>`,
-    data: { __nix_js_streaming: true, page: route.path },
+    data: { __elur_js_streaming: true, page: route.path },
     actions,
     clientEntry: config.clientEntry,
     renderEndpoint: config.renderEndpoint,

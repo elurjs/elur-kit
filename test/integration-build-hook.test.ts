@@ -3,14 +3,14 @@ import assert from "node:assert/strict";
 import { mkdir, rm, writeFile, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { build } from "../src/build/build.ts";
-import type { NixKitIntegration } from "../src/integrations/index.ts";
+import type { ElurKitIntegration } from "../src/integrations/index.ts";
 
 /**
  * Verifies that the `build` integration hook fires at the end of build()
  * and that artifacts written by the integration survive into the output
  * directory.
  *
- * Regression test for the bug where NixKitIntegration.build was declared
+ * Regression test for the bug where ElurKitIntegration.build was declared
  * in the interface but never invoked from build.ts.
  */
 describe("integration build hook", () => {
@@ -22,14 +22,14 @@ describe("integration build hook", () => {
     await mkdir(appDir, { recursive: true });
     await writeFile(
       join(appDir, "page.ts"),
-      `import { html } from "@deijose/nix-js";\nexport default function Page() { return html\`<h1>Home</h1>\`; }\n`,
+      `import { html } from "@elurjs/core";\nexport default function Page() { return html\`<h1>Home</h1>\`; }\n`,
     );
 
     let hookCalled = false;
     let receivedResult: { pages: number; outDir: string } | null = null;
     let receivedContext: { command: string; root: string } | null = null;
 
-    const integration: NixKitIntegration = {
+    const integration: ElurKitIntegration = {
       name: "test-build-hook",
       build: async (result, context) => {
         hookCalled = true;
@@ -67,7 +67,7 @@ describe("integration build hook", () => {
     await mkdir(appDir, { recursive: true });
     await writeFile(
       join(appDir, "page.ts"),
-      `import { html } from "@deijose/nix-js";\nexport default function Page() { return html\`<h1>Home</h1>\`; }\n`,
+      `import { html } from "@elurjs/core";\nexport default function Page() { return html\`<h1>Home</h1>\`; }\n`,
     );
 
     try {

@@ -1,5 +1,5 @@
 /**
- * Common options shared by all nix-js-kit deployment adapters.
+ * Common options shared by all elur-kit deployment adapters.
  */
 export interface AdapterOptions {
   /** Project root directory. */
@@ -12,7 +12,7 @@ export interface AdapterOptions {
   outDir: string;
   /** Public directory relative to root (default: public). */
   publicDir?: string;
-  /** Public path for the client entry module (default: /_nix-js/entry-client.js). */
+  /** Public path for the client entry module (default: /_elur/entry-client.js). */
   clientEntry: string;
   /** HTML lang attribute (default: es). */
   lang: string;
@@ -21,7 +21,7 @@ export interface AdapterOptions {
 }
 
 /**
- * An adapter turns a nix-js-kit build into a deployment target output.
+ * An adapter turns a elur-kit build into a deployment target output.
  */
 export interface Adapter {
   name: string;

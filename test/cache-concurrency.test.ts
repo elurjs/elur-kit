@@ -14,7 +14,7 @@ import { mkdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
-const CACHE_DIR = join(tmpdir(), `nix-cache-concurrency-${Date.now()}`);
+const CACHE_DIR = join(tmpdir(), `elur-cache-concurrency-${Date.now()}`);
 
 function makeEntry(html: string, revalidate = 60, tags: string[] = []): CacheEntry {
   return { html, generatedAt: Date.now(), revalidate, tags };

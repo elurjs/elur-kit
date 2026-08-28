@@ -1,28 +1,28 @@
 // --- raw() helper: inject pre-rendered HTML without escaping ---
 //
-// Nix.js templates escape interpolated values by default. When rendering
+// Elur templates escape interpolated values by default. When rendering
 // Markdown or other trusted HTML, we need to bypass that escaping. `raw()`
-// creates a NixTemplate that inserts the HTML string directly, the same
+// creates a ElurTemplate that inserts the HTML string directly, the same
 // pattern used by `island()` for server-side rendering.
 
-import { NIX_RENDER_PROTOCOL, type NixTemplate } from "@deijose/nix-js";
+import { ELUR_RENDER_PROTOCOL, type ElurTemplate } from "@elurjs/core";
 
 /**
- * Creates a NixTemplate that renders the given HTML string without escaping.
+ * Creates a ElurTemplate that renders the given HTML string without escaping.
  *
  * **Security:** Only use `raw()` with trusted content (e.g. Markdown you
  * authored, or HTML you generated and sanitized). Never use it with
  * user-supplied input without sanitization.
  */
-export function raw(html: string): NixTemplate {
+export function raw(html: string): ElurTemplate {
   return {
-    __isNixTemplate: true as const,
-    [NIX_RENDER_PROTOCOL]: {
+    __isElurTemplate: true as const,
+    [ELUR_RENDER_PROTOCOL]: {
       renderServer: () => html,
     },
     mount(container: Element | string) {
       const el = typeof container === "string" ? document.querySelector(container) : container;
-      if (!el) throw new Error("[nix-js-kit] raw(): container not found");
+      if (!el) throw new Error("[elur-kit] raw(): container not found");
       el.innerHTML = html;
       return {
         unmount() {
@@ -42,5 +42,5 @@ export function raw(html: string): NixTemplate {
         }
       };
     },
-  } as unknown as NixTemplate;
+  } as unknown as ElurTemplate;
 }

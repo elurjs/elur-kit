@@ -1,4 +1,4 @@
-import { html } from "@deijose/nix-js";
+import { html } from "@elurjs/core";
 import type { PageProps } from "../../../../../../src/index.ts";
 import { load } from "./page.data.ts";
 

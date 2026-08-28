@@ -16,9 +16,9 @@ const islandsDir = resolve(root, "src/islands");
 const publicDir = resolve(root, ".tmp-public");
 const secretPath = resolve(root, "secret.txt");
 
-/** Strip Nix.js hydration markers so content assertions work with marker-enabled SSR. */
+/** Strip Elur hydration markers so content assertions work with marker-enabled SSR. */
 function stripMarkers(html: string): string {
-  return html.replace(/<!--nix-\d+-->/g, "").replace(/<!--nix-end-\d+-->/g, "");
+  return html.replace(/<!--elur-\d+-->/g, "").replace(/<!--elur-end-\d+-->/g, "");
 }
 
 function rawGet(port: number, path: string): Promise<{ status: number; body: string }> {
@@ -49,7 +49,7 @@ describe("integration: build + SSR", () => {
       appDir,
       outDir,
       islandsDir,
-      generatedEntry: resolve(root, ".nix-js/entry-client.ts"),
+      generatedEntry: resolve(root, ".elur/entry-client.ts"),
       hydrateImport: "../../../src/island/index.ts",
     });
 
@@ -58,7 +58,7 @@ describe("integration: build + SSR", () => {
 
     const html = await readFile(resolve(outDir, "index.html"), "utf8");
     assert.ok(stripMarkers(html).includes("<h1>Hello from test</h1>"), "should render loader data");
-    assert.ok(html.includes('id="nix-js-data"'), "should serialize loader data");
+    assert.ok(html.includes('id="elur-data"'), "should serialize loader data");
   });
 
   it("copies public assets into the build output", async () => {
@@ -88,7 +88,7 @@ describe("integration: build + SSR", () => {
       const body = await page.text();
       assert.ok(stripMarkers(body).includes("<h1>Hello from test</h1>"), "SSR should render home page");
 
-      const action = await fetch(`http://127.0.0.1:${port}/__nix-js/actions`, {
+      const action = await fetch(`http://127.0.0.1:${port}/__elur-js/actions`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify({ name: "greet", page: "/", args: ["Ada"] }),
@@ -96,7 +96,7 @@ describe("integration: build + SSR", () => {
       assert.equal(action.status, 200);
       assert.equal(await action.json(), "Hello, Ada!");
 
-      const crossOriginAction = await fetch(`http://127.0.0.1:${port}/__nix-js/actions`, {
+      const crossOriginAction = await fetch(`http://127.0.0.1:${port}/__elur-js/actions`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -134,7 +134,7 @@ describe("integration: build + SSR", () => {
   });
 
   it("caches streamed content via the render endpoint with ISR", async () => {
-    const cacheDir = resolve(root, ".nix-js/cache-render");
+    const cacheDir = resolve(root, ".elur/cache-render");
     await rm(cacheDir, { recursive: true, force: true });
     const server = await createSsrServer({
       appDir,
@@ -146,9 +146,9 @@ describe("integration: build + SSR", () => {
     const { port } = server.server.address() as { port: number };
 
     try {
-      const render = await fetch(`http://127.0.0.1:${port}/__nix-js/render?page=%2F&search=`);
+      const render = await fetch(`http://127.0.0.1:${port}/__elur-js/render?page=%2F&search=`);
       assert.equal(render.status, 200);
-      const cached = await getCachedHtml(cacheDir, "/__nix-js/render/?");
+      const cached = await getCachedHtml(cacheDir, "/__elur-js/render/?");
       assert.ok(cached, "render endpoint content should be cached");
       assert.ok(stripMarkers(cached.html).includes("<h1>Hello from test</h1>"), "cached HTML should match");
     } finally {
@@ -157,7 +157,7 @@ describe("integration: build + SSR", () => {
   });
 
   it("caches pages with revalidate in ISR cache", async () => {
-    const cacheDir = resolve(root, ".nix-js/cache");
+    const cacheDir = resolve(root, ".elur/cache");
     await rm(cacheDir, { recursive: true, force: true });
     const server = await createSsrServer({
       appDir,
@@ -203,9 +203,9 @@ describe("integration: build + SSR", () => {
       assert.equal(page.status, 200);
       const body = await page.text();
       assert.ok(body.includes("<p>Loading...</p>"), "shell should render loading boundary");
-      assert.ok(body.includes("__nixJsStreamRender"), "shell should include streaming script");
+      assert.ok(body.includes("__elurJsStreamRender"), "shell should include streaming script");
 
-      const render = await fetch(`http://127.0.0.1:${port}/__nix-js/render?page=%2F&search=`);
+      const render = await fetch(`http://127.0.0.1:${port}/__elur-js/render?page=%2F&search=`);
       assert.equal(render.status, 200);
       const renderedBody = await render.text();
       assert.ok(stripMarkers(renderedBody).includes("<h1>Hello from test</h1>"), "render endpoint should return real content");

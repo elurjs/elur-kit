@@ -7,7 +7,7 @@ import { renderPage, renderErrorPage } from "../ssr/render.js";
 import { scanActions, actionNames } from "../action/scan.js";
 import { consumeImageRegistry, setImageManifest, type ImageFormat } from "../image/index.js";
 import { processImageBatch, type ImageManifest } from "../image/service.js";
-import { runIntegrationHook, type NixKitIntegration } from "../integrations/index.js";
+import { runIntegrationHook, type ElurKitIntegration } from "../integrations/index.js";
 import type { RouteParams, GenerateStaticParams } from "../types.js";
 
 export interface BuildConfig {
@@ -18,7 +18,7 @@ export interface BuildConfig {
   /** Absolute path to the project root (e.g. /project). When provided, action
    * paths in the serialized HTML shell are made relative to this root. */
   root?: string;
-  /** Base path for the client entry module, e.g. "/_nix-js/entry-client.js". */
+  /** Base path for the client entry module, e.g. "/_elur/entry-client.js". */
   clientEntry?: string;
   /** Default language for the HTML shell. */
   lang?: string;
@@ -30,17 +30,17 @@ export interface BuildConfig {
   islandsDir?: string;
   /**
    * Absolute path where the generated client entry module is written
-   * (e.g. /project/.nix-js/entry-client.ts). Required when `islandsDir` is set.
+   * (e.g. /project/.elur/entry-client.ts). Required when `islandsDir` is set.
    */
   generatedEntry?: string;
   /**
    * Import specifier the generated entry uses for `hydrateIslands`.
-   * Defaults to the published subpath `@deijose/nix-js-kit/island`.
+   * Defaults to the published subpath `@elurjs/kit/island`.
    */
   hydrateImport?: string;
   /**
    * Import specifier the generated entry uses for `startClientRouter`.
-   * Defaults to the published subpath `@deijose/nix-js-kit/router`.
+   * Defaults to the published subpath `@elurjs/kit/router`.
    */
   routerImport?: string;
   /** Absolute path to the public directory for static assets (optional). */
@@ -48,7 +48,7 @@ export interface BuildConfig {
   /** Image formats to generate when sharp is available. Defaults to ["webp", "avif"]. */
   imageFormats?: ImageFormat[];
   /**
-   * Whether the SSR render endpoint (`/__nix-js/render`) exists at runtime.
+   * Whether the SSR render endpoint (`/__elur-js/render`) exists at runtime.
    * Defaults to `true` (dev, preview and SSR deployments). Set to `false` for
    * fully static outputs so the emitted HTML tells the client router to skip
    * the endpoint (no 404 storms on static hosts like Vercel).
@@ -60,7 +60,7 @@ export interface BuildConfig {
    * giving integrations a chance to write post-build artifacts (sitemaps,
    * robots.txt, search indexes, etc.) into the output directory.
    */
-  integrations?: NixKitIntegration[];
+  integrations?: ElurKitIntegration[];
 }
 
 export interface BuildResult {
@@ -208,7 +208,7 @@ export async function build(config: BuildConfig): Promise<BuildResult> {
   const registeredImages = consumeImageRegistry();
   let manifest: ImageManifest | null = null;
   if (registeredImages.length > 0 && config.publicDir) {
-    const manifestPath = join(config.outDir, ".nix-js", "image-manifest.json");
+    const manifestPath = join(config.outDir, ".elur", "image-manifest.json");
     const processResult = await processImageBatch(registeredImages, {
       publicDir: config.publicDir,
       outDir: config.outDir,

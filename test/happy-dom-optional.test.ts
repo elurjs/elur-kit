@@ -9,7 +9,7 @@ const pkgPath = join(__dirname, "..", "package.json");
 const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
 
 // happy-dom is no longer a dependency of the kit: the SSR runtime uses the
-// core's DOM-free `renderToString` (`@deijose/nix-js/server`), so the legacy
+// core's DOM-free `renderToString` (`@elurjs/core/server`), so the legacy
 // happy-dom fallback was removed. This test guards against accidental
 // re-introduction as a runtime/peer dependency.
 

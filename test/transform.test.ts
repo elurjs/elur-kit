@@ -10,7 +10,7 @@ import { readFile, readdir, mkdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fail, redirect, isActionFailure, isRedirectResponse } from "../src/errors.ts";
 
-describe("nixJsInterpolationPlugin transform", () => {
+describe("elurJsInterpolationPlugin transform", () => {
   it("converts partial attribute interpolation to single interpolation", () => {
     const source = 'html' + '`<a href="/blog/${slug}">Post</a>`;';
     const result = transformPartialInterpolations(source);
@@ -108,7 +108,7 @@ describe("transformProjectFiles", () => {
   const root = join(process.cwd(), "test/fixtures/transform-tmp");
   const appDir = join(root, "src/app");
   const islandsDir = join(root, "src/islands");
-  const outDir = join(root, ".nix-js/transformed");
+  const outDir = join(root, ".elur/transformed");
 
   after(async () => {
     await rm(root, { recursive: true, force: true });
@@ -121,7 +121,7 @@ describe("transformProjectFiles", () => {
     await writeFile(
       join(appDir, "blog", "[slug]", "page.ts"),
       [
-        'import { html } from "@deijose/nix-js";',
+        'import { html } from "@elurjs/core";',
         'import LikeButton from "../../../islands/LikeButton.ts";',
         'import { getPost } from "../../../../lib/posts.ts";',
         "export default function Page() {",
@@ -199,7 +199,7 @@ describe("fail/redirect helpers", () => {
   it("detects failures across bundling boundaries via markers", () => {
     // Simulate a copy of the class from another bundle (no shared identity).
     class ForeignActionFailure {
-      __nix_js_action_failure = true;
+      __elur_js_action_failure = true;
       constructor(public status: number, public data: unknown) { }
     }
     const value = new ForeignActionFailure(400, "nope");

@@ -5,7 +5,7 @@ import { mkdir, writeFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
-const STATIC_ROOT = join(tmpdir(), `nix-js-static-test-${Date.now()}`);
+const STATIC_ROOT = join(tmpdir(), `elur-static-test-${Date.now()}`);
 
 before(async () => {
   await mkdir(STATIC_ROOT, { recursive: true });

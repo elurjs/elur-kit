@@ -71,7 +71,7 @@ describe("client router: accessibility & concurrency", () => {
     const { navigateTo } = await import("../src/router/client.ts");
     await navigateTo("/about", "", true);
 
-    const announcer = window.document.getElementById("nix-js-route-announcer");
+    const announcer = window.document.getElementById("elur-route-announcer");
     assert.ok(announcer, "announcer should exist");
     assert.equal(announcer?.getAttribute("aria-live"), "assertive");
     assert.equal(announcer?.getAttribute("role"), "status");
@@ -170,7 +170,7 @@ describe("client router: accessibility & concurrency", () => {
     );
   });
 
-  it("dispatches nix-js:rendered event after navigation", async () => {
+  it("dispatches elur:rendered event after navigation", async () => {
     window.document.body.innerHTML = '<div id="app"><p>old</p></div>';
     globalThis.fetch = (async () => ({
       ok: true,
@@ -180,11 +180,11 @@ describe("client router: accessibility & concurrency", () => {
     const { navigateTo } = await import("../src/router/client.ts");
 
     let eventFired = false;
-    window.document.addEventListener("nix-js:rendered", () => {
+    window.document.addEventListener("elur:rendered", () => {
       eventFired = true;
     });
 
     await navigateTo("/page", "", true);
-    assert.ok(eventFired, "nix-js:rendered event should fire");
+    assert.ok(eventFired, "elur:rendered event should fire");
   });
 });

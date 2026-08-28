@@ -10,19 +10,19 @@ import { matchApiRoute, matchRoute } from "../ssr/match.js";
 import { renderPage, renderErrorPage } from "../ssr/render.js";
 import { setContentRoot, clearContentCache } from "../content/collections.js";
 import { loadMiddleware, matchesMiddleware, runMiddleware, type LoadedMiddleware } from "../middleware/index.js";
-import { nixJsInterpolationPlugin, shouldUseLegacyInterpolation, type InterpolationMode } from "./interpolation-plugin.js";
+import { elurJsInterpolationPlugin, shouldUseLegacyInterpolation, type InterpolationMode } from "./interpolation-plugin.js";
 import { incomingMessageToRequest } from "../runtime/node-http.js";
 
-export interface NixJsKitViteOptions {
+export interface ElurJsKitViteOptions {
   /** App directory relative to Vite root (default: src/app). */
   appDir?: string;
   /** Islands directory relative to Vite root (default: src/islands). */
   islandsDir?: string;
   /** Content directory relative to Vite root (default: src/content). */
   contentDir?: string;
-  /** Where to write the generated client entry (default: .nix-js/entry-client.ts). */
+  /** Where to write the generated client entry (default: .elur/entry-client.ts). */
   generatedEntry?: string;
-  /** Public path for the client entry module (default: /_nix-js/entry-client.js). */
+  /** Public path for the client entry module (default: /_elur/entry-client.js). */
   clientEntry?: string;
   /** HTML lang attribute (default: es). */
   lang?: string;
@@ -34,7 +34,7 @@ export interface NixJsKitViteOptions {
   actionSecurity?: ActionSecurityOptions;
   /**
    * How the legacy interpolation transform is handled (default: "auto").
-   * With a Nix.js core that supports partial attribute interpolation natively
+   * With a Elur core that supports partial attribute interpolation natively
    * the transform is not applied; use "legacy" for migrations against older
    * cores and "off" to never transform.
    */
@@ -42,21 +42,21 @@ export interface NixJsKitViteOptions {
 }
 
 /**
- * Official Vite plugin for nix-js-kit.
+ * Official Vite plugin for elur-kit.
  *
  * In dev mode it generates the islands entry and renders every page via SSR.
- * In production builds it can be combined with `nix-js-kit build` to generate
+ * In production builds it can be combined with `elur-kit build` to generate
  * static HTML files.
  */
-export function nixJsKit(options: NixJsKitViteOptions = {}): Plugin[] {
+export function elurJsKit(options: ElurJsKitViteOptions = {}): Plugin[] {
   const appDir = options.appDir ?? "src/app";
   const islandsDir = options.islandsDir ?? "src/islands";
   const contentDir = options.contentDir ?? "src/content";
-  const generatedEntry = options.generatedEntry ?? ".nix-js/entry-client.ts";
-  const clientEntry = options.clientEntry ?? "/_nix-js/entry-client.js";
+  const generatedEntry = options.generatedEntry ?? ".elur/entry-client.ts";
+  const clientEntry = options.clientEntry ?? "/_elur/entry-client.js";
   const lang = options.lang ?? "es";
-  const hydrateImport = options.hydrateImport ?? "@deijose/nix-js-kit/island";
-  const routerImport = options.routerImport ?? "@deijose/nix-js-kit/router";
+  const hydrateImport = options.hydrateImport ?? "@elurjs/kit/island";
+  const routerImport = options.routerImport ?? "@elurjs/kit/router";
 
   let routes: Awaited<ReturnType<typeof scanRoutes>> | null = null;
   let actions: ActionRegistry = {};
@@ -64,7 +64,7 @@ export function nixJsKit(options: NixJsKitViteOptions = {}): Plugin[] {
   let middleware: LoadedMiddleware | null = null;
 
   const mainPlugin: Plugin = {
-    name: "nix-js-kit",
+    name: "elur-kit",
     enforce: "pre",
 
     async configResolved(config) {
@@ -105,7 +105,7 @@ export function nixJsKit(options: NixJsKitViteOptions = {}): Plugin[] {
         const urlPath = requestUrl.pathname;
 
         // Server actions endpoint.
-        if (urlPath === "/__nix-js/actions" && req.method === "POST") {
+        if (urlPath === "/__elur-js/actions" && req.method === "POST") {
           try {
             const body = await readRequestBody(req);
             const request = incomingMessageToRequest(req, body);
@@ -113,16 +113,16 @@ export function nixJsKit(options: NixJsKitViteOptions = {}): Plugin[] {
             res.writeHead(response.status, Object.fromEntries(response.headers.entries()));
             res.end(await response.text());
           } catch (err) {
-            console.error("[nix-js-kit] action error:", err);
+            console.error("[elur-kit] action error:", err);
             res.writeHead(500, { "Content-Type": "text/plain; charset=utf-8" });
             res.end(String(err));
           }
           return;
         }
 
-        if (urlPath.startsWith("/_nix-js/entry-client.js")) {
+        if (urlPath.startsWith("/_elur/entry-client.js")) {
           const transformed = await server.transformRequest(
-            "/.nix-js/entry-client.ts",
+            "/.elur/entry-client.ts",
           );
           if (transformed) {
             res.writeHead(200, {
@@ -138,7 +138,7 @@ export function nixJsKit(options: NixJsKitViteOptions = {}): Plugin[] {
         const currentActions = Object.keys(actions).length ? actions : (actions = await scanActions(appDirPath));
 
         // Render endpoint used by the SPA router and streaming boundaries.
-        if (urlPath === "/__nix-js/render") {
+        if (urlPath === "/__elur-js/render") {
           const { renderPageBody, RouteNotFoundError } = await import("../ssr/stream.js");
           try {
             const page = requestUrl.searchParams.get("page") ?? "/";
@@ -156,7 +156,7 @@ export function nixJsKit(options: NixJsKitViteOptions = {}): Plugin[] {
             });
             if (wantsJson) {
               const headers: Record<string, string> = { "Content-Type": "application/json; charset=utf-8" };
-              if (clearActionErrorCookie) headers["X-Nix-Action-Clear-Cookie"] = clearActionErrorCookie;
+              if (clearActionErrorCookie) headers["X-Elur-Action-Clear-Cookie"] = clearActionErrorCookie;
               res.writeHead(200, headers);
               res.end(JSON.stringify({ title, body, head, clearActionErrorCookie }));
             } else {
@@ -172,7 +172,7 @@ export function nixJsKit(options: NixJsKitViteOptions = {}): Plugin[] {
               res.end("Not Found");
               return;
             }
-            console.error("[nix-js-kit] render endpoint error:", err);
+            console.error("[elur-kit] render endpoint error:", err);
             res.writeHead(500, { "Content-Type": "text/plain; charset=utf-8" });
             res.end(String(err));
             return;
@@ -199,7 +199,7 @@ export function nixJsKit(options: NixJsKitViteOptions = {}): Plugin[] {
               res.writeHead(response.status, Object.fromEntries(response.headers.entries()));
               res.end(Buffer.from(await response.arrayBuffer()));
             } catch (err) {
-              console.error("[nix-js-kit] API route error:", err);
+              console.error("[elur-kit] API route error:", err);
               res.writeHead(500, { "Content-Type": "text/plain; charset=utf-8" });
               res.end(String(err));
             }
@@ -233,11 +233,11 @@ export function nixJsKit(options: NixJsKitViteOptions = {}): Plugin[] {
   };
 
   return shouldUseLegacyInterpolation(options.interpolation ?? "auto")
-    ? [mainPlugin, nixJsInterpolationPlugin({ appDir, islandsDir })]
+    ? [mainPlugin, elurJsInterpolationPlugin({ appDir, islandsDir })]
     : [mainPlugin];
 }
 
-export { nixJsInterpolationPlugin, type InterpolationPluginOptions } from "./interpolation-plugin.js";
+export { elurJsInterpolationPlugin, type InterpolationPluginOptions } from "./interpolation-plugin.js";
 export type { InterpolationMode } from "./interpolation-plugin.js";
 export { coreSupportsPartialInterpolation, shouldUseLegacyInterpolation } from "./interpolation-plugin.js";
 
@@ -272,11 +272,11 @@ function setupHmr(
     if (mod) server.moduleGraph.invalidateModule(mod);
     if (path.startsWith(islandsDirPath)) {
       await regenerateIslandEntry();
-      console.log("[nix-js-kit] HMR reload islands after change:", path);
+      console.log("[elur-kit] HMR reload islands after change:", path);
     } else if (path.startsWith(contentDirPath) && path.endsWith(".md")) {
-      console.log("[nix-js-kit] HMR content changed:", path);
+      console.log("[elur-kit] HMR content changed:", path);
     } else if (path.includes(".action.ts") || path.includes(".data.ts") || path.includes("page.ts") || path.includes("layout.ts")) {
-      console.log("[nix-js-kit] HMR reload routes/actions after change:", path);
+      console.log("[elur-kit] HMR reload routes/actions after change:", path);
     }
   });
 
@@ -286,7 +286,7 @@ function setupHmr(
     if (path.startsWith(islandsDirPath)) {
       await regenerateIslandEntry();
     }
-    console.log("[nix-js-kit] HMR new file detected:", path);
+    console.log("[elur-kit] HMR new file detected:", path);
   });
 
   server.watcher.on("unlink", async (path) => {
@@ -297,7 +297,7 @@ function setupHmr(
     if (path.startsWith(islandsDirPath)) {
       await regenerateIslandEntry();
     }
-    console.log("[nix-js-kit] HMR file removed:", path);
+    console.log("[elur-kit] HMR file removed:", path);
   });
 }
 
@@ -402,7 +402,7 @@ async function handleSsrRequest(
       res.end(html);
       return true;
     } catch (err) {
-      console.error("[nix-js-kit] SSR render error:", err);
+      console.error("[elur-kit] SSR render error:", err);
       const errorResult = await renderErrorPage({
         routes: options.routes,
         status: 500,

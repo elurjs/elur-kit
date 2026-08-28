@@ -1,18 +1,18 @@
 {
-  "name": "@deijose/nix-js-kit",
+  "name": "@elurjs/kit",
   "version": "2.4.4",
-  "description": "Full-stack meta-framework for Nix.js — file-based routing, SSG and islands.",
+  "description": "Full-stack framework for Elur — file-based routing, SSG and islands.",
   "license": "MIT",
   "author": "Deiver Vasquez",
-  "homepage": "https://github.com/DeijoseDevelop/nix-js-kit",
+  "homepage": "https://github.com/elurjs/elur-kit",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/DeijoseDevelop/nix-js-kit.git"
+    "url": "git+https://github.com/elurjs/elur-kit.git"
   },
   "type": "module",
   "keywords": [
-    "nix-js",
-    "meta-framework",
+    "elur",
+    "framework",
     "ssg",
     "islands",
     "file-based-routing",
@@ -234,7 +234,7 @@
     "LICENSE"
   ],
   "bin": {
-    "nix-js-kit": "./bin/nix-js-kit.js"
+    "elur-kit": "./bin/elur-kit.js"
   },
   "publishConfig": {
     "access": "public"
@@ -247,7 +247,7 @@
     "poc": "bun run example/build.ts",
     "build:example": "bun run example/build.ts",
     "build:client": "vite build --config example/vite.client.config.ts",
-    "dev:example": "node bin/nix-js-kit.js dev --root example --hydrate-import ../../src/island/index.ts --client-config vite.client.config.ts",
+    "dev:example": "node bin/elur-kit.js dev --root example --hydrate-import ../../src/island/index.ts --client-config vite.client.config.ts",
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test test/**/*.test.ts",
     "test:watch": "node --import tsx --test --watch test/**/*.test.ts",
@@ -262,8 +262,8 @@
     "tsx": "^4.23.12"
   },
   "peerDependencies": {
-    "@deijose/nix-js": "^3.5.0",
-    "@deijose/vite-plugin-nix-js": "^2.0.2",
+    "@elurjs/core": "^3.5.0",
+    "@elurjs/vite-plugin-elur": "^2.0.2",
     "vite": "^7.0.0 || ^8.0.0"
   },
   "peerDependenciesMeta": {
@@ -276,12 +276,13 @@
     "sharp": {
       "optional": true
     },
-    "@deijose/vite-plugin-nix-js": {
+    "@elurjs/vite-plugin-elur": {
       "optional": true
     }
   },
   "devDependencies": {
-    "@deijose/nix-js": "../nix-js-microframework",
+    "@elurjs/core": "^3.5.0",
+    "@elurjs/vite-plugin-elur": "^2.0.2",
     "@playwright/test": "^1.62.1",
     "@types/node": "^22.20.1",
     "terser": "^5.50.0",

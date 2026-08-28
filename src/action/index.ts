@@ -3,44 +3,44 @@
  *
  * Server actions are defined in `page.action.ts` files next to `page.ts`.
  * They export async functions that run on the server. On the client, call them
- * by name using `callAction` or the higher-level `nixJsAction` helper:
+ * by name using `callAction` or the higher-level `elurJsAction` helper:
  *
  * ```ts
- * import { callAction } from "@deijose/nix-js-kit/action";
+ * import { callAction } from "@elurjs/kit/action";
  *
  * const result = await callAction("submitContact", { name: "Ada" }, { page: "/contact" });
  * ```
  *
  * ```ts
- * import { nixJsAction } from "@deijose/nix-js-kit/action";
+ * import { elurJsAction } from "@elurjs/kit/action";
  *
- * const contact = nixJsAction("submitContact", { page: "/contact" });
+ * const contact = elurJsAction("submitContact", { page: "/contact" });
  * await contact.submit({ name: "Ada" });
  * console.log(contact.data.value, contact.error.value, contact.pending.value);
  * ```
  */
 
-import { signal } from "@deijose/nix-js";
+import { signal } from "@elurjs/core";
 import { ActionFailure, RedirectResponse } from "../errors.js";
 
 interface ActionFailurePayload {
-  __nix_js_action_failure?: boolean;
+  __elur_js_action_failure?: boolean;
   status?: number;
   data?: unknown;
 }
 
 interface RedirectPayload {
-  __nix_js_action_redirect?: boolean;
+  __elur_js_action_redirect?: boolean;
   status?: number;
   location?: string;
 }
 
-function isActionFailurePayload(value: unknown): value is ActionFailurePayload & { __nix_js_action_failure: true } {
-  return typeof value === "object" && value !== null && (value as Record<string, unknown>).__nix_js_action_failure === true;
+function isActionFailurePayload(value: unknown): value is ActionFailurePayload & { __elur_js_action_failure: true } {
+  return typeof value === "object" && value !== null && (value as Record<string, unknown>).__elur_js_action_failure === true;
 }
 
-function isRedirectPayload(value: unknown): value is RedirectPayload & { __nix_js_action_redirect: true } {
-  return typeof value === "object" && value !== null && (value as Record<string, unknown>).__nix_js_action_redirect === true;
+function isRedirectPayload(value: unknown): value is RedirectPayload & { __elur_js_action_redirect: true } {
+  return typeof value === "object" && value !== null && (value as Record<string, unknown>).__elur_js_action_redirect === true;
 }
 
 export interface ActionRequest {
@@ -57,7 +57,7 @@ export interface CallActionOptions {
 /**
  * Call a server action by name.
  *
- * The request is sent as a POST to `/__nix-js/actions` with the action name,
+ * The request is sent as a POST to `/__elur-js/actions` with the action name,
  * optional page scope, and serialized arguments. The server executes the
  * matching exported function from the scanned `page.action.ts` modules and
  * returns its JSON result.
@@ -68,7 +68,7 @@ export async function callAction<T = unknown>(
   options: CallActionOptions = {},
 ): Promise<T | ActionFailure<T> | RedirectResponse> {
   const argsArray = Array.isArray(args) ? args : [args];
-  const res = await fetch("/__nix-js/actions", {
+  const res = await fetch("/__elur-js/actions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -99,7 +99,7 @@ export async function callAction<T = unknown>(
   return payload as T;
 }
 
-export interface NixJsAction<TInput = unknown, TOutput = unknown> {
+export interface ElurJsAction<TInput = unknown, TOutput = unknown> {
   /** Submit the action with the given input. */
   submit(input: TInput): Promise<TOutput | ActionFailure<TOutput> | RedirectResponse>;
   /** Signal that is true while the action is running. */
@@ -116,10 +116,10 @@ export interface NixJsAction<TInput = unknown, TOutput = unknown> {
  * Returns a `submit` function and signals for `pending`, `data`, and `error`.
  * Useful for wiring actions to forms and islands without manual signal boilerplate.
  */
-export function nixJsAction<TInput = unknown, TOutput = unknown>(
+export function elurJsAction<TInput = unknown, TOutput = unknown>(
   name: string,
   options: CallActionOptions = {},
-): NixJsAction<TInput, TOutput> {
+): ElurJsAction<TInput, TOutput> {
   const pending = signal(false);
   const error = signal<Error | null>(null);
   const data = signal<TOutput | ActionFailure<TOutput> | RedirectResponse | null>(null);

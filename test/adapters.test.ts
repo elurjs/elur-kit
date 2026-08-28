@@ -15,10 +15,10 @@ const root = resolve(__dirname, "fixtures/minimal");
 const appDir = resolve(root, "src/app");
 const outDir = resolve(root, "dist");
 const islandsDir = resolve(root, "src/islands");
-const generatedDir = resolve(root, ".nix-js");
+const generatedDir = resolve(root, ".elur");
 
 function stripMarkers(html: string): string {
-  return html.replace(/<!--nix-\d+-->/g, "").replace(/<!--nix-end-\d+-->/g, "");
+  return html.replace(/<!--elur-\d+-->/g, "").replace(/<!--elur-end-\d+-->/g, "");
 }
 
 function waitForServer(url: string, timeout = 10000): Promise<void> {
@@ -71,7 +71,7 @@ describe("adapters", () => {
       appDir: "src/app",
       outDir: "dist",
       islandsDir: "src/islands",
-      clientEntry: "/_nix-js/entry-client.js",
+      clientEntry: "/_elur/entry-client.js",
       lang: "es",
       hydrateImport: "../../../src/island/index.ts",
     });
@@ -98,7 +98,7 @@ describe("adapters", () => {
       appDir: "src/app",
       outDir: "dist",
       islandsDir: "src/islands",
-      clientEntry: "/_nix-js/entry-client.js",
+      clientEntry: "/_elur/entry-client.js",
       lang: "es",
       hydrateImport: "../../../src/island/index.ts",
     });
@@ -125,12 +125,12 @@ describe("adapters", () => {
       appDir: "src/app",
       outDir: "dist",
       islandsDir: "src/islands",
-      clientEntry: "/_nix-js/entry-client.js",
+      clientEntry: "/_elur/entry-client.js",
       lang: "es",
       hydrateImport: "../../../src/island/index.ts",
     });
 
-    const handlerPath = resolve(root, ".vercel/output/functions/__nix-js-kit.func/index.js");
+    const handlerPath = resolve(root, ".vercel/output/functions/__elur-js-kit.func/index.js");
     await stat(handlerPath);
 
     const { default: handler } = await import(handlerPath);
@@ -147,12 +147,12 @@ describe("adapters", () => {
       appDir: "src/app",
       outDir: "dist",
       islandsDir: "src/islands",
-      clientEntry: "/_nix-js/entry-client.js",
+      clientEntry: "/_elur/entry-client.js",
       lang: "es",
       hydrateImport: "../../../src/island/index.ts",
     });
 
-    const handlerPath = resolve(root, "netlify/functions/__nix-js-kit.mjs");
+    const handlerPath = resolve(root, "netlify/functions/__elur-js-kit.mjs");
     await stat(handlerPath);
 
     const { default: handler } = await import(handlerPath);
@@ -169,7 +169,7 @@ describe("adapters", () => {
       appDir: "src/app",
       outDir: "dist",
       islandsDir: "src/islands",
-      clientEntry: "/_nix-js/entry-client.js",
+      clientEntry: "/_elur/entry-client.js",
       lang: "es",
       hydrateImport: "../../../src/island/index.ts",
     });

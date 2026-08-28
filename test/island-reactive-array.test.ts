@@ -1,9 +1,9 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { Window } from "happy-dom";
-import { html, signal, computed } from "@deijose/nix-js";
-import { renderToString } from "@deijose/nix-js/server";
-import { hydrate } from "@deijose/nix-js/hydrate";
+import { html, signal, computed } from "@elurjs/core";
+import { renderToString } from "@elurjs/core/server";
+import { hydrate } from "@elurjs/core/hydrate";
 import { island } from "../src/island/island.ts";
 import { hydrateIslands, cleanupHydratedIslands } from "../src/island/hydrate.ts";
 

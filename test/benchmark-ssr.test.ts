@@ -7,7 +7,7 @@
 
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { html } from "@deijose/nix-js";
+import { html } from "@elurjs/core";
 import { renderToString } from "../src/render/render-to-string.ts";
 
 function makePage() {
@@ -37,7 +37,7 @@ function makePage() {
           </ul>
         </main>
         <footer>
-          <p>Powered by Nix.js Kit</p>
+          <p>Powered by Elur Kit</p>
         </footer>
       </body>
     </html>

@@ -49,7 +49,7 @@ describe("defineAction() (plan §9.2)", () => {
 
     // Invalid input should return ActionFailure(400).
     const badResult = await greet({ name: 123 } as unknown as { name: string }, makeCtx());
-    assert.ok(badResult && typeof badResult === "object" && "__nix_js_action_failure" in badResult);
+    assert.ok(badResult && typeof badResult === "object" && "__elur_js_action_failure" in badResult);
     assert.equal((badResult as { status: number }).status, 400);
   });
 
@@ -63,11 +63,11 @@ describe("defineAction() (plan §9.2)", () => {
       },
       async (input: string) => input,
     );
-    assert.ok(action.__nixAction, "should have __nixAction metadata");
-    assert.equal(action.__nixAction.concurrency, "queue");
-    assert.equal(action.__nixAction.idempotent, true);
-    assert.deepEqual([...action.__nixAction.invalidateTags], ["products"]);
-    assert.deepEqual([...action.__nixAction.invalidatePaths], ["/products"]);
+    assert.ok(action.__elurAction, "should have __elurAction metadata");
+    assert.equal(action.__elurAction.concurrency, "queue");
+    assert.equal(action.__elurAction.idempotent, true);
+    assert.deepEqual([...action.__elurAction.invalidateTags], ["products"]);
+    assert.deepEqual([...action.__elurAction.invalidatePaths], ["/products"]);
   });
 
   it("supports fail() return for validation errors", async () => {
@@ -81,7 +81,7 @@ describe("defineAction() (plan §9.2)", () => {
       },
     );
     const result = await submit({ email: "not-an-email" }, makeCtx());
-    assert.ok(result && typeof result === "object" && "__nix_js_action_failure" in result);
+    assert.ok(result && typeof result === "object" && "__elur_js_action_failure" in result);
     assert.equal((result as unknown as { status: number }).status, 400);
   });
 
@@ -102,7 +102,7 @@ describe("defineAction() (plan §9.2)", () => {
 
     controller.abort();
     const result = await slow(undefined as void, ctxWithSignal);
-    assert.ok(result && typeof result === "object" && "__nix_js_action_failure" in result);
+    assert.ok(result && typeof result === "object" && "__elur_js_action_failure" in result);
     assert.equal((result as unknown as { status: number }).status, 499);
   });
 
@@ -142,7 +142,7 @@ describe("defineAction() (plan §9.2)", () => {
 
   it("defaults to latest concurrency and non-idempotent", () => {
     const action = defineAction({}, async (x: number) => x);
-    assert.equal(action.__nixAction.concurrency, "latest");
-    assert.equal(action.__nixAction.idempotent, false);
+    assert.equal(action.__elurAction.concurrency, "latest");
+    assert.equal(action.__elurAction.idempotent, false);
   });
 });

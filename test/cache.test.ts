@@ -7,7 +7,7 @@ import { getCachedHtml, setCachedHtml } from "../src/cache.ts";
 
 describe("ISR filesystem cache", () => {
   it("does not collide for paths that normalize to the same legacy filename", async () => {
-    const cacheDir = await mkdtemp(join(tmpdir(), "nix-cache-"));
+    const cacheDir = await mkdtemp(join(tmpdir(), "elur-cache-"));
     try {
       await setCachedHtml(cacheDir, "/a/b", "nested", 60);
       await setCachedHtml(cacheDir, "/a_b", "underscore", 60);
@@ -19,7 +19,7 @@ describe("ISR filesystem cache", () => {
   });
 
   it("uses atomic temporary files for concurrent writes", async () => {
-    const cacheDir = await mkdtemp(join(tmpdir(), "nix-cache-"));
+    const cacheDir = await mkdtemp(join(tmpdir(), "elur-cache-"));
     try {
       await Promise.all(Array.from({ length: 20 }, (_, index) =>
         setCachedHtml(cacheDir, "/same", `value-${index}`, 60),

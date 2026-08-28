@@ -10,17 +10,17 @@ import { createSsrServer } from "./ssr/server.js";
 import { scanActions } from "./action/scan.js";
 import { scanRoutes } from "./router/route-scanner.js";
 import { incomingMessageToRequest } from "./runtime/node-http.js";
-import { loadNixConfig, type ResolvedNixConfig } from "./config/index.js";
+import { loadElurConfig, type ResolvedElurConfig } from "./config/index.js";
 import { createAppManifest, writeAppManifest, writeRouteTypes } from "./manifest/index.js";
 import { validateCapabilities } from "./runtime/capabilities.js";
 
 // --- CLI ---
 //
-// Minimal command-line interface for Nix.js Kit. Supports:
-//   nix-js-kit build   — run a production static build
-//   nix-js-kit dev     — run a dev server that rebuilds on file changes
-//   nix-js-kit preview — serve the static build in production mode
-//   nix-js-kit start   — run an SSR server that renders pages on demand
+// Minimal command-line interface for Elur Kit. Supports:
+//   elur-kit build   — run a production static build
+//   elur-kit dev     — run a dev server that rebuilds on file changes
+//   elur-kit preview — serve the static build in production mode
+//   elur-kit start   — run an SSR server that renders pages on demand
 //
 // This is intentionally small: no generators, no config file parsing, just
 // convention-based defaults overridable via CLI flags.
@@ -50,7 +50,7 @@ export interface CliOptions {
   /** Default revalidate interval in seconds for ISR. */
   defaultRevalidate?: number;
   configFile?: string;
-  resolvedConfig?: ResolvedNixConfig;
+  resolvedConfig?: ResolvedElurConfig;
 }
 
 function parseArgs(argv: string[]): CliOptions {
@@ -70,7 +70,7 @@ function parseArgs(argv: string[]): CliOptions {
     command !== "routes" &&
     command !== "doctor"
   ) {
-    throw new Error(`Usage: nix-js-kit <build|dev|preview|start|adapter|check|routes|doctor> [options]`);
+    throw new Error(`Usage: elur-kit <build|dev|preview|start|adapter|check|routes|doctor> [options]`);
   }
   const adapterName = command === "adapter" ? args[1] : undefined;
   if (
@@ -80,7 +80,7 @@ function parseArgs(argv: string[]): CliOptions {
     adapterName !== "bun" &&
     adapterName !== "node"
   ) {
-    throw new Error(`Usage: nix-js-kit adapter <vercel|netlify|bun|node> [options]`);
+    throw new Error(`Usage: elur-kit adapter <vercel|netlify|bun|node> [options]`);
   }
   const optionStart = command === "adapter" ? 2 : 1;
 
@@ -89,8 +89,8 @@ function parseArgs(argv: string[]): CliOptions {
   let islandsDir = "src/islands";
   let outDir = "dist";
   let publicDir = "public";
-  let generatedEntry = ".nix-js/entry-client.ts";
-  let clientEntry = "/_nix-js/entry-client.js";
+  let generatedEntry = ".elur/entry-client.ts";
+  let clientEntry = "/_elur/entry-client.js";
   let port = 3000;
   let host = "127.0.0.1";
   let lang = "es";
@@ -201,7 +201,7 @@ function parseArgs(argv: string[]): CliOptions {
 
 function printHelp(): void {
   console.log(`
-nix-js-kit <command> [options]
+elur-kit <command> [options]
 
 Commands:
   build            Run a static site build
@@ -225,7 +225,7 @@ Options:
   --hydrate-import <spec>   Import specifier for hydrateIslands in generated entry
   --router-import <spec>    Import specifier for startClientRouter in generated entry
   --client-config <path>    Vite config used to build the client hydration bundle
-  --config <path>           Nix config file (default: nix-js.config.ts/js/mjs)
+  --config <path>           Elur config file (default: elur.config.ts/js/mjs)
   --cache-dir <dir>         Directory for ISR cache (only used by start)
   --default-revalidate <s>  Default ISR revalidate interval in seconds
 `);
@@ -249,7 +249,7 @@ function toBuildConfig(options: CliOptions): BuildConfig {
 }
 
 async function doBuild(options: CliOptions): Promise<void> {
-  const transformedRoot = join(options.root, ".nix-js", "transformed");
+  const transformedRoot = join(options.root, ".elur", "transformed");
   const transformedAppDir = transformedAppDirOf(options.root, options.appDir, options.islandsDir, transformedRoot);
   await transformProjectFiles({
     root: options.root,
@@ -276,13 +276,13 @@ async function doBuild(options: CliOptions): Promise<void> {
     if (options.resolvedConfig) {
       try {
         const manifest = await createAppManifest(options.resolvedConfig);
-        const manifestPath = join(tempOutDir, ".nix-js", "manifest.json");
+        const manifestPath = join(tempOutDir, ".elur", "manifest.json");
         await writeAppManifest(manifest, manifestPath);
-        const typesPath = join(options.root, ".nix-js", "routes.d.ts");
+        const typesPath = join(options.root, ".elur", "routes.d.ts");
         await writeRouteTypes(manifest, typesPath);
-        console.log(`  - manifest: ${relative(options.root, join(options.outDir, ".nix-js", "manifest.json"))}`);
+        console.log(`  - manifest: ${relative(options.root, join(options.outDir, ".elur", "manifest.json"))}`);
       } catch (err) {
-        console.warn("[nix-js-kit] manifest generation failed:", err);
+        console.warn("[elur-kit] manifest generation failed:", err);
       }
     }
 
@@ -331,12 +331,12 @@ async function doBuild(options: CliOptions): Promise<void> {
   }
 }
 
-const DEV_WORKER_ENV = "NIX_JS_KIT_DEV_WORKER";
+const DEV_WORKER_ENV = "ELUR_JS_KIT_DEV_WORKER";
 
 async function doDev(options: CliOptions): Promise<void> {
   await doBuild(options);
 
-  const transformedRoot = join(options.root, ".nix-js", "transformed");
+  const transformedRoot = join(options.root, ".elur", "transformed");
   const transformedAppDir = transformedAppDirOf(options.root, options.appDir, options.islandsDir, transformedRoot);
   await transformProjectFiles({
     root: options.root,
@@ -461,13 +461,13 @@ export async function doPreview(options: CliOptions): Promise<import("node:http"
     const code = (err as NodeJS.ErrnoException).code;
     if (code === "ENOENT") {
       throw new Error(
-        `No build output found at ${options.outDir}. Run \`nix-js-kit build\` first.`,
+        `No build output found at ${options.outDir}. Run \`elur-kit build\` first.`,
       );
     }
     throw err;
   }
 
-  const transformedRoot = join(options.root, ".nix-js", "preview-transformed");
+  const transformedRoot = join(options.root, ".elur", "preview-transformed");
   const transformedAppDir = transformedAppDirOf(options.root, options.appDir, options.islandsDir, transformedRoot);
   await transformProjectFiles({
     root: options.root,
@@ -486,7 +486,7 @@ export async function doPreview(options: CliOptions): Promise<import("node:http"
 }
 
 async function doStart(options: CliOptions): Promise<void> {
-  const transformedRoot = join(options.root, ".nix-js", "transformed");
+  const transformedRoot = join(options.root, ".elur", "transformed");
   const transformedAppDir = transformedAppDirOf(options.root, options.appDir, options.islandsDir, transformedRoot);
   await transformProjectFiles({
     root: options.root,
@@ -529,11 +529,11 @@ async function buildClient(options: CliOptions): Promise<void> {
   // This avoids child-process overhead, shares the module cache, and gives us
   // structured errors instead of exit-code parsing.
   const { buildClientBundle } = await import("./build/vite-build.js");
-  const clientOutDir = join(options.outDir, "_nix-js");
-  // The client bundle is always served from /_nix-js/ regardless of the
+  const clientOutDir = join(options.outDir, "_elur");
+  // The client bundle is always served from /_elur/ regardless of the
   // project's deployment base. The deployment base is applied to page HTML,
   // not to the internal hydration bundle path.
-  const clientBase = "/_nix-js/";
+  const clientBase = "/_elur/";
   await buildClientBundle({
     root: options.root,
     userConfigPath: resolve(options.clientConfig),
@@ -583,7 +583,7 @@ async function handleRequest(
   try {
     response = await webHandler(request);
   } catch (err) {
-    console.error("[nix-js-kit] request error:", err);
+    console.error("[elur-kit] request error:", err);
     res.writeHead(500, { "Content-Type": "text/plain; charset=utf-8" });
     res.end("Internal Server Error");
     return;
@@ -630,17 +630,17 @@ async function doAdapter(options: CliOptions): Promise<void> {
     const { netlifyAdapter } = await import("./adapters/netlify.js");
     assertCapabilities(netlifyAdapter, features, adapterName);
     await netlifyAdapter.build(adapterOptions);
-    console.log("\n  → Netlify output generated at netlify/functions/__nix-js-kit.mjs");
+    console.log("\n  → Netlify output generated at netlify/functions/__elur-js-kit.mjs");
   } else if (adapterName === "bun") {
     const { bunAdapter } = await import("./adapters/bun.js");
     assertCapabilities(bunAdapter, features, adapterName);
     await bunAdapter.build(adapterOptions);
-    console.log("\n  → Bun server generated at .nix-js/bun-server.ts");
+    console.log("\n  → Bun server generated at .elur/bun-server.ts");
   } else if (adapterName === "node") {
     const { nodeAdapter } = await import("./adapters/node.js");
     assertCapabilities(nodeAdapter, features, adapterName);
     await nodeAdapter.build(adapterOptions);
-    console.log("\n  → Node server generated at .nix-js/node-server.mjs");
+    console.log("\n  → Node server generated at .elur/node-server.mjs");
   }
 }
 
@@ -653,7 +653,7 @@ function assertCapabilities(
   const diagnostics = validateCapabilities(adapter.capabilities, features);
   if (!diagnostics.ok) {
     throw new Error(
-      `[nix-js-kit] Adapter "${adapterName}" cannot satisfy the requested features:\n  - ${diagnostics.problems.join("\n  - ")}`,
+      `[elur-kit] Adapter "${adapterName}" cannot satisfy the requested features:\n  - ${diagnostics.problems.join("\n  - ")}`,
     );
   }
 }
@@ -663,7 +663,7 @@ async function applyProjectConfig(options: CliOptions, argv: string[]): Promise<
   const command = (options.command === "adapter" || options.command === "routes" || options.command === "doctor")
     ? "build"
     : options.command;
-  const config = await loadNixConfig({
+  const config = await loadElurConfig({
     root: options.root,
     configFile: options.configFile,
     command,
@@ -677,7 +677,7 @@ async function applyProjectConfig(options: CliOptions, argv: string[]): Promise<
   if (!has("--public")) options.publicDir = config.publicDir;
   if (!has("--cache-dir")) options.cacheDir = config.cache.dir;
   if (!has("--default-revalidate")) options.defaultRevalidate = config.cache.defaultRevalidate;
-  options.generatedEntry = resolve(config.root, ".nix-js/entry-client.ts");
+  options.generatedEntry = resolve(config.root, ".elur/entry-client.ts");
   options.resolvedConfig = config;
 }
 

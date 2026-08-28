@@ -203,7 +203,7 @@ describe("image service: validateManifestUrls", () => {
 describe("image service: processImageBatch without sharp", () => {
   const publicDir = join(tempRoot, "public");
   const outDir = join(tempRoot, "out");
-  const manifestPath = join(outDir, ".nix-js", "image-manifest.json");
+  const manifestPath = join(outDir, ".elur", "image-manifest.json");
 
   before(async () => {
     await mkdir(publicDir, { recursive: true });

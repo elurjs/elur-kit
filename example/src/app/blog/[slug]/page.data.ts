@@ -1,4 +1,4 @@
-import type { PageDataLoad, LoadContext } from "@deijose/nix-js-kit";
+import type { PageDataLoad, LoadContext } from "@elurjs/kit";
 
 export interface PostData {
   title: string;

@@ -17,7 +17,7 @@ export interface RedisCacheAdapterOptions {
    * Compatible with node-redis, ioredis, and Upstash.
    */
   client: RedisClient;
-  /** Key prefix to namespace cache entries. Default: "nix-kit:". */
+  /** Key prefix to namespace cache entries. Default: "elur-kit:". */
   prefix?: string;
 }
 
@@ -33,7 +33,7 @@ export interface RedisClient {
 
 export function createRedisCacheAdapter(options: RedisCacheAdapterOptions): CacheAdapter {
   const client = options.client;
-  const prefix = options.prefix ?? "nix-kit:";
+  const prefix = options.prefix ?? "elur-kit:";
 
   const dataKey = (key: string) => `${prefix}data:${key}`;
   const tagKey = (tag: string) => `${prefix}tag:${tag}`;
@@ -121,7 +121,7 @@ export interface CloudflareKVAdapterOptions {
    * Must implement `get`, `put`, and `delete` methods.
    */
   namespace: CloudflareKVNamespace;
-  /** Key prefix to namespace cache entries. Default: "nix-kit:". */
+  /** Key prefix to namespace cache entries. Default: "elur-kit:". */
   prefix?: string;
 }
 
@@ -134,7 +134,7 @@ export interface CloudflareKVNamespace {
 
 export function createCloudflareKVCacheAdapter(options: CloudflareKVAdapterOptions): CacheAdapter {
   const kv = options.namespace;
-  const prefix = options.prefix ?? "nix-kit:";
+  const prefix = options.prefix ?? "elur-kit:";
 
   const dataKey = (key: string) => `${prefix}data:${key}`;
   const tagKey = (tag: string) => `${prefix}tag:${tag}`;

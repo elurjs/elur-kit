@@ -15,9 +15,9 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { RequestContext, type RouteTable } from "../src/runtime/context.ts";
-import type { ResolvedNixConfig } from "../src/config/index.ts";
+import type { ResolvedElurConfig } from "../src/config/index.ts";
 
-function makeConfig(): ResolvedNixConfig {
+function makeConfig(): ResolvedElurConfig {
   return {
     root: "/tmp/test",
     appDir: "src/app",
@@ -31,11 +31,11 @@ function makeConfig(): ResolvedNixConfig {
     output: "server",
     adapter: undefined,
     images: {},
-    cache: { dir: ".nix-js/cache", defaultRevalidate: 60 },
+    cache: { dir: ".elur/cache", defaultRevalidate: 60 },
     security: { headers: true },
     router: { redirects: [], rewrites: [], headers: [] },
     integrations: [],
-  } as unknown as ResolvedNixConfig;
+  } as unknown as ResolvedElurConfig;
 }
 
 function makeRoutes(): RouteTable {

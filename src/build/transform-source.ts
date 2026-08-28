@@ -15,7 +15,7 @@ export interface TransformProjectOptions {
   outDir: string;
   /**
    * How the legacy interpolation transform is handled (default: "auto").
-   * With a Nix.js core that supports partial attribute interpolation natively
+   * With a Elur core that supports partial attribute interpolation natively
    * the transform is not applied; use "legacy" for migrations against older
    * cores and "off" to never transform.
    */
@@ -24,7 +24,7 @@ export interface TransformProjectOptions {
 
 /**
  * Copy app (and optionally islands) source files to a transformed directory,
- * rewriting partial Nix.js attribute interpolations so they can be imported
+ * rewriting partial Elur attribute interpolations so they can be imported
  * by the SSG/SSR build without requiring manual syntax changes.
  */
 async function collectTsFiles(dir: string): Promise<string[]> {

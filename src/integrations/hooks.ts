@@ -1,7 +1,7 @@
 // --- Integration hooks for optional packages (plan §11.6) ---
 //
-// These hooks allow optional packages (nix-i18n, nix-js-auth, nix-query,
-// nix-js-testing) to integrate with the Kit runtime without being a
+// These hooks allow optional packages (elur-i18n, elur-auth, elur-query,
+// elur-testing) to integrate with the Kit runtime without being a
 // dependency. The Kit calls these hooks at well-defined points; integrations
 // register themselves via `registerIntegration()`.
 //
@@ -11,9 +11,9 @@
 //   - Integrations register via the public API.
 //   - Missing integrations are silently skipped (no error).
 
-import type { NixKitIntegration } from "./index.js";
+import type { ElurKitIntegration } from "./index.js";
 
-// i18n hooks (nix-i18n)
+// i18n hooks (elur-i18n)
 
 export interface I18nIntegration {
   /** Extracts the locale from a request (e.g. from URL, cookie, Accept-Language). */
@@ -24,7 +24,7 @@ export interface I18nIntegration {
   translate(key: string, locale: string, params?: Record<string, unknown>): string;
 }
 
-// Auth hooks (nix-js-auth)
+// Auth hooks (elur-auth)
 
 export interface AuthIntegration {
   /** Extracts the user/session from a request and populates locals. */
@@ -33,7 +33,7 @@ export interface AuthIntegration {
   seedSSR(locals: Record<string, unknown>): Record<string, unknown>;
 }
 
-// Query hooks (nix-query)
+// Query hooks (elur-query)
 
 export interface QueryIntegration {
   /** Dehydrates query cache for SSR serialization. */
@@ -44,7 +44,7 @@ export interface QueryIntegration {
   invalidate(tags: readonly string[], keys?: readonly string[]): void | Promise<void>;
 }
 
-// Testing hooks (nix-js-testing)
+// Testing hooks (elur-testing)
 
 export interface TestingIntegration {
   /** Creates a test request fixture. */
@@ -62,7 +62,7 @@ interface IntegrationRegistry {
   auth?: AuthIntegration;
   query?: QueryIntegration;
   testing?: TestingIntegration;
-  custom: NixKitIntegration[];
+  custom: ElurKitIntegration[];
 }
 
 const registry: IntegrationRegistry = { custom: [] };
@@ -89,14 +89,14 @@ export function registerIntegration(
 ): void;
 export function registerIntegration(
   type: "custom",
-  integration: NixKitIntegration,
+  integration: ElurKitIntegration,
 ): void;
 export function registerIntegration(
   type: keyof IntegrationRegistry,
   integration: unknown,
 ): void {
   if (type === "custom") {
-    registry.custom.push(integration as NixKitIntegration);
+    registry.custom.push(integration as ElurKitIntegration);
   } else {
     (registry as unknown as Record<string, unknown>)[type] = integration;
   }
@@ -123,7 +123,7 @@ export function getTestingIntegration(): TestingIntegration | undefined {
 }
 
 /** Gets all registered custom integrations. */
-export function getCustomIntegrations(): readonly NixKitIntegration[] {
+export function getCustomIntegrations(): readonly ElurKitIntegration[] {
   return registry.custom;
 }
 

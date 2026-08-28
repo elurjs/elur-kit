@@ -2,7 +2,7 @@
 //
 // Server actions accept POST requests from the browser. Without origin
 // verification, any third-party site could submit forged requests to
-// `/__nix-js/actions` on behalf of a logged-in user (CSRF).
+// `/__elur-js/actions` on behalf of a logged-in user (CSRF).
 //
 // Strategy: compare the request's `Origin` (or `Referer` fallback) host against
 // the target `Host` header. Same-origin requests pass; cross-origin requests

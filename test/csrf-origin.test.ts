@@ -24,43 +24,43 @@ const CROSS_ORIGIN = "http://evil.com";
 
 describe("CSRF: same-origin (A-07)", () => {
   it("accepts when Origin matches target", () => {
-    const req = makeRequest(`${TARGET}/__nix-js/actions`, { Origin: TARGET });
+    const req = makeRequest(`${TARGET}/__elur-js/actions`, { Origin: TARGET });
     assert.equal(verifyOrigin(req), undefined);
   });
 
   it("accepts when Referer matches target", () => {
-    const req = makeRequest(`${TARGET}/__nix-js/actions`, { Referer: `${TARGET}/some-page` });
+    const req = makeRequest(`${TARGET}/__elur-js/actions`, { Referer: `${TARGET}/some-page` });
     assert.equal(verifyOrigin(req), undefined);
   });
 
   it("accepts when Origin matches with different path", () => {
-    const req = makeRequest(`${TARGET}/__nix-js/actions`, { Origin: `${TARGET}/some-path` });
+    const req = makeRequest(`${TARGET}/__elur-js/actions`, { Origin: `${TARGET}/some-path` });
     assert.equal(verifyOrigin(req), undefined);
   });
 });
 
 describe("CSRF: cross-origin (A-07)", () => {
   it("rejects when Origin is different host", () => {
-    const req = makeRequest(`${TARGET}/__nix-js/actions`, { Origin: CROSS_ORIGIN });
+    const req = makeRequest(`${TARGET}/__elur-js/actions`, { Origin: CROSS_ORIGIN });
     const result = verifyOrigin(req);
     assert.ok(result, "should reject cross-origin");
     assert.ok(result!.includes("Cross-origin"));
   });
 
   it("rejects when Referer is different host", () => {
-    const req = makeRequest(`${TARGET}/__nix-js/actions`, { Referer: `${CROSS_ORIGIN}/page` });
+    const req = makeRequest(`${TARGET}/__elur-js/actions`, { Referer: `${CROSS_ORIGIN}/page` });
     const result = verifyOrigin(req);
     assert.ok(result, "should reject cross-origin Referer");
   });
 
   it("rejects when Origin has different port", () => {
-    const req = makeRequest(`${TARGET}/__nix-js/actions`, { Origin: "http://localhost:8080" });
+    const req = makeRequest(`${TARGET}/__elur-js/actions`, { Origin: "http://localhost:8080" });
     const result = verifyOrigin(req);
     assert.ok(result, "should reject different port");
   });
 
   it("rejects when Origin has different protocol", () => {
-    const req = makeRequest(`${TARGET}/__nix-js/actions`, { Origin: "https://localhost:3000" });
+    const req = makeRequest(`${TARGET}/__elur-js/actions`, { Origin: "https://localhost:3000" });
     const result = verifyOrigin(req);
     assert.ok(result, "should reject different protocol");
   });
@@ -68,12 +68,12 @@ describe("CSRF: cross-origin (A-07)", () => {
 
 describe("CSRF: missing headers (A-07)", () => {
   it("accepts when both Origin and Referer are missing (default)", () => {
-    const req = makeRequest(`${TARGET}/__nix-js/actions`);
+    const req = makeRequest(`${TARGET}/__elur-js/actions`);
     assert.equal(verifyOrigin(req), undefined);
   });
 
   it("rejects when both missing and strictOrigin is true", () => {
-    const req = makeRequest(`${TARGET}/__nix-js/actions`);
+    const req = makeRequest(`${TARGET}/__elur-js/actions`);
     const opts: OriginCheckOptions = { strictOrigin: true };
     const result = verifyOrigin(req, opts);
     assert.ok(result, "should reject missing headers in strict mode");
@@ -83,20 +83,20 @@ describe("CSRF: missing headers (A-07)", () => {
 
 describe("CSRF: allow-list (A-07)", () => {
   it("accepts cross-origin when in allowedOrigins", () => {
-    const req = makeRequest(`${TARGET}/__nix-js/actions`, { Origin: "http://preview.example.com" });
+    const req = makeRequest(`${TARGET}/__elur-js/actions`, { Origin: "http://preview.example.com" });
     const opts: OriginCheckOptions = { allowedOrigins: ["http://preview.example.com"] };
     assert.equal(verifyOrigin(req, opts), undefined);
   });
 
   it("rejects cross-origin when not in allowedOrigins", () => {
-    const req = makeRequest(`${TARGET}/__nix-js/actions`, { Origin: CROSS_ORIGIN });
+    const req = makeRequest(`${TARGET}/__elur-js/actions`, { Origin: CROSS_ORIGIN });
     const opts: OriginCheckOptions = { allowedOrigins: ["http://preview.example.com"] };
     const result = verifyOrigin(req, opts);
     assert.ok(result, "should reject origin not in allow-list");
   });
 
   it("accepts multiple allowed origins", () => {
-    const req = makeRequest(`${TARGET}/__nix-js/actions`, { Origin: "http://staging.example.com" });
+    const req = makeRequest(`${TARGET}/__elur-js/actions`, { Origin: "http://staging.example.com" });
     const opts: OriginCheckOptions = {
       allowedOrigins: ["http://preview.example.com", "http://staging.example.com"],
     };
@@ -106,21 +106,21 @@ describe("CSRF: allow-list (A-07)", () => {
 
 describe("CSRF: invalid headers (A-07)", () => {
   it("rejects invalid Origin header", () => {
-    const req = makeRequest(`${TARGET}/__nix-js/actions`, { Origin: "not-a-url" });
+    const req = makeRequest(`${TARGET}/__elur-js/actions`, { Origin: "not-a-url" });
     const result = verifyOrigin(req);
     assert.ok(result, "should reject invalid Origin");
     assert.ok(result!.includes("Invalid Origin"));
   });
 
   it("rejects invalid Referer header", () => {
-    const req = makeRequest(`${TARGET}/__nix-js/actions`, { Referer: "not-a-url" });
+    const req = makeRequest(`${TARGET}/__elur-js/actions`, { Referer: "not-a-url" });
     const result = verifyOrigin(req);
     assert.ok(result, "should reject invalid Referer");
     assert.ok(result!.includes("Invalid Referer"));
   });
 
   it("rejects non-HTTP protocol in Origin", () => {
-    const req = makeRequest(`${TARGET}/__nix-js/actions`, { Origin: "file:///etc/passwd" });
+    const req = makeRequest(`${TARGET}/__elur-js/actions`, { Origin: "file:///etc/passwd" });
     const result = verifyOrigin(req);
     assert.ok(result, "should reject file:// protocol");
   });
@@ -136,14 +136,14 @@ describe("CSRF: originForbidden response (A-07)", () => {
 
 describe("CSRF: Sec-Fetch-Site (A-07)", () => {
   it("accepts when Sec-Fetch-Site is same-origin", () => {
-    const req = makeRequest(`${TARGET}/__nix-js/actions`, {
+    const req = makeRequest(`${TARGET}/__elur-js/actions`, {
       "Sec-Fetch-Site": "same-origin",
     });
     assert.equal(verifyOrigin(req), undefined);
   });
 
   it("rejects when Sec-Fetch-Site is cross-site", () => {
-    const req = makeRequest(`${TARGET}/__nix-js/actions`, {
+    const req = makeRequest(`${TARGET}/__elur-js/actions`, {
       "Sec-Fetch-Site": "cross-site",
     });
     // Sec-Fetch-Site: cross-site without Origin/Referer should be rejected
@@ -155,7 +155,7 @@ describe("CSRF: Sec-Fetch-Site (A-07)", () => {
   });
 
   it("accepts when Sec-Fetch-Site is none (non-browser)", () => {
-    const req = makeRequest(`${TARGET}/__nix-js/actions`, {
+    const req = makeRequest(`${TARGET}/__elur-js/actions`, {
       "Sec-Fetch-Site": "none",
     });
     assert.equal(verifyOrigin(req), undefined);

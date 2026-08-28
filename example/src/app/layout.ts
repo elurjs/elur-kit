@@ -1,4 +1,4 @@
-import { html } from "@deijose/nix-js";
+import { html } from "@elurjs/core";
 import type { LayoutProps } from "../../../src/index.ts";
 
 export default function RootLayout({ children }: LayoutProps) {
@@ -11,7 +11,7 @@ export default function RootLayout({ children }: LayoutProps) {
         <a href="/features">Features</a>
       </header>
       <main>${children}</main>
-      <footer>Nix Kit v0.1</footer>
+      <footer>Elur Kit v0.1</footer>
     </div>
   `;
 }

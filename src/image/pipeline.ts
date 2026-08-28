@@ -66,7 +66,7 @@ export async function processImages(
   const sharp = await loadSharp();
   if (!sharp) {
     console.warn(
-      "[nix-js-kit] Image optimization requires `sharp`. Install it with:\n" +
+      "[elur-kit] Image optimization requires `sharp`. Install it with:\n" +
       "  npm install sharp\n" +
       "  # or\n" +
       "  bun add sharp\n" +
@@ -85,7 +85,7 @@ export async function processImages(
       await stat(sourcePath);
     } catch {
       if (!warned) {
-        console.warn(`[nix-js-kit] Image not found: ${sourcePath}. Skipping.`);
+        console.warn(`[elur-kit] Image not found: ${sourcePath}. Skipping.`);
         warned = true;
       }
       continue;
@@ -114,7 +114,7 @@ export async function processImages(
             .toFile(variantAbsPath);
           variants.push({ path: variantRelPath, width, format });
         } catch (err) {
-          console.warn(`[nix-js-kit] Failed to generate ${variantName}:`, err);
+          console.warn(`[elur-kit] Failed to generate ${variantName}:`, err);
         }
       }
     }

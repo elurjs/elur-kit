@@ -1,4 +1,4 @@
-import type { NixTemplate } from "@deijose/nix-js";
+import type { ElurTemplate } from "@elurjs/core";
 import { renderToString } from "../render/render-to-string.js";
 import { documentShell, buildHeadTags } from "../build/document-shell.js";
 import type { PageRoute, ScannedRoutes } from "../router/route-scanner.js";
@@ -80,7 +80,7 @@ export async function renderPage(options: RenderPageOptions): Promise<RenderPage
   const { route, params = {}, searchParams = new URLSearchParams(), config, importer = defaultImport, actions, request } = options;
 
   const pageModule = await importer(route.pagePath) as {
-    default: (props: PageProps<unknown>) => NixTemplate;
+    default: (props: PageProps<unknown>) => ElurTemplate;
     generateMetadata?: GenerateMetadata;
   };
   const { default: PageComponent, generateMetadata } = pageModule;
@@ -137,7 +137,7 @@ export async function renderPage(options: RenderPageOptions): Promise<RenderPage
     if (match) {
       const decoded = decodeActionErrorCookie(match[1]);
       if (decoded) {
-        form = { __nix_js_action_error: true, status: decoded.status, data: decoded.data };
+        form = { __elur_js_action_error: true, status: decoded.status, data: decoded.data };
         clearActionErrorCookie = `${ACTION_ERROR_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`;
       }
     }
@@ -180,11 +180,11 @@ export async function renderPage(options: RenderPageOptions): Promise<RenderPage
   }
 
   // Load slot modules if the route has them (v2.1 — Fix #2: Layout Slots).
-  let slotTemplates: Record<string, NixTemplate> | undefined;
+  let slotTemplates: Record<string, ElurTemplate> | undefined;
   if (route.slots) {
     slotTemplates = {};
     for (const [slotName, slotPath] of Object.entries(route.slots)) {
-      const slotMod = await importer(slotPath) as { default: (props: PageProps<unknown>) => NixTemplate };
+      const slotMod = await importer(slotPath) as { default: (props: PageProps<unknown>) => ElurTemplate };
       slotTemplates[slotName] = slotMod.default(props);
     }
   }
@@ -193,7 +193,7 @@ export async function renderPage(options: RenderPageOptions): Promise<RenderPage
     let template = PageComponent(props);
     for (let i = layoutModules.length - 1; i >= 0; i--) {
       const { default: Layout } = layoutModules[i] as {
-        default: (props: { children: NixTemplate; data?: unknown; slots?: Record<string, NixTemplate> }) => NixTemplate;
+        default: (props: { children: ElurTemplate; data?: unknown; slots?: Record<string, ElurTemplate> }) => ElurTemplate;
       };
       template = Layout({ children: template, data: layoutDataList[i], slots: slotTemplates });
     }
@@ -201,8 +201,8 @@ export async function renderPage(options: RenderPageOptions): Promise<RenderPage
   });
 
   const title = typeof data === "object" && data && "title" in data
-    ? String((data as { title?: unknown }).title ?? "Nix.js Kit")
-    : "Nix.js Kit";
+    ? String((data as { title?: unknown }).title ?? "Elur Kit")
+    : "Elur Kit";
 
   const { htmlAttributes, headScripts, headLinks } = collectShellExtras(data, layoutDataList);
 

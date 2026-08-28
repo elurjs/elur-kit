@@ -6,7 +6,7 @@
 //
 // Collections are defined in `src/content/config.ts`:
 //
-//   import { defineCollection } from "@deijose/nix-js-kit/content";
+//   import { defineCollection } from "@elurjs/kit/content";
 //   export const collections = {
 //     blog: defineCollection({ schema: z.object({ title: z.string() }) }),
 //   };
@@ -121,7 +121,7 @@ async function loadCollectionsConfig(root: string): Promise<CollectionsConfig | 
     configCache.set(cacheKey, config);
     return config;
   } catch (err) {
-    console.warn("[nix-js-kit] Failed to load content config:", err);
+    console.warn("[elur-kit] Failed to load content config:", err);
     configCache.set(cacheKey, null);
     return null;
   }
@@ -199,7 +199,7 @@ export async function getCollection<TData = Record<string, unknown>>(
 ): Promise<ContentEntry<TData>[]> {
   // Containment check: reject names that could escape the content root.
   if (!isValidCollectionName(name)) {
-    throw new Error(`[nix-js-kit] Invalid collection name: "${name}". Collection names must be alphanumeric with hyphens/underscores only.`);
+    throw new Error(`[elur-kit] Invalid collection name: "${name}". Collection names must be alphanumeric with hyphens/underscores only.`);
   }
 
   const root = resolveContentRoot();
@@ -209,7 +209,7 @@ export async function getCollection<TData = Record<string, unknown>>(
   const resolvedDir = resolve(collectionDir);
   const resolvedRoot = resolve(root);
   if (!resolvedDir.startsWith(resolvedRoot + "/") && resolvedDir !== resolvedRoot) {
-    throw new Error(`[nix-js-kit] Collection "${name}" escapes the content root.`);
+    throw new Error(`[elur-kit] Collection "${name}" escapes the content root.`);
   }
 
   const cached = collectionCache.get(`${root}:${name}`);

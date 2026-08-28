@@ -6,7 +6,7 @@ import { mkdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
-const APP_DIR = join(tmpdir(), `nix-route-test-${Date.now()}`);
+const APP_DIR = join(tmpdir(), `elur-route-test-${Date.now()}`);
 
 before(async () => {
   await mkdir(join(APP_DIR, "blog", "[slug]"), { recursive: true });
@@ -69,7 +69,7 @@ describe("route scanner: URL decoding (plan §11.1, §10)", () => {
 
 describe("route scanner: conflict detection (plan §11.1)", () => {
   it("throws on duplicate page routes with the same path", async () => {
-    const conflictDir = join(tmpdir(), `nix-conflict-test-${Date.now()}`);
+    const conflictDir = join(tmpdir(), `elur-conflict-test-${Date.now()}`);
     await mkdir(join(conflictDir, "page"), { recursive: true });
     await mkdir(join(conflictDir, "(group)"), { recursive: true });
     await mkdir(join(conflictDir, "(group)", "page"), { recursive: true });

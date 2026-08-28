@@ -3,7 +3,7 @@ title: Hello World
 date: 2026-08-15
 tags:
   - intro
-  - nix-js
+  - elur
 draft: false
 ---
 

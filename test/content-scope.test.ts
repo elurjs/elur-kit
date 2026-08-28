@@ -5,8 +5,8 @@ import { mkdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
-const CONTENT_ROOT_A = join(tmpdir(), `nix-content-a-${Date.now()}`);
-const CONTENT_ROOT_B = join(tmpdir(), `nix-content-b-${Date.now()}`);
+const CONTENT_ROOT_A = join(tmpdir(), `elur-content-a-${Date.now()}`);
+const CONTENT_ROOT_B = join(tmpdir(), `elur-content-b-${Date.now()}`);
 
 before(async () => {
   await mkdir(join(CONTENT_ROOT_A, "blog"), { recursive: true });

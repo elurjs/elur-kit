@@ -2,7 +2,7 @@ import { mkdir, rm, rename, stat, cp, access } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join, resolve, dirname, relative } from "node:path";
 import { build as viteBuild, type InlineConfig, type PluginOption } from "vite";
-import { nixJsInterpolationPlugin, shouldUseLegacyInterpolation, type InterpolationMode } from "../vite/interpolation-plugin.js";
+import { elurJsInterpolationPlugin, shouldUseLegacyInterpolation, type InterpolationMode } from "../vite/interpolation-plugin.js";
 
 // --- Programmatic Vite build orchestration ---
 //
@@ -32,7 +32,7 @@ export interface ClientBuildOptions {
   logPrefix?: string;
   /**
    * How the legacy interpolation transform is handled (default: "auto").
-   * With a Nix.js core that supports partial attribute interpolation natively
+   * With a Elur core that supports partial attribute interpolation natively
    * the transform is not applied; use "legacy" for migrations against older
    * cores and "off" to never transform.
    */
@@ -49,7 +49,7 @@ export interface ClientBuildResult {
 /**
  * Build the client hydration bundle using the Vite JavaScript API.
  *
- * The user's config is loaded programmatically and the nix-js interpolation
+ * The user's config is loaded programmatically and the elur interpolation
  * plugin is injected so partial attribute interpolations inside islands are
  * transformed before reaching the browser.
  */
@@ -59,7 +59,7 @@ export async function buildClientBundle(options: ClientBuildOptions): Promise<Cl
 
   const userConfig = await loadUserConfig(options.userConfigPath, options.root);
   const pluginOptions: PluginOption = shouldUseLegacyInterpolation(options.interpolation ?? "auto")
-    ? nixJsInterpolationPlugin({
+    ? elurJsInterpolationPlugin({
         appDir: options.appDir,
         islandsDir: options.islandsDir,
       })

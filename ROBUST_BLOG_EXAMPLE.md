@@ -1,8 +1,8 @@
-# Resumen: ejemplo robusto de Nix.js Kit
+# Resumen: ejemplo robusto de Elur Kit
 
 Este documento describe los ajustes realizados para convertir el blog de ejemplo en una aplicación full-stack real con SQLite, autenticación, middleware, validación y server/client actions.
 
-## 1. Cambios en `nix-js-kit` (framework)
+## 1. Cambios en `elur-kit` (framework)
 
 ### Nuevas capacidades
 
@@ -55,7 +55,7 @@ Este documento describe los ajustes realizados para convertir el blog de ejemplo
 - `src/islands/CreatePostForm.ts`: formulario admin para crear posts.
 - `src/islands/CommentForm.ts`: envía comentarios a la API.
 - `src/islands/LikeButton.ts`: like por API sin actions.
-- `src/islands/ClientSearch.ts`: búsqueda client-side con `nix-query` y `/api/posts`.
+- `src/islands/ClientSearch.ts`: búsqueda client-side con `elur-query` y `/api/posts`.
 - `src/islands/ContactForm.ts` / `NewsletterForm.ts`: usan server actions con Zod.
 - `src/app/contact/page.action.ts`: valida con Zod y guarda en DB.
 
@@ -71,14 +71,14 @@ Este documento describe los ajustes realizados para convertir el blog de ejemplo
 Desde `blog-example`:
 
 ```bash
-rm -rf data .nix-js
-bun /ruta/a/nix-js-kit/bin/nix-js-kit.js dev --port 3000 --host 127.0.0.1
+rm -rf data .elur
+bun /ruta/a/elur-kit/bin/elur-kit.js dev --port 3000 --host 127.0.0.1
 ```
 
 La app requiere **Bun** porque usa `bun:sqlite`. No funciona con Node.js puro.
 
 ## 4. Pendientes / notas
 
-- Durante el build estático (`nix-js-kit build`) los loaders reciben `request` como `undefined`; `getAuthContext` ahora maneja ese caso devolviendo un usuario no autenticado.
-- `blog-example` no está bajo control de versiones en este workspace; solo se subió a GitHub el framework `nix-js-kit`.
+- Durante el build estático (`elur-kit build`) los loaders reciben `request` como `undefined`; `getAuthContext` ahora maneja ese caso devolviendo un usuario no autenticado.
+- `blog-example` no está bajo control de versiones en este workspace; solo se subió a GitHub el framework `elur-kit`.
 - El servidor dev quedó validando la integración de layout data + auth; se recomienda revisar con las credenciales de prueba.

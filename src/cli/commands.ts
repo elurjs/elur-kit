@@ -164,9 +164,9 @@ export async function doDoctor(options: CliOptions): Promise<number> {
     results.push(await checkExists("Public directory", options.publicDir, "Create public/ for static assets", "warn"));
   }
 
-  // Check 4: nix-js.config.ts exists (optional)
-  const preferredPaths = ["nix-js.config.ts", "nix-js.config.js", "nix-js.config.mjs"];
-  const legacyPaths = ["nix.config.ts", "nix.config.js", "nix.config.mjs"];
+  // Check 4: elur.config.ts exists (optional)
+  const preferredPaths = ["elur.config.ts", "elur.config.js", "elur.config.mjs"];
+  const legacyPaths = ["elur.config.ts", "elur.config.js", "elur.config.mjs"];
   let configFound = false;
   let foundName: string | undefined;
   let isLegacy = false;
@@ -197,17 +197,17 @@ export async function doDoctor(options: CliOptions): Promise<number> {
     results.push({
       name: "Config file",
       status: isLegacy ? "warn" : "ok",
-      message: `Found ${foundName}${isLegacy ? " (legacy, rename to nix-js.config.* )" : ""}`,
+      message: `Found ${foundName}${isLegacy ? " (legacy, rename to elur.config.* )" : ""}`,
       suggestion: isLegacy
-        ? `Rename ${foundName} to nix-js.config.${foundName.split(".").slice(1).join(".")} (deprecated name)`
+        ? `Rename ${foundName} to elur.config.${foundName.split(".").slice(1).join(".")} (deprecated name)`
         : undefined,
     });
   } else {
     results.push({
       name: "Config file",
       status: "warn",
-      message: "No nix-js.config.ts/js/mjs found",
-      suggestion: "Create nix-js.config.ts for custom configuration (optional, defaults work)",
+      message: "No elur.config.ts/js/mjs found",
+      suggestion: "Create elur.config.ts for custom configuration (optional, defaults work)",
     });
   }
 
@@ -267,7 +267,7 @@ export async function doDoctor(options: CliOptions): Promise<number> {
   }
 
   // Print results
-  console.log("\nNix.js Kit doctor\n");
+  console.log("\nElur Kit doctor\n");
   let hasErrors = false;
   let hasWarnings = false;
   for (const result of results) {

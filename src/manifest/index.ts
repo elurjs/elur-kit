@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, relative } from "node:path";
 import { scanActions, type ActionRegistry } from "../action/scan.js";
-import type { ResolvedNixConfig } from "../config/index.js";
+import type { ResolvedElurConfig } from "../config/index.js";
 import { runIntegrationHook } from "../integrations/index.js";
 import { scanIslands, type IslandModule } from "../island/scan.js";
 import { scanRoutes, type ScannedRoutes } from "../router/route-scanner.js";
@@ -13,10 +13,10 @@ export interface AppManifest {
   actions: ActionRegistry;
   islands: IslandModule[];
   base: string;
-  output: ResolvedNixConfig["output"];
+  output: ResolvedElurConfig["output"];
 }
 
-export async function createAppManifest(config: ResolvedNixConfig): Promise<AppManifest> {
+export async function createAppManifest(config: ResolvedElurConfig): Promise<AppManifest> {
   const [routes, actions, islands] = await Promise.all([
     scanRoutes(config.appDir),
     scanActions(config.appDir),
@@ -52,9 +52,9 @@ export async function writeRouteTypes(manifest: AppManifest, path: string): Prom
     .filter((name, index, names) => names.indexOf(name) === index)
     .map((name) => JSON.stringify(name));
   const source = [
-    `export type NixRoutePath = ${routePaths.length ? routePaths.join(" | ") : "never"};`,
-    `export type NixActionName = ${actionNames.length ? actionNames.join(" | ") : "never"};`,
-    "export interface NixRouteParams { [name: string]: string | string[] | undefined }",
+    `export type ElurRoutePath = ${routePaths.length ? routePaths.join(" | ") : "never"};`,
+    `export type ElurActionName = ${actionNames.length ? actionNames.join(" | ") : "never"};`,
+    "export interface ElurRouteParams { [name: string]: string | string[] | undefined }",
     "",
   ].join("\n");
   await mkdir(dirname(path), { recursive: true });
@@ -75,28 +75,28 @@ export function validateManifestRoutes(routes: ScannedRoutes): void {
 
 export function assertClientImportAllowed(id: string, importer?: string): void {
   if (/\.server\.[cm]?[jt]sx?$/.test(id)) {
-    throw new Error(`[nix-js-kit] Server-only module imported by client${importer ? ` from ${importer}` : ""}: ${id}`);
+    throw new Error(`[elur-kit] Server-only module imported by client${importer ? ` from ${importer}` : ""}: ${id}`);
   }
 }
 
 function registerRoute(seen: Map<string, string>, path: string, file: string, kind: string): void {
   const existing = seen.get(path);
   if (existing) {
-    throw new Error(`[nix-js-kit] Duplicate ${kind} route "${path}": ${existing} and ${file}`);
+    throw new Error(`[elur-kit] Duplicate ${kind} route "${path}": ${existing} and ${file}`);
   }
   seen.set(path, file);
 }
 
 function assertNotReserved(path: string, file: string): void {
-  if (path === "/__nix-js" || path.startsWith("/__nix-js/") || path === "/_nix-js" || path.startsWith("/_nix-js/")) {
-    throw new Error(`[nix-js-kit] Reserved route "${path}" declared by ${file}`);
+  if (path === "/__elur-js" || path.startsWith("/__elur-js/") || path === "/_elur" || path.startsWith("/_elur/")) {
+    throw new Error(`[elur-kit] Reserved route "${path}" declared by ${file}`);
   }
 }
 
 function validateIslands(islands: readonly IslandModule[]): void {
   const names = new Set<string>();
   for (const island of islands) {
-    if (names.has(island.name)) throw new Error(`[nix-js-kit] Duplicate island name: ${island.name}`);
+    if (names.has(island.name)) throw new Error(`[elur-kit] Duplicate island name: ${island.name}`);
     names.add(island.name);
   }
 }

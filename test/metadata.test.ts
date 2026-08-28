@@ -4,15 +4,15 @@ import { documentShell, buildHeadTags } from "../src/build/document-shell.ts";
 import type { PageMetadata } from "../src/types.ts";
 
 describe("buildHeadTags", () => {
-  it("emits title with data-nix-js-head", () => {
+  it("emits title with data-elur-head", () => {
     const tags = buildHeadTags({ title: "Hello" }, "Fallback");
-    assert.ok(tags.includes('<title data-nix-js-head>Hello</title>'));
+    assert.ok(tags.includes('<title data-elur-head>Hello</title>'));
   });
 
   it("emits meta description", () => {
     const tags = buildHeadTags({ description: "A test page" }, "Fallback");
     assert.ok(tags.includes('name="description" content="A test page"'));
-    assert.ok(tags.includes("data-nix-js-head"));
+    assert.ok(tags.includes("data-elur-head"));
   });
 
   it("emits canonical link", () => {
@@ -63,7 +63,7 @@ describe("documentShell with metadata", () => {
       body: "<p>hi</p>",
       metadata: { title: "My Page", description: "Test" },
     });
-    assert.ok(html.includes('<title data-nix-js-head>My Page</title>'));
+    assert.ok(html.includes('<title data-elur-head>My Page</title>'));
     assert.ok(html.includes('name="description" content="Test"'));
   });
 
@@ -73,7 +73,7 @@ describe("documentShell with metadata", () => {
       title: "Plain Title",
     });
     assert.ok(html.includes("<title>Plain Title</title>"));
-    assert.ok(!html.includes("data-nix-js-head"));
+    assert.ok(!html.includes("data-elur-head"));
   });
 
   it("does not emit duplicate title tags", () => {
@@ -85,7 +85,7 @@ describe("documentShell with metadata", () => {
     // Should have only one <title> tag, and it should be the metadata one.
     const titleCount = (html.match(/<title/g) || []).length;
     assert.equal(titleCount, 1);
-    assert.ok(html.includes('<title data-nix-js-head>Meta Title</title>'));
+    assert.ok(html.includes('<title data-elur-head>Meta Title</title>'));
   });
 
   it("escapes HTML in metadata values", () => {

@@ -44,7 +44,7 @@ export function createValidator(schema: unknown): SchemaValidator | undefined {
           ? issues.map((i: any) => `  - ${i.path?.join(".") ?? "(root)"}: ${i.message}`).join("\n")
           : String(err);
         throw new Error(
-          `[nix-js-kit] Schema validation failed for "${filePath}":\n${details}`,
+          `[elur-kit] Schema validation failed for "${filePath}":\n${details}`,
         );
       }
     };
@@ -56,7 +56,7 @@ export function createValidator(schema: unknown): SchemaValidator | undefined {
       try {
         return (schema as Function)(data);
       } catch (err: any) {
-        throw new Error(`[nix-js-kit] Schema validation failed for "${filePath}": ${err?.message ?? err}`);
+        throw new Error(`[elur-kit] Schema validation failed for "${filePath}": ${err?.message ?? err}`);
       }
     };
   }
@@ -72,7 +72,7 @@ export async function getZod(): Promise<any> {
   const zod = await loadZod();
   if (!zod) {
     throw new Error(
-      "[nix-js-kit] Schema validation requires the `zod` package. Install it with:\n" +
+      "[elur-kit] Schema validation requires the `zod` package. Install it with:\n" +
       "  npm install zod\n" +
       "  # or\n" +
       "  bun add zod",

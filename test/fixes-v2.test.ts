@@ -13,7 +13,7 @@ describe("Fix #1: Client router code-splitting", () => {
         { name: "Counter", filePath: "/app/islands/Counter.ts" },
         { name: "TodoList", filePath: "/app/islands/TodoList.ts" },
       ],
-      "/.nix-js/entry-client.ts",
+      "/.elur/entry-client.ts",
     );
 
     // Must contain `import(` (dynamic) — not `import Counter from` (static).
@@ -30,7 +30,7 @@ describe("Fix #1: Client router code-splitting", () => {
   it("wraps each island in a { load } discriminated lazy loader", () => {
     const source = buildEntrySource(
       [{ name: "Hero", filePath: "/app/islands/Hero.ts" }],
-      "/.nix-js/entry-client.ts",
+      "/.elur/entry-client.ts",
     );
 
     // The registry entry must be `{ load: () => import(...).then(m => m.default) }`
@@ -51,7 +51,7 @@ describe("Fix #1: Client router code-splitting", () => {
         { name: "B", filePath: "/app/islands/B.ts" },
         { name: "C", filePath: "/app/islands/C.ts" },
       ],
-      "/.nix-js/entry-client.ts",
+      "/.elur/entry-client.ts",
     );
 
     // Each island must have its own import specifier.

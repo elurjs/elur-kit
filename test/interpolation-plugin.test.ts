@@ -2,7 +2,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert";
 import { transformPartialInterpolations } from "../src/vite/interpolation-plugin";
 
-describe("nixJsInterpolationPlugin transform", () => {
+describe("elurJsInterpolationPlugin transform", () => {
   it("converts partial attribute interpolation to single interpolation", () => {
     const source = 'html' + '`<a href="/blog/${slug}">Post</a>`;';
     const result = transformPartialInterpolations(source);

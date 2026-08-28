@@ -1,4 +1,4 @@
-// --- @deijose/nix-js-kit — public API (v0.1) ---
+// --- @elurjs/kit — public API (v0.1) ---
 
 export type {
   RouteParams,
@@ -77,9 +77,9 @@ export {
   type MiddlewareResult,
 } from "./middleware/index.js";
 export { streamBoundary, type StreamBoundaryOptions } from "./middleware/stream-boundary.js";
-export { defineConfig, loadNixConfig, type NixConfig, type ResolvedNixConfig, type LoadNixConfigOptions, type NixOutputMode, type TrailingSlashMode } from "./config/index.js";
+export { defineConfig, loadElurConfig, type ElurConfig, type ResolvedElurConfig, type LoadElurConfigOptions, type ElurOutputMode, type TrailingSlashMode } from "./config/index.js";
 export { createAppManifest, writeAppManifest, writeRouteTypes, validateManifestRoutes, assertClientImportAllowed, type AppManifest } from "./manifest/index.js";
-export { runIntegrationHook, type NixKitIntegration, type NixKitIntegrationContext } from "./integrations/index.js";
+export { runIntegrationHook, type ElurKitIntegration, type ElurKitIntegrationContext } from "./integrations/index.js";
 export {
   buildClientBundle,
   beginAtomicStage,

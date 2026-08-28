@@ -5,7 +5,7 @@ import { rm, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
-const CACHE_DIR = join(tmpdir(), `nix-cache-test-${Date.now()}`);
+const CACHE_DIR = join(tmpdir(), `elur-cache-test-${Date.now()}`);
 
 before(async () => {
   await mkdir(CACHE_DIR, { recursive: true });

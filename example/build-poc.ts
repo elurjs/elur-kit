@@ -25,7 +25,7 @@ async function main(): Promise<void> {
     title: data.title,
     body,
     data,
-    clientEntry: "/_nix-js/entry-client.js",
+    clientEntry: "/_elur/entry-client.js",
   });
 
   // 4. Write the static file.

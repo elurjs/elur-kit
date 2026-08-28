@@ -7,13 +7,13 @@ import { writeSsrEntry } from "./shared.js";
 import { SERVERLESS_CAPABILITIES } from "../runtime/capabilities.js";
 
 /**
- * Netlify adapter for nix-js-kit.
+ * Netlify adapter for elur-kit.
  *
  * Produces the files expected by Netlify Functions v2:
- *   - `netlify/functions/__nix-js-kit.mjs` — bundled SSR function.
+ *   - `netlify/functions/__elur-js-kit.mjs` — bundled SSR function.
  *   - `netlify.toml` — redirects unmatched routes to the function.
  *
- * Run this after `nix-js-kit build`. The static files are left in `dist/` and
+ * Run this after `elur-kit build`. The static files are left in `dist/` and
  * served directly by Netlify; the function only handles routes that have no
  * matching static file.
  */
@@ -26,14 +26,14 @@ export const netlifyAdapter: Adapter = {
     const outDir = resolve(root, options.outDir);
     const netlifyDir = resolve(root, "netlify");
     const functionsDir = join(netlifyDir, "functions");
-    const generatedDir = resolve(root, ".nix-js");
+    const generatedDir = resolve(root, ".elur");
 
     // Verify the production build exists.
     try {
       await stat(outDir);
     } catch {
       throw new Error(
-        `Output directory not found: ${outDir}. Run "nix-js-kit build" first.`,
+        `Output directory not found: ${outDir}. Run "elur-kit build" first.`,
       );
     }
 
@@ -60,7 +60,7 @@ export const netlifyAdapter: Adapter = {
         lib: {
           entry: entryPath,
           formats: ["es"],
-          fileName: () => "__nix-js-kit.mjs",
+          fileName: () => "__elur-js-kit.mjs",
         },
         rollupOptions: {
           external: [],
@@ -73,24 +73,24 @@ export const netlifyAdapter: Adapter = {
 
     // Vite SSR lib builds may use the entry file name, so force the expected handler name.
     const generatedHandler = join(functionsDir, "netlify-index.js");
-    const targetHandler = join(functionsDir, "__nix-js-kit.mjs");
+    const targetHandler = join(functionsDir, "__elur-js-kit.mjs");
     try {
       await stat(generatedHandler);
       await rename(generatedHandler, targetHandler);
     } catch {
-      // If the file is already named __nix-js-kit.mjs, nothing to do.
+      // If the file is already named __elur-js-kit.mjs, nothing to do.
     }
 
     // Write Netlify redirects config.
     await writeFile(
       join(root, "netlify.toml"),
       `[build]
-  command = "nix-js-kit build"
+  command = "elur-kit build"
   publish = "dist"
 
 [[redirects]]
   from = "/*"
-  to = "/.netlify/functions/__nix-js-kit"
+  to = "/.netlify/functions/__elur-js-kit"
   status = 200
 `,
       "utf8",

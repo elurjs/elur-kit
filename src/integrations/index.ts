@@ -1,23 +1,23 @@
-export interface NixKitIntegrationContext {
+export interface ElurKitIntegrationContext {
   root: string;
   command: "dev" | "build" | "preview" | "start" | "check" | "routes" | "doctor";
 }
 
-export interface NixKitIntegration {
+export interface ElurKitIntegration {
   name: string;
-  config?(config: Record<string, unknown>, context: NixKitIntegrationContext): void | Promise<void>;
-  routes?(manifest: unknown, context: NixKitIntegrationContext): void | Promise<void>;
-  request?(request: Request, context: NixKitIntegrationContext): void | Response | Promise<void | Response>;
-  render?(result: { html: string }, context: NixKitIntegrationContext): void | Promise<void>;
-  build?(result: unknown, context: NixKitIntegrationContext): void | Promise<void>;
-  clientEntry?(source: string, context: NixKitIntegrationContext): string | void | Promise<string | void>;
-  error?(error: unknown, context: NixKitIntegrationContext): void | Promise<void>;
+  config?(config: Record<string, unknown>, context: ElurKitIntegrationContext): void | Promise<void>;
+  routes?(manifest: unknown, context: ElurKitIntegrationContext): void | Promise<void>;
+  request?(request: Request, context: ElurKitIntegrationContext): void | Response | Promise<void | Response>;
+  render?(result: { html: string }, context: ElurKitIntegrationContext): void | Promise<void>;
+  build?(result: unknown, context: ElurKitIntegrationContext): void | Promise<void>;
+  clientEntry?(source: string, context: ElurKitIntegrationContext): string | void | Promise<string | void>;
+  error?(error: unknown, context: ElurKitIntegrationContext): void | Promise<void>;
 }
 
-export async function runIntegrationHook<K extends keyof Omit<NixKitIntegration, "name">>(
-  integrations: readonly NixKitIntegration[],
+export async function runIntegrationHook<K extends keyof Omit<ElurKitIntegration, "name">>(
+  integrations: readonly ElurKitIntegration[],
   hook: K,
-  args: Parameters<NonNullable<NixKitIntegration[K]>>,
+  args: Parameters<NonNullable<ElurKitIntegration[K]>>,
 ): Promise<void> {
   for (const integration of integrations) {
     const handler = integration[hook];

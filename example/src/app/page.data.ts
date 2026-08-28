@@ -8,7 +8,7 @@ export interface HomeData {
 
 export const load: PageDataLoad<HomeData> = async () => {
   return {
-    title: "Hello Nix Kit",
+    title: "Hello Elur Kit",
     intro:
       "Este HTML fue generado en build-time con renderToString, sin navegador.",
     features: ["SSG", "Islands", "SSR"],

@@ -1,8 +1,8 @@
 import { describe, it, before, after } from "node:test";
 import assert from "node:assert/strict";
-import { nixJsAction } from "../src/action/index.ts";
+import { elurJsAction } from "../src/action/index.ts";
 
-describe("nixJsAction", () => {
+describe("elurJsAction", () => {
   let originalFetch: typeof fetch;
 
   before(() => {
@@ -17,7 +17,7 @@ describe("nixJsAction", () => {
     globalThis.fetch = async () =>
       new Response(JSON.stringify("Hello, Ada!"), { status: 200, headers: { "Content-Type": "application/json" } });
 
-    const greet = nixJsAction("greet", { page: "/" });
+    const greet = elurJsAction("greet", { page: "/" });
     assert.equal(greet.pending.value, false);
     assert.equal(greet.data.value, null);
     assert.equal(greet.error.value, null);
@@ -34,7 +34,7 @@ describe("nixJsAction", () => {
     globalThis.fetch = async () =>
       new Response("boom", { status: 500, statusText: "Internal Server Error" });
 
-    const greet = nixJsAction("greet", { page: "/" });
+    const greet = elurJsAction("greet", { page: "/" });
     await assert.rejects(() => greet.submit("Ada"), /Action "greet" failed/);
     assert.equal(greet.data.value, null);
     assert.ok(greet.error.value instanceof Error);

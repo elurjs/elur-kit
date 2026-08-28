@@ -7,7 +7,7 @@ import type { PageRoute } from "../src/router/route-scanner.ts";
 const mockImporter = async (path: string): Promise<Record<string, unknown>> => {
   if (path.endsWith("page.ts")) {
     return {
-      default: () => ({ __isNixTemplate: true, mount: () => ({ unmount() { } }), _render: () => () => { } }),
+      default: () => ({ __isElurTemplate: true, mount: () => ({ unmount() { } }), _render: () => () => { } }),
     };
   }
   if (path.endsWith("page.data.ts")) {
@@ -50,7 +50,7 @@ describe("throw new Response() as first-class (A-22)", () => {
     const redirectImporter = async (path: string): Promise<Record<string, unknown>> => {
       if (path.endsWith("page.ts")) {
         return {
-          default: () => ({ __isNixTemplate: true, mount: () => ({ unmount() { } }), _render: () => () => { } }),
+          default: () => ({ __isElurTemplate: true, mount: () => ({ unmount() { } }), _render: () => () => { } }),
         };
       }
       if (path.endsWith("page.data.ts")) {
@@ -84,7 +84,7 @@ describe("throw new Response() as first-class (A-22)", () => {
     const errorImporter = async (path: string): Promise<Record<string, unknown>> => {
       if (path.endsWith("page.ts")) {
         return {
-          default: () => ({ __isNixTemplate: true, mount: () => ({ unmount() { } }), _render: () => () => { } }),
+          default: () => ({ __isElurTemplate: true, mount: () => ({ unmount() { } }), _render: () => () => { } }),
         };
       }
       if (path.endsWith("page.data.ts")) {

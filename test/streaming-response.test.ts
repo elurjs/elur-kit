@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { NIX_RENDER_PROTOCOL } from "@deijose/nix-js";
+import { ELUR_RENDER_PROTOCOL } from "@elurjs/core";
 import { createStreamingResponse, createBufferedResponse, supportsStreaming } from "../src/ssr/stream-response.ts";
 import { withBoundaryContext, getCurrentBoundaryContext } from "../src/middleware/stream-boundary.ts";
 import type { PageRoute } from "../src/router/route-scanner.ts";
@@ -21,8 +21,8 @@ const mockConfig = {
 /** Creates a mock template that supports server rendering without a DOM. */
 function mockTemplate(html: string) {
   return {
-    __isNixTemplate: true as const,
-    [NIX_RENDER_PROTOCOL]: { renderServer: () => html },
+    __isElurTemplate: true as const,
+    [ELUR_RENDER_PROTOCOL]: { renderServer: () => html },
     mount: () => ({ unmount() { } }),
     _render: () => () => { },
   };

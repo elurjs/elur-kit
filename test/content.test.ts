@@ -152,7 +152,7 @@ describe("getCollection / getEntry", () => {
     assert.ok(entry);
     assert.equal(entry!.data.title, "Hello World");
     assert.ok(entry!.data.date instanceof Date);
-    assert.deepEqual(entry!.data.tags, ["intro", "nix-js"]);
+    assert.deepEqual(entry!.data.tags, ["intro", "elur"]);
     assert.equal(entry!.data.draft, false);
   });
 

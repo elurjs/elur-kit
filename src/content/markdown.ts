@@ -17,7 +17,7 @@ let markedLoader: (() => Promise<MarkedModule>) | null | undefined;
 async function loadMarked(): Promise<MarkedModule> {
   if (markedLoader === null) {
     throw new Error(
-      "[nix-js-kit] Markdown rendering requires the `marked` package. Install it with:\n" +
+      "[elur-kit] Markdown rendering requires the `marked` package. Install it with:\n" +
       "  npm install marked\n" +
       "  # or\n" +
       "  bun add marked",
@@ -36,7 +36,7 @@ async function loadMarked(): Promise<MarkedModule> {
   } catch {
     markedLoader = null;
     throw new Error(
-      "[nix-js-kit] Markdown rendering requires the `marked` package. Install it with:\n" +
+      "[elur-kit] Markdown rendering requires the `marked` package. Install it with:\n" +
       "  npm install marked\n" +
       "  # or\n" +
       "  bun add marked",

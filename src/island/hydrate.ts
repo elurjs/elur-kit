@@ -1,5 +1,5 @@
-import type { NixTemplate } from "@deijose/nix-js";
-import { hydrate as hydrateTemplate } from "@deijose/nix-js/hydrate";
+import type { ElurTemplate } from "@elurjs/core";
+import { hydrate as hydrateTemplate } from "@elurjs/core/hydrate";
 import type { IslandDirective } from "./island.js";
 
 // --- Client-side island hydration ---
@@ -9,10 +9,10 @@ import type { IslandDirective } from "./island.js";
 const _islandDisposes = new Set<() => void>();
 const _islandSchedules = new Set<() => void>();
 
-// Finds [data-nix-js-island] markers in the current document and mounts the
+// Finds [data-elur-island] markers in the current document and mounts the
 // corresponding interactive components over them. This runs in the browser.
 
-export type IslandComponent<TProps = unknown> = (props: TProps) => NixTemplate | null | false | undefined;
+export type IslandComponent<TProps = unknown> = (props: TProps) => ElurTemplate | null | false | undefined;
 
 // Re-exported from island.ts so the client entry and the server helper share a
 // single source of truth for the directive union (now includes "only").
@@ -72,12 +72,12 @@ interface IslandMarker {
 
 function collectMarkers(): IslandMarker[] {
   const elements = Array.from(
-    document.querySelectorAll<HTMLElement>("[data-nix-js-island]"),
+    document.querySelectorAll<HTMLElement>("[data-elur-island]"),
   );
   return elements.map((el) => {
     const marker: IslandMarker = {
       el,
-      name: el.dataset.nixJsIsland ?? "",
+      name: el.dataset.elurJsIsland ?? "",
       directive: (el.dataset.directive as IslandDirective) ?? "load",
       props: null,
     };
@@ -101,7 +101,7 @@ async function hydrate(marker: IslandMarker, registry: IslandRegistry): Promise<
 
     const entry = registry[marker.name];
     if (!entry) {
-      console.warn(`[nix-js-kit] No island registered for "${marker.name}"`);
+      console.warn(`[elur-kit] No island registered for "${marker.name}"`);
       return;
     }
 
@@ -125,22 +125,22 @@ async function hydrate(marker: IslandMarker, registry: IslandRegistry): Promise<
     }
 
     if (typeof Component !== "function") {
-      console.warn(`[nix-js-kit] Island "${marker.name}" did not resolve to a component function`);
+      console.warn(`[elur-kit] Island "${marker.name}" did not resolve to a component function`);
       return;
     }
 
     const template = Component(marker.props);
     if (template === null || template === false || template === undefined) return;
-    const prevDispose = (marker.el as any).__nix_js_island_dispose;
+    const prevDispose = (marker.el as any).__elur_js_island_dispose;
     if (typeof prevDispose === "function") prevDispose();
 
     // Islands with directive "only" or options.ssr:false have no SSR-rendered
     // DOM inside the marker — only fallback HTML or nothing. hydrateTemplate
     // assumes the SSR DOM is already present and walks it for hydration markers
-    // (<!--nix-N-->, data-nix-e-*). When there's nothing to walk, it silently
+    // (<!--elur-N-->, data-elur-e-*). When there's nothing to walk, it silently
     // does nothing (no contexts to match → empty loop → no mount). So we detect
     // the absence of hydration markers and do a fresh _render mount instead.
-    const hasSSRMarkers = marker.el.innerHTML.includes("<!--nix-");
+    const hasSSRMarkers = marker.el.innerHTML.includes("<!--elur-");
     const handle = hasSSRMarkers
       ? hydrateTemplate(template, marker.el, { mismatch: "warn-remount" })
       : freshMount(template, marker.el);
@@ -148,9 +148,9 @@ async function hydrate(marker: IslandMarker, registry: IslandRegistry): Promise<
     const wrappedDispose = () => {
       handle.unmount();
       _islandDisposes.delete(wrappedDispose);
-      delete (marker.el as any).__nix_js_island_dispose;
+      delete (marker.el as any).__elur_js_island_dispose;
     };
-    (marker.el as any).__nix_js_island_dispose = wrappedDispose;
+    (marker.el as any).__elur_js_island_dispose = wrappedDispose;
     _islandDisposes.add(wrappedDispose);
   } catch (error) {
     reportIslandError(marker, error);
@@ -158,10 +158,10 @@ async function hydrate(marker: IslandMarker, registry: IslandRegistry): Promise<
 }
 
 function reportIslandError(marker: IslandMarker, error: unknown): void {
-  console.error(`[nix-js-kit] Failed to hydrate island "${marker.name}":`, error);
+  console.error(`[elur-kit] Failed to hydrate island "${marker.name}":`, error);
   const EventConstructor = marker.el.ownerDocument.defaultView?.CustomEvent;
   if (EventConstructor) {
-    marker.el.dispatchEvent(new EventConstructor("nix-js:island-error", {
+    marker.el.dispatchEvent(new EventConstructor("elur:island-error", {
       bubbles: true,
       detail: { name: marker.name, error },
     }));
@@ -173,7 +173,7 @@ function reportIslandError(marker: IslandMarker, error: unknown): void {
  * Used for islands with no SSR DOM (directive "only" or ssr:false) where
  * hydrateTemplate can't work — there's nothing to hydrate against.
  */
-function freshMount(template: NixTemplate, container: Element): { unmount: () => void } {
+function freshMount(template: ElurTemplate, container: Element): { unmount: () => void } {
   container.replaceChildren();
   const dispose = template._render(container, null);
   return { unmount: dispose };

@@ -145,7 +145,7 @@ function assertInside(root: string, candidate: string, label: string): void {
   const resolvedRoot = resolve(root);
   const resolvedCandidate = resolve(candidate);
   if (!isInside(resolvedRoot, resolvedCandidate)) {
-    throw new Error(`[nix-js-kit] Image ${label} escapes its allowed root (${resolvedCandidate}).`);
+    throw new Error(`[elur-kit] Image ${label} escapes its allowed root (${resolvedCandidate}).`);
   }
 }
 
@@ -351,7 +351,7 @@ export async function processImageBatch(
   const warnOnce = (key: string, message: string): void => {
     if (warned.has(key)) return;
     warned.add(key);
-    console.warn(`[nix-js-kit] ${message}`);
+    console.warn(`[elur-kit] ${message}`);
   };
 
   if (!sharp) {
@@ -359,7 +359,7 @@ export async function processImageBatch(
     for (const { src } of images) {
       if (entries[src]) continue;
       if (!isSafeRelativePath(src)) {
-        if (strict) throw new Error(`[nix-js-kit] Invalid image source path: ${src}`);
+        if (strict) throw new Error(`[elur-kit] Invalid image source path: ${src}`);
         warnOnce(`path:${src}`, `Skipping invalid image source path: ${src}`);
         continue;
       }
@@ -375,7 +375,7 @@ export async function processImageBatch(
           hash: createHash("sha256").update(buffer).digest("hex").slice(0, 8),
         };
       } catch (error) {
-        if (strict) throw new Error(`[nix-js-kit] Image source not found: ${src}`);
+        if (strict) throw new Error(`[elur-kit] Image source not found: ${src}`);
         warnOnce(`missing:${src}`, `Image source not found: ${src}. Skipping.`);
       }
     }
@@ -388,7 +388,7 @@ export async function processImageBatch(
     if (entries[src]) continue;
 
     if (!isSafeRelativePath(src)) {
-      if (strict) throw new Error(`[nix-js-kit] Invalid image source path: ${src}`);
+      if (strict) throw new Error(`[elur-kit] Invalid image source path: ${src}`);
       warnOnce(`path:${src}`, `Skipping invalid image source path: ${src}`);
       continue;
     }
@@ -400,7 +400,7 @@ export async function processImageBatch(
     try {
       sourceBuffer = await readFile(sourcePath);
     } catch (error) {
-      if (strict) throw new Error(`[nix-js-kit] Image source not found: ${src}`);
+      if (strict) throw new Error(`[elur-kit] Image source not found: ${src}`);
       warnOnce(`missing:${src}`, `Image not found: ${src}. Skipping.`);
       continue;
     }
@@ -475,7 +475,7 @@ export async function processImageBatch(
           await mkdir(dirname(variantAbsPath), { recursive: true });
           await atomicWriteFile(variantAbsPath, buffer);
         } catch (error) {
-          if (strict) throw new Error(`[nix-js-kit] Failed to generate ${variantName}: ${error instanceof Error ? error.message : String(error)}`);
+          if (strict) throw new Error(`[elur-kit] Failed to generate ${variantName}: ${error instanceof Error ? error.message : String(error)}`);
           warnOnce(`fail:${variantName}`, `Failed to generate ${variantName}.`);
           return;
         }

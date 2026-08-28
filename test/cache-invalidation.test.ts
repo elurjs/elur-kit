@@ -10,7 +10,7 @@ import { mkdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
-const CACHE_DIR = join(tmpdir(), `nix-inval-test-${Date.now()}`);
+const CACHE_DIR = join(tmpdir(), `elur-inval-test-${Date.now()}`);
 
 describe("cache invalidation (§9.4)", () => {
   it("CacheInvalidator dispatches events to listeners", async () => {

@@ -1,8 +1,8 @@
-import { html } from "@deijose/nix-js";
-import { nixJsAction } from "../../../src/action/index.ts";
+import { html } from "@elurjs/core";
+import { elurJsAction } from "../../../src/action/index.ts";
 
 export default function ContactForm() {
-  const contact = nixJsAction("subscribe", { page: "/" });
+  const contact = elurJsAction("subscribe", { page: "/" });
 
   return html`
     <form

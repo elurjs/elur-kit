@@ -16,8 +16,8 @@ import { mkdir, writeFile, symlink, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
-const TEST_ROOT = join(tmpdir(), `nix-traversal-${Date.now()}`);
-const SECRET_FILE = join(tmpdir(), `nix-secret-${Date.now()}.txt`);
+const TEST_ROOT = join(tmpdir(), `elur-traversal-${Date.now()}`);
+const SECRET_FILE = join(tmpdir(), `elur-secret-${Date.now()}.txt`);
 
 before(async () => {
   await mkdir(join(TEST_ROOT, "subdir"), { recursive: true });

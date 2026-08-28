@@ -3,7 +3,7 @@
 // Convention: `src/middleware.ts` in the project root exports a default
 // function and an optional `config` with a `matcher` array.
 //
-//   import type { Middleware } from "@deijose/nix-js-kit";
+//   import type { Middleware } from "@elurjs/kit";
 //
 //   export default function middleware(request: Request) {
 //     if (!request.headers.get("Cookie")?.includes("session=")) {
@@ -100,7 +100,7 @@ export async function loadMiddleware(root: string): Promise<LoadedMiddleware | n
         continue;
       }
       // Actual error in the middleware file — rethrow (§6).
-      throw new Error(`[nix-js-kit] Error loading middleware: ${msg}`, { cause: err });
+      throw new Error(`[elur-kit] Error loading middleware: ${msg}`, { cause: err });
     }
   }
 
@@ -190,7 +190,7 @@ export async function runMiddleware(
       try {
         await cleanup();
       } catch (err) {
-        console.error("[nix-js-kit] middleware cleanup error:", err);
+        console.error("[elur-kit] middleware cleanup error:", err);
       }
     }
   }

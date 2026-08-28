@@ -222,7 +222,7 @@ async function scanRecursive(
 }
 
 /**
- * Scans an app directory for Nix.js Kit file-based routes.
+ * Scans an app directory for Elur Kit file-based routes.
  *
  * @param appDir Absolute path to the app directory (e.g. "src/app").
  * @returns Discovered page and API routes.
@@ -277,7 +277,7 @@ function detectRouteConflicts(routes: ScannedRoutes): void {
     const existing = pagePaths.get(page.path);
     if (existing) {
       throw new Error(
-        `[nix-js-kit] Route conflict: "${page.path}" is defined by both ` +
+        `[elur-kit] Route conflict: "${page.path}" is defined by both ` +
         `"${existing}" and "${page.pagePath}". ` +
         `Remove one of the conflicting page.ts files.`,
       );
@@ -291,7 +291,7 @@ function detectRouteConflicts(routes: ScannedRoutes): void {
     const existing = apiPaths.get(api.path);
     if (existing) {
       throw new Error(
-        `[nix-js-kit] API route conflict: "${api.path}" is defined by both ` +
+        `[elur-kit] API route conflict: "${api.path}" is defined by both ` +
         `"${existing}" and "${api.routePath}".`,
       );
     }

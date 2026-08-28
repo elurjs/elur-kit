@@ -124,7 +124,7 @@ describe("runtime: createWebHandler no-cache mode", () => {
     await mkdir(staticRoot, { recursive: true });
     await writeFile(
       join(staticRoot, "index.html"),
-      '<html><meta name="nix-js:render-endpoint" content="off" /><body>hi</body></html>',
+      '<html><meta name="elur:render-endpoint" content="off" /><body>hi</body></html>',
       "utf8",
     );
   });
@@ -142,7 +142,7 @@ describe("runtime: createWebHandler no-cache mode", () => {
     const res = await handler(new Request("http://localhost/"));
     assert.equal(res.status, 200);
     const body = await res.text();
-    assert.ok(!body.includes('nix-js:render-endpoint'), "should strip the marker");
+    assert.ok(!body.includes('elur:render-endpoint'), "should strip the marker");
     assert.equal(res.headers.get("Cache-Control"), "no-store, must-revalidate");
   });
 });

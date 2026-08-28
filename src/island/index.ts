@@ -1,4 +1,4 @@
-// --- @deijose/nix-js-kit/island ---
+// --- @elurjs/kit/island ---
 //
 // Client-only entry point. Import `hydrateIslands` from here in your entry-client
 // so the client bundle does not pull in server-only code (route scanner, build

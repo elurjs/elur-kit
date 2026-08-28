@@ -40,7 +40,7 @@ export default defineConfig({
                 "integrations/index": resolve("src/integrations/index.ts"),
                 "runtime/index": resolve("src/runtime/index.ts"),
             },
-            name: "NixJSKit",
+            name: "ElurJSKit",
             formats: ["es", "cjs"],
             fileName: (format, entryName) =>
                 format === "cjs"
@@ -50,7 +50,7 @@ export default defineConfig({
 
         rollupOptions: {
             external: [
-                /^@deijose\/nix-js(?:\/.*)?$/,
+                /^@elurjs\/core(?:\/.*)?$/,
                 "vite",
                 "marked",
                 "zod",
@@ -67,7 +67,7 @@ export default defineConfig({
             output: {
                 preserveModules: false,
                 globals: {
-                    "@deijose/nix-js": "NixJS",
+                    "@elurjs/core": "ElurJS",
                     "vite": "Vite",
                 },
                 // Vite 8 deprecates inlineDynamicImports in favor of

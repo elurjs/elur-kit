@@ -11,7 +11,7 @@
 // When sharp is not installed, it falls back to a plain `<img>` with srcset
 // pointing to the original file.
 
-import { NIX_RENDER_PROTOCOL, type NixTemplate } from "@deijose/nix-js";
+import { ELUR_RENDER_PROTOCOL, type ElurTemplate } from "@elurjs/core";
 import { getManifestEntry, buildPictureMarkup } from "./service.js";
 import {
   registerImage,
@@ -42,7 +42,7 @@ export interface ImageOptions {
 }
 
 /**
- * Creates a NixTemplate that renders an optimized `<img>` or `<picture>` element.
+ * Creates a ElurTemplate that renders an optimized `<img>` or `<picture>` element.
  *
  * When a manifest is active (post-build or SSR with manifest loaded):
  *   * Emits `<picture>` with `<source>` per format and real hashed variant URLs.
@@ -53,7 +53,7 @@ export interface ImageOptions {
  *   * Does NOT emit srcset with unresolved variant URLs.
  *   * Registers the image for build-time processing.
  */
-export function image(opts: ImageOptions): NixTemplate {
+export function image(opts: ImageOptions): ElurTemplate {
   const {
     src,
     alt,
@@ -98,13 +98,13 @@ export function image(opts: ImageOptions): NixTemplate {
   }
 
   return {
-    __isNixTemplate: true as const,
-    [NIX_RENDER_PROTOCOL]: {
+    __isElurTemplate: true as const,
+    [ELUR_RENDER_PROTOCOL]: {
       renderServer: () => html,
     },
     mount(container: Element | string) {
       const el = typeof container === "string" ? document.querySelector(container) : container;
-      if (!el) throw new Error("[nix-js-kit] image(): container not found");
+      if (!el) throw new Error("[elur-kit] image(): container not found");
       el.innerHTML = html;
       return { unmount() { el.innerHTML = ""; } };
     },
@@ -120,7 +120,7 @@ export function image(opts: ImageOptions): NixTemplate {
         }
       };
     },
-  } as unknown as NixTemplate;
+  } as unknown as ElurTemplate;
 }
 
 function escapeAttr(value: string): string {

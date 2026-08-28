@@ -2,7 +2,7 @@
 //
 // Actions can emit tags/paths to invalidate via a generic context. The cache
 // server listens to these hooks and invalidates the appropriate entries.
-// Integrations like nix-query can also listen, but they are NOT a dependency
+// Integrations like elur-query can also listen, but they are NOT a dependency
 // of the cache server.
 //
 // Design:
@@ -22,7 +22,7 @@ export type InvalidationListener = (event: InvalidationEvent) => void | Promise<
 
 /**
  * A pub/sub hub for cache invalidation events. Actions emit events;
- * the cache adapter (and optionally nix-query or other integrations) listen.
+ * the cache adapter (and optionally elur-query or other integrations) listen.
  */
 export class CacheInvalidator {
   private listeners = new Set<InvalidationListener>();
@@ -42,11 +42,11 @@ export class CacheInvalidator {
         if (result instanceof Promise) {
           // Wrap to prevent unhandled rejection from failing the whole emit.
           promises.push(result.catch((err) => {
-            console.error("[nix-js-kit] invalidation listener error:", err);
+            console.error("[elur-kit] invalidation listener error:", err);
           }));
         }
       } catch (err) {
-        console.error("[nix-js-kit] invalidation listener error:", err);
+        console.error("[elur-kit] invalidation listener error:", err);
       }
     }
     await Promise.all(promises);

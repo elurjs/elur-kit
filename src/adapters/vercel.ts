@@ -7,7 +7,7 @@ import { copyStatic, writeSsrEntry } from "./shared.js";
 import { SERVERLESS_CAPABILITIES } from "../runtime/capabilities.js";
 
 /**
- * Vercel adapter for nix-js-kit.
+ * Vercel adapter for elur-kit.
  *
  * Produces a `.vercel/output` directory compatible with the Vercel Build Output
  * API (v3). Static files are served from `dist/` and unmatched routes fall back
@@ -21,15 +21,15 @@ export const vercelAdapter: Adapter = {
     const root = resolve(options.root);
     const outDir = resolve(root, options.outDir);
     const vercelOut = resolve(root, ".vercel/output");
-    const functionsDir = join(vercelOut, "functions", "__nix-js-kit.func");
-    const generatedDir = resolve(root, ".nix-js");
+    const functionsDir = join(vercelOut, "functions", "__elur-js-kit.func");
+    const generatedDir = resolve(root, ".elur");
 
     // Verify the production build exists.
     try {
       await stat(outDir);
     } catch {
       throw new Error(
-        `Output directory not found: ${outDir}. Run "nix-js-kit build" first.`,
+        `Output directory not found: ${outDir}. Run "elur-kit build" first.`,
       );
     }
 
@@ -105,7 +105,7 @@ export const vercelAdapter: Adapter = {
           version: 3,
           routes: [
             { handle: "filesystem" },
-            { src: "/(.*)", "dest": "/__nix-js-kit" },
+            { src: "/(.*)", "dest": "/__elur-js-kit" },
           ],
         },
         null,

@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { Window } from "happy-dom";
-import { html, signal } from "@deijose/nix-js";
+import { html, signal } from "@elurjs/core";
 import { island, type IslandComponent } from "../src/island/island.ts";
 import { isSSR } from "../src/render/ssr-flag.ts";
 import { renderToString } from "../src/render/render-to-string.ts";
@@ -9,7 +9,7 @@ import { hydrateIslands, cleanupHydratedIslands } from "../src/island/hydrate.ts
 
 // --- Tests for the hybrid client-only island fix (v2.4.3) ---
 //
-// Covers: directive "only", options.ssr:false, fallback (string + NixTemplate),
+// Covers: directive "only", options.ssr:false, fallback (string + ElurTemplate),
 // error wrapping (no silent swallow), isSSR() export, and backward compatibility
 // for SSR-safe islands.
 
@@ -46,7 +46,7 @@ describe("island client-only: directive \"only\"", () => {
     };
     const out = await renderToString(() => island("C", component, {}, "only"));
     assert.equal(calls, 0, "component must not be called during SSR");
-    assert.match(out, /data-nix-js-island="C"/);
+    assert.match(out, /data-elur-island="C"/);
     assert.match(out, /data-directive="only"/);
     assert.doesNotMatch(out, /client/, "no component HTML in SSR output");
   });
@@ -55,7 +55,7 @@ describe("island client-only: directive \"only\"", () => {
     const out = await renderToString(() =>
       island("C", clientOnlyComponent(), {}, "only"),
     );
-    assert.match(out, /<div data-nix-js-island="C"[^>]*><\/div>/);
+    assert.match(out, /<div data-elur-island="C"[^>]*><\/div>/);
   });
 
   it("emits the string fallback inside the marker", async () => {
@@ -65,7 +65,7 @@ describe("island client-only: directive \"only\"", () => {
     assert.match(out, /<p>Loading…<\/p>/);
   });
 
-  it("emits a NixTemplate fallback (reactive) inside the marker", async () => {
+  it("emits a ElurTemplate fallback (reactive) inside the marker", async () => {
     const out = await renderToString(() =>
       island("C", clientOnlyComponent(), {}, "only", { fallback: html`<span class="skeleton">.</span>` }),
     );
@@ -174,7 +174,7 @@ describe("island backward compatibility", () => {
   it("component returning null renders an empty marker (no fallback)", async () => {
     const component = (() => null) as unknown as IslandComponent<Record<string, never>>;
     const out = await renderToString(() => island("Empty", component, {}));
-    assert.match(out, /<div data-nix-js-island="Empty"[^>]*><\/div>/);
+    assert.match(out, /<div data-elur-island="Empty"[^>]*><\/div>/);
   });
 
   it("component returning null with a fallback renders the fallback", async () => {
@@ -207,8 +207,8 @@ describe("isSSR() export", () => {
       return html`<span>${() => width.value}px</span>`;
     };
     const out = await renderToString(() => island("W", component, {}));
-    // Hydration markers (<!--nix-N-->) may be interleaved; strip them before checking.
-    const stripped = out.replace(/<!--nix-\d+-->/g, "").replace(/<!--nix-end-\d+-->/g, "");
+    // Hydration markers (<!--elur-N-->) may be interleaved; strip them before checking.
+    const stripped = out.replace(/<!--elur-\d+-->/g, "").replace(/<!--elur-end-\d+-->/g, "");
     assert.match(stripped, /0px/);
   });
 });
@@ -222,7 +222,7 @@ describe("island client _render path", () => {
       const tpl = island("C", component, {}, "only", { fallback: "<p>fb</p>" });
       const container = document.createElement("div");
       tpl._render(container, null);
-      const marker = container.querySelector('[data-nix-js-island="C"]');
+      const marker = container.querySelector('[data-elur-island="C"]');
       assert.ok(marker, "marker present");
       assert.equal(marker?.innerHTML, "<p>fb</p>");
       assert.doesNotMatch(marker!.innerHTML, /never/);
@@ -239,7 +239,7 @@ describe("island client _render path", () => {
       const tpl = island("C", component, {}, "visible", { ssr: false, fallback: "loading" });
       const container = document.createElement("div");
       tpl._render(container, null);
-      const marker = container.querySelector('[data-nix-js-island="C"]');
+      const marker = container.querySelector('[data-elur-island="C"]');
       assert.equal(marker?.innerHTML, "loading");
     } finally {
       restore();
@@ -264,7 +264,7 @@ describe("island directive \"only\" client hydration (v2.4.4 regression fix)", (
 
       // Before hydration: marker is empty
       assert.equal(
-        document.querySelector('[data-nix-js-island="Counter"]')?.innerHTML,
+        document.querySelector('[data-elur-island="Counter"]')?.innerHTML,
         "",
         "marker empty before hydration",
       );
@@ -278,7 +278,7 @@ describe("island directive \"only\" client hydration (v2.4.4 regression fix)", (
       await new Promise((r) => setTimeout(r, 10));
 
       assert.equal(
-        document.querySelector('[data-nix-js-island="Counter"] button')?.textContent,
+        document.querySelector('[data-elur-island="Counter"] button')?.textContent,
         "Click",
         "component hydrated into the marker",
       );
@@ -299,7 +299,7 @@ describe("island directive \"only\" client hydration (v2.4.4 regression fix)", (
 
       // Before: fallback visible
       assert.equal(
-        document.querySelector('[data-nix-js-island="Widget"]')?.textContent,
+        document.querySelector('[data-elur-island="Widget"]')?.textContent,
         "loading",
       );
 
@@ -310,7 +310,7 @@ describe("island directive \"only\" client hydration (v2.4.4 regression fix)", (
 
       // After: component replaced fallback
       assert.equal(
-        document.querySelector('[data-nix-js-island="Widget"]')?.textContent,
+        document.querySelector('[data-elur-island="Widget"]')?.textContent,
         "live",
       );
     } finally {

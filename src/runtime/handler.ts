@@ -17,8 +17,8 @@ import type { SecurityHeadersConfig } from "../config/index.js";
 // eventually calls this handler so behavior is identical across platforms.
 //
 // Responsibilities (in order):
-//   1. Server actions endpoint (/__nix-js/actions).
-//   2. SPA render endpoint (/__nix-js/render).
+//   1. Server actions endpoint (/__elur-js/actions).
+//   2. SPA render endpoint (/__elur-js/render).
 //   3. API routes.
 //   4. Static files from the output directory.
 //   5. Dynamic SSR rendering for unmatched paths.
@@ -113,7 +113,7 @@ export function createWebHandler(
     try {
       return await handleActionRequest(request, actionResolver);
     } catch (err) {
-      console.error("[nix-js-kit] action error:", err);
+      console.error("[elur-kit] action error:", err);
       return publicErrorResponse(err, { includeDetail: noCache });
     }
   }
@@ -138,7 +138,7 @@ export function createWebHandler(
       if (err instanceof RouteNotFoundError) return notFound("Not Found");
       // A thrown Response from a loader is a first-class response (A-22).
       if (err instanceof Response) return err;
-      console.error("[nix-js-kit] render endpoint error:", err);
+      console.error("[elur-kit] render endpoint error:", err);
       return publicErrorResponse(err, { includeDetail: noCache });
     }
   }
@@ -164,7 +164,7 @@ export function createWebHandler(
       const response = (await (handler as (req: Request, ctx?: { params: Record<string, string | string[]>; locals: Record<string, unknown> }) => unknown)(request, ctx)) as Response;
       return response;
     } catch (err) {
-      console.error("[nix-js-kit] API route error:", err);
+      console.error("[elur-kit] API route error:", err);
       return publicErrorResponse(err, { includeDetail: noCache });
     }
   }
@@ -175,9 +175,9 @@ export function createWebHandler(
       const ct = response.headers.get("Content-Type") ?? "";
       if (ct.includes("text/html")) {
         // Dev mode: strip the render-endpoint marker so the client router uses
-        // the live /__nix-js/render endpoint for fast SPA navigation.
+        // the live /__elur-js/render endpoint for fast SPA navigation.
         const stripped = (await response.text())
-          .replace('<meta name="nix-js:render-endpoint" content="off" />', "");
+          .replace('<meta name="elur:render-endpoint" content="off" />', "");
         return new Response(stripped, {
           status: response.status,
           headers: { "Content-Type": ct, "Cache-Control": "no-store, must-revalidate" },
@@ -194,14 +194,14 @@ export function createWebHandler(
         const headers = Object.fromEntries(response.headers.entries());
         delete headers["content-length"];
         const body = await response.text();
-        if (body.includes('nix-js:render-endpoint" content="off"')) {
+        if (body.includes('elur:render-endpoint" content="off"')) {
           // The SSG build baked `render-endpoint content="off"` so static
           // deployments never probe the endpoint. This server exposes
-          // /__nix-js/render, so advertise it: SPA navigations fetch live
+          // /__elur-js/render, so advertise it: SPA navigations fetch live
           // server-rendered content instead of the stale static file.
           const rewritten = body.replace(
-            '<meta name="nix-js:render-endpoint" content="off" />',
-            '<meta name="nix-js:render-endpoint" content="on" />',
+            '<meta name="elur:render-endpoint" content="off" />',
+            '<meta name="elur:render-endpoint" content="on" />',
           );
           return new Response(rewritten, { status: response.status, headers });
         }
@@ -261,7 +261,7 @@ export function createWebHandler(
     } catch (err) {
       // A thrown Response from a loader is a first-class response (A-22).
       if (err instanceof Response) return err;
-      console.error("[nix-js-kit] SSR render error:", err);
+      console.error("[elur-kit] SSR render error:", err);
       const errorResult = await renderErrorPage({
         routes,
         status: 500,
@@ -287,13 +287,13 @@ export function createWebHandler(
       : buildSecurityHeaders(securityHeadersConfig, isHttps);
 
     // 1. Server actions endpoint.
-    if (pathname === "/__nix-js/actions" && request.method === "POST") {
+    if (pathname === "/__elur-js/actions" && request.method === "POST") {
       const response = await handleActions(request);
       return applySecurityHeaders(response, secHeaders);
     }
 
     // 2. SPA render endpoint.
-    if (pathname === "/__nix-js/render" && renderEndpoint) {
+    if (pathname === "/__elur-js/render" && renderEndpoint) {
       const response = await handleRenderEndpoint(request, url);
       return applySecurityHeaders(response, secHeaders);
     }
@@ -329,7 +329,7 @@ function isResultCacheable(
   request: Request,
 ): boolean {
   // If the HTML contains action error markers, it's personalized.
-  if (result.html.includes("__nix_js_action_error")) return false;
+  if (result.html.includes("__elur_js_action_error")) return false;
   // Use the route's cache policy if declared.
   if (result.cachePolicy) {
     return shouldCachePublic(result.cachePolicy, request);

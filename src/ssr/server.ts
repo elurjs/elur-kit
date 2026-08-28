@@ -21,7 +21,7 @@ export interface SsrServerOptions {
   root?: string;
   /** Absolute path to the public directory for static files (optional). */
   publicDir?: string;
-  /** Base path for the client entry module, e.g. "/_nix-js/entry-client.js". */
+  /** Base path for the client entry module, e.g. "/_elur/entry-client.js". */
   clientEntry?: string;
   /** Default language for the HTML shell. */
   lang?: string;
@@ -72,7 +72,7 @@ export async function createSsrServer(options: SsrServerOptions): Promise<SsrSer
     if (urlPath.includes("?")) urlPath = urlPath.split("?")[0];
 
     // Server actions endpoint.
-    if (urlPath === "/__nix-js/actions" && req.method === "POST") {
+    if (urlPath === "/__elur-js/actions" && req.method === "POST") {
       try {
         const body = await readRequestBody(req);
         const request = incomingMessageToRequest(req, body);
@@ -87,7 +87,7 @@ export async function createSsrServer(options: SsrServerOptions): Promise<SsrSer
       return;
     }
 
-    if (urlPath === "/__nix-js/render") {
+    if (urlPath === "/__elur-js/render") {
       const renderUrl = new URL(req.url ?? "/", "http://localhost");
       const page = renderUrl.searchParams.get("page") ?? "/";
       const search = renderUrl.searchParams.get("search") ?? "";
@@ -102,7 +102,7 @@ export async function createSsrServer(options: SsrServerOptions): Promise<SsrSer
         let lastRenderedCookie: string | undefined;
         let lastRenderedHead: string | undefined;
         const ttl = await resolveTtl(options, page, routes);
-        const cacheKey = `/__nix-js/render${page}?${search}`;
+        const cacheKey = `/__elur-js/render${page}?${search}`;
         if (options.cacheDir && typeof ttl === "number" && canUsePublicCache(request)) {
           const cached = await getCachedHtml(options.cacheDir, cacheKey);
           if (cached) {
@@ -143,7 +143,7 @@ export async function createSsrServer(options: SsrServerOptions): Promise<SsrSer
           // The SPA router applies the cookie via document.cookie so the next
           // full reload does not re-feed stale errors to the page.
           const setCookie = lastRenderedCookie;
-          if (setCookie) headers["X-Nix-Action-Clear-Cookie"] = setCookie;
+          if (setCookie) headers["X-Elur-Action-Clear-Cookie"] = setCookie;
           res.writeHead(200, headers);
           res.end(JSON.stringify({ title, body, head: lastRenderedHead, clearActionErrorCookie: setCookie }));
         } else {
@@ -343,14 +343,14 @@ async function tryServeStatic(
   if (contentType.includes("text/html")) {
     // The SSG build bakes `render-endpoint content="off"` into the static
     // HTML so purely static deployments never probe the endpoint. This server
-    // (SSR `start`) DOES expose /__nix-js/render, so advertise it: SPA
+    // (SSR `start`) DOES expose /__elur-js/render, so advertise it: SPA
     // navigations then fetch live server-rendered content instead of the
     // stale static file (e.g. after a mutating server action).
     data = data
       .toString("utf8")
       .replace(
-        '<meta name="nix-js:render-endpoint" content="off" />',
-        '<meta name="nix-js:render-endpoint" content="on" />',
+        '<meta name="elur:render-endpoint" content="off" />',
+        '<meta name="elur:render-endpoint" content="on" />',
       );
   }
   res.writeHead(200, { "Content-Type": contentType, "Content-Length": Buffer.byteLength(data) });

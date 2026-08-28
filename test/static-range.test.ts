@@ -5,7 +5,7 @@ import { mkdir, writeFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
-const STATIC_ROOT = join(tmpdir(), `nix-js-static-range-${Date.now()}`);
+const STATIC_ROOT = join(tmpdir(), `elur-static-range-${Date.now()}`);
 const CONTENT = "0123456789abcdefghij"; // 20 bytes
 
 before(async () => {

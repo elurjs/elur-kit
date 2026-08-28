@@ -165,11 +165,11 @@ async function parseActionRequest(
           }),
         };
       }
-      name = form.get("__nix_js_action_name") as string | null ?? undefined;
-      page = form.get("__nix_js_action_page") as string | null ?? undefined;
+      name = form.get("__elur_js_action_name") as string | null ?? undefined;
+      page = form.get("__elur_js_action_page") as string | null ?? undefined;
       const input: Record<string, unknown> = {};
       for (const [key, value] of form) {
-        if (key === "__nix_js_action_name" || key === "__nix_js_action_page") continue;
+        if (key === "__elur_js_action_name" || key === "__elur_js_action_page") continue;
         input[key] = value;
       }
       args = [input];
@@ -177,11 +177,11 @@ async function parseActionRequest(
       const bodyResult = await readBodyWithLimit(request, bodyLimit);
       if (!bodyResult.ok) return { ok: false, response: bodyResult.response };
       const form = parseFormBody(bodyResult.text);
-      name = form.__nix_js_action_name as string | undefined;
-      page = form.__nix_js_action_page as string | undefined;
+      name = form.__elur_js_action_name as string | undefined;
+      page = form.__elur_js_action_page as string | undefined;
       const input: Record<string, unknown> = {};
       for (const [key, value] of Object.entries(form)) {
-        if (key === "__nix_js_action_name" || key === "__nix_js_action_page") continue;
+        if (key === "__elur_js_action_name" || key === "__elur_js_action_page") continue;
         input[key] = value;
       }
       args = [input];
@@ -191,11 +191,11 @@ async function parseActionRequest(
     const bodyResult = await readBodyWithLimit(request, bodyLimit);
     if (!bodyResult.ok) return { ok: false, response: bodyResult.response };
     const form = parseFormBody(bodyResult.text);
-    name = form.__nix_js_action_name as string | undefined;
-    page = form.__nix_js_action_page as string | undefined;
+    name = form.__elur_js_action_name as string | undefined;
+    page = form.__elur_js_action_page as string | undefined;
     const input: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(form)) {
-      if (key === "__nix_js_action_name" || key === "__nix_js_action_page") continue;
+      if (key === "__elur_js_action_name" || key === "__elur_js_action_page") continue;
       input[key] = value;
     }
     args = [input];
@@ -227,7 +227,7 @@ async function parseActionRequest(
  * `security.allowedOrigins`.
  *
  * For progressive-enhancement form submissions that fail, the failure payload
- * is relayed back via a short-lived `__nix_js_action_error` cookie (SameSite=Lax,
+ * is relayed back via a short-lived `__elur_js_action_error` cookie (SameSite=Lax,
  * Max-Age=15s) instead of a query param, so errors do not leak into browser
  * history, server logs or third-party Referer headers.
  */
@@ -259,7 +259,7 @@ export async function handleActionRequest(
 
     if (isActionFailure(result)) {
       if (wantsJson) {
-        return new Response(JSON.stringify({ __nix_js_action_failure: true, status: result.status, data: result.data }), {
+        return new Response(JSON.stringify({ __elur_js_action_failure: true, status: result.status, data: result.data }), {
           status: result.status,
           headers: { "Content-Type": "application/json" },
         });
@@ -281,7 +281,7 @@ export async function handleActionRequest(
     if (isRedirectResponse(result)) {
       if (wantsJson) {
         return new Response(
-          JSON.stringify({ __nix_js_action_redirect: true, status: result.status, location: result.location }),
+          JSON.stringify({ __elur_js_action_redirect: true, status: result.status, location: result.location }),
           {
             status: 200,
             headers: { "Content-Type": "application/json" },
@@ -311,7 +311,7 @@ export async function handleActionRequest(
       },
     });
   } catch (err) {
-    console.error("[nix-js-kit] Action error:", err);
+    console.error("[elur-kit] Action error:", err);
     return publicErrorResponse(err, { includeDetail: false });
   }
 }

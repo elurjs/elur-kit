@@ -1,8 +1,8 @@
 /**
- * Client-side router for Nix.js Kit.
+ * Client-side router for Elur Kit.
  *
  * Intercepts clicks on internal links, fetches the rendered page body from
- * `/__nix-js/render`, swaps the `#app` content and updates the history state.
+ * `/__elur-js/render`, swaps the `#app` content and updates the history state.
  * This is loaded as part of the client bundle instead of being inlined in
  * every HTML page.
  *
@@ -23,8 +23,8 @@ interface RenderPayload {
 }
 
 /**
- * Whether the `/__nix-js/render` endpoint has been detected. Static builds emit
- * `<meta name="nix-js:render-endpoint" content="off">` so this starts as
+ * Whether the `/__elur-js/render` endpoint has been detected. Static builds emit
+ * `<meta name="elur:render-endpoint" content="off">` so this starts as
  * `false` with zero probe requests. For older builds, a single shared probe
  * determines availability so concurrent prefetches never storm the endpoint.
  */
@@ -38,11 +38,11 @@ function resolveEndpointAvailability(): Promise<boolean> {
   if (!renderEndpointAvailable) return Promise.resolve(false);
   if (!endpointProbe) {
     endpointProbe = (async () => {
-      const url = new URL("/__nix-js/render", location.origin);
+      const url = new URL("/__elur-js/render", location.origin);
       url.searchParams.set("page", "/");
       try {
         const response = await fetch(url.toString(), {
-          headers: { Accept: "application/json", "X-Nix-Probe": "1" },
+          headers: { Accept: "application/json", "X-Elur-Probe": "1" },
         });
         renderEndpointAvailable = response.ok;
         return response.ok;
@@ -105,7 +105,7 @@ function setCached(key: string, payload: RenderPayload): void {
  * Fetches the render payload for a path. Uses the prefetch cache when fresh.
  * Stores the result in the cache for subsequent navigations.
  *
- * On static deployments (no `/__nix-js/render` endpoint), falls back to
+ * On static deployments (no `/__elur-js/render` endpoint), falls back to
  * fetching the full HTML page and extracting `#app` + `<head>` tags.
  */
 async function fetchPayload(pathname: string, search: string, signal?: AbortSignal): Promise<RenderPayload | undefined> {
@@ -135,9 +135,9 @@ async function fetchPayload(pathname: string, search: string, signal?: AbortSign
   return payload;
 }
 
-/** Attempts to fetch from the `/__nix-js/render` JSON endpoint. */
+/** Attempts to fetch from the `/__elur-js/render` JSON endpoint. */
 async function fetchFromRenderEndpoint(pathname: string, search: string, signal?: AbortSignal): Promise<RenderPayload | undefined> {
-  const url = new URL("/__nix-js/render", location.origin);
+  const url = new URL("/__elur-js/render", location.origin);
   url.searchParams.set("page", pathname);
   const current = new URL(location.href);
   url.searchParams.set("search", search || current.search);
@@ -162,7 +162,7 @@ async function fetchFromRenderEndpoint(pathname: string, search: string, signal?
 
 /**
  * Static-mode fallback: fetches the full HTML page for the path and extracts
- * the `#app` innerHTML plus managed `<head>` tags (`[data-nix-js-head]`).
+ * the `#app` innerHTML plus managed `<head>` tags (`[data-elur-head]`).
  * Also extracts `<title>`, stylesheets, and headLinks for SPA navigation.
  */
 async function fetchFromHtml(pathname: string, search: string, signal?: AbortSignal): Promise<RenderPayload | undefined> {
@@ -192,15 +192,15 @@ async function fetchFromHtml(pathname: string, search: string, signal?: AbortSig
   if (!appEl) return undefined;
   const body = appEl.innerHTML;
 
-  // Extract managed head tags (data-nix-js-head) for mergeHead.
-  const headTags = doc.querySelectorAll("[data-nix-js-head]");
+  // Extract managed head tags (data-elur-head) for mergeHead.
+  const headTags = doc.querySelectorAll("[data-elur-head]");
   let head = "";
   for (const tag of headTags) {
     head += tag.outerHTML;
   }
 
   // Also extract headLinks (favicons, manifest, theme-color) so they persist.
-  // These don't have data-nix-js-head, so we grab them separately.
+  // These don't have data-elur-head, so we grab them separately.
   const linkTags = doc.head.querySelectorAll("link[rel='icon'], link[rel='apple-touch-icon'], link[rel='manifest'], meta[name='theme-color']");
   for (const tag of linkTags) {
     // Skip if already in the current document head
@@ -279,7 +279,7 @@ export function hoistStyles(container: ParentNode): void {
       continue;
     }
     // Mark as hoisted so we can clean up later if needed
-    link.setAttribute("data-nix-js-hoisted", "");
+    link.setAttribute("data-elur-hoisted", "");
     document.head.appendChild(link);
   }
 
@@ -295,7 +295,7 @@ export function hoistStyles(container: ParentNode): void {
       style.remove();
       continue;
     }
-    style.setAttribute("data-nix-js-hoisted", "");
+    style.setAttribute("data-elur-hoisted", "");
     document.head.appendChild(style);
   }
 }
@@ -306,10 +306,10 @@ export function hoistStyles(container: ParentNode): void {
  * has changed after a SPA navigation.
  */
 function announceNavigation(pathname: string): void {
-  let liveRegion = document.getElementById("nix-js-route-announcer");
+  let liveRegion = document.getElementById("elur-route-announcer");
   if (!liveRegion) {
     liveRegion = document.createElement("div");
-    liveRegion.id = "nix-js-route-announcer";
+    liveRegion.id = "elur-route-announcer";
     liveRegion.setAttribute("aria-live", "assertive");
     liveRegion.setAttribute("aria-atomic", "true");
     liveRegion.setAttribute("role", "status");
@@ -375,8 +375,8 @@ function updateCanonicalUrl(pathname: string, search: string): void {
 
 /**
  * Navigates to a page without a full reload: fetches the fresh body from the
- * `/__nix-js/render` endpoint, swaps `#app`, updates the document title and
- * dispatches `nix-js:rendered` so islands re-hydrate. Used by the router on
+ * `/__elur-js/render` endpoint, swaps `#app`, updates the document title and
+ * dispatches `elur:rendered` so islands re-hydrate. Used by the router on
  * clicks and available for programmatic navigation (e.g. after a server
  * action returns a redirect, so the target page shows fresh server data).
  *
@@ -469,7 +469,7 @@ export async function navigateTo(pathname: string, search = "", push = true): Pr
     // Only on push (forward navigation), not on back/forward (popstate).
     if (push) moveFocusToContent();
 
-    document.dispatchEvent(new CustomEvent("nix-js:rendered"));
+    document.dispatchEvent(new CustomEvent("elur:rendered"));
   };
 
   // Use View Transitions when available and the user hasn't opted out.
@@ -484,13 +484,13 @@ export async function navigateTo(pathname: string, search = "", push = true): Pr
 }
 
 /**
- * Replaces all `<head>` tags marked with `data-nix-js-head` with the new ones
+ * Replaces all `<head>` tags marked with `data-elur-head` with the new ones
  * from the server payload. Also updates `document.title` when a title tag is
  * present in the new head.
  */
 function mergeHead(head: string | undefined, fallbackTitle: string | undefined): void {
   // Remove existing managed tags.
-  const existing = document.querySelectorAll("[data-nix-js-head]");
+  const existing = document.querySelectorAll("[data-elur-head]");
   existing.forEach((el) => el.remove());
 
   if (head && head.trim().length > 0) {
@@ -576,7 +576,7 @@ function setupLinkPrefetch(): void {
   mutationObserver.observe(document.body, { childList: true, subtree: true });
 
   // Re-scan after each SPA navigation.
-  document.addEventListener("nix-js:rendered", observeLinks);
+  document.addEventListener("elur:rendered", observeLinks);
 }
 
 // --- Router bootstrap ---
@@ -586,7 +586,7 @@ export function startClientRouter(): void {
   // endpoint (zero 404s on fully static deployments). The meta lives in the
   // initial HTML head and persists across SPA navigations.
   const endpointMeta = document.querySelector<HTMLMetaElement>(
-    'meta[name="nix-js:render-endpoint"]',
+    'meta[name="elur:render-endpoint"]',
   );
   if (endpointMeta?.getAttribute("content") === "off") {
     renderEndpointAvailable = false;

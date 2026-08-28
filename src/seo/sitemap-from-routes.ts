@@ -49,7 +49,7 @@ export async function generateSitemapFromRoutes(
     // Skip error pages.
     if (page.path === "/404" || page.path === "/500") continue;
     // Skip internal namespaces.
-    if (page.path.startsWith("/_nix-js") || page.path.startsWith("/__nix-js")) continue;
+    if (page.path.startsWith("/_elur") || page.path.startsWith("/__elur-js")) continue;
 
     routeUrls.push({
       url: page.path,

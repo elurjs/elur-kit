@@ -1,4 +1,4 @@
-import type { ResolvedNixConfig } from "../config/index.js";
+import type { ResolvedElurConfig } from "../config/index.js";
 import { randomUUID } from "node:crypto";
 
 // --- RequestContext: unified per-request runtime context ---
@@ -128,14 +128,14 @@ function serializeCookie(name: string, value: string, options: CookieOptions): s
 
 export interface RequestContextOptions {
   request: Request;
-  config: ResolvedNixConfig;
+  config: ResolvedElurConfig;
   routes: RouteTable;
   actions: import("../action/scan.js").ActionRegistry;
   /** Public action names serialized into the HTML shell. */
   publicActions: Record<string, string[]>;
   /** Optional module loader for adapter-bundled entries. */
   importer?: (path: string) => unknown | Promise<unknown>;
-  /** Whether the render endpoint (/__nix-js/render) is available. */
+  /** Whether the render endpoint (/__elur-js/render) is available. */
   renderEndpoint?: boolean;
   /** Whether to bypass the ISR cache (dev mode). */
   noCache?: boolean;
@@ -160,7 +160,7 @@ export interface RequestContextOptions {
 export class RequestContext {
   readonly request: Request;
   readonly url: URL;
-  readonly config: ResolvedNixConfig;
+  readonly config: ResolvedElurConfig;
   readonly routes: RouteTable;
   readonly actions: import("../action/scan.js").ActionRegistry;
   readonly publicActions: Record<string, string[]>;

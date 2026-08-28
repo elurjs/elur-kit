@@ -1,9 +1,9 @@
-import { NIX_RENDER_PROTOCOL, type NixTemplate, type ServerRenderProtocolContext } from "@deijose/nix-js";
+import { ELUR_RENDER_PROTOCOL, type ElurTemplate, type ServerRenderProtocolContext } from "@elurjs/core";
 
 // --- Islands helper ---
 //
 // Marks a component as an island. During server-side rendering it emits a
-// static placeholder with `data-nix-js-island` attributes. The client entry finds
+// static placeholder with `data-elur-island` attributes. The client entry finds
 // these markers and hydrates them with the real component + reactive signals.
 //
 // SSR strategy
@@ -17,7 +17,7 @@ import { NIX_RENDER_PROTOCOL, type NixTemplate, type ServerRenderProtocolContext
 //   1. directive: "only"  — shortcut for client-only with `load` scheduling.
 //   2. options: { ssr: false } — client-only with any directive (load/idle/visible).
 //
-// When SSR is skipped, only `options.fallback` (a NixTemplate or string) is
+// When SSR is skipped, only `options.fallback` (a ElurTemplate or string) is
 // rendered into the marker. The client hydrates from scratch.
 //
 // When SSR runs and the component throws, the error is NOT swallowed: it is
@@ -28,7 +28,7 @@ import { NIX_RENDER_PROTOCOL, type NixTemplate, type ServerRenderProtocolContext
 export type IslandDirective = "load" | "idle" | "visible" | "only";
 
 export interface IslandComponent<TProps = unknown> {
-  (props: TProps): NixTemplate | null | false | undefined;
+  (props: TProps): ElurTemplate | null | false | undefined;
 }
 
 /**
@@ -38,12 +38,12 @@ export interface IslandComponent<TProps = unknown> {
  *   unless `directive === "only"` (then `false`). When `false`, the component
  *   is never called during SSR; only `fallback` is rendered.
  * - `fallback`: HTML to render inside the island marker when SSR is skipped or
- *   the component returns null/false. Accepts a `NixTemplate` (reactive, with
+ *   the component returns null/false. Accepts a `ElurTemplate` (reactive, with
  *   signals) or a plain string. Defaults to an empty string.
  */
 export interface IslandOptions {
   ssr?: boolean;
-  fallback?: NixTemplate | string;
+  fallback?: ElurTemplate | string;
 }
 
 /**
@@ -56,7 +56,7 @@ export interface IslandOptions {
  * @param directive When to hydrate on the client. Use `"only"` to skip SSR
  *   entirely (client-only island).
  * @param options SSR strategy and fallback content.
- * @returns A NixTemplate that renders the island placeholder.
+ * @returns A ElurTemplate that renders the island placeholder.
  */
 export function island<TProps>(
   name: string,
@@ -64,17 +64,17 @@ export function island<TProps>(
   props: TProps,
   directive: IslandDirective = "load",
   options?: IslandOptions,
-): NixTemplate {
+): ElurTemplate {
   // `directive: "only"` forces ssr off; explicit `options.ssr` wins otherwise.
   const ssr = directive === "only" ? false : (options?.ssr ?? true);
   const fallback = options?.fallback;
 
   const markerHtml = (innerHtml: string) =>
-    `<div data-nix-js-island="${escapeHtml(name)}" data-directive="${directive}" data-props='${serializeProps(props)}'>${innerHtml}</div>`;
+    `<div data-elur-island="${escapeHtml(name)}" data-directive="${directive}" data-props='${serializeProps(props)}'>${innerHtml}</div>`;
 
   return {
-    __isNixTemplate: true as const,
-    [NIX_RENDER_PROTOCOL]: {
+    __isElurTemplate: true as const,
+    [ELUR_RENDER_PROTOCOL]: {
       async renderServer(context: ServerRenderProtocolContext) {
         let innerHtml = "";
         if (ssr) {
@@ -120,7 +120,7 @@ export function island<TProps>(
         if (inserted?.parentNode) inserted.parentNode.removeChild(inserted);
       };
     },
-  } as unknown as NixTemplate;
+  } as unknown as ElurTemplate;
 }
 
 /**
@@ -134,18 +134,18 @@ function wrapIslandSSRError(name: string, error: unknown): Error {
   const cause = error instanceof Error ? error : new Error(String(error));
   const msg = error instanceof Error ? error.message : String(error);
   return new Error(
-    `[nix-js-kit] Island "${name}" threw during SSR: ${msg}\n` +
+    `[elur-kit] Island "${name}" threw during SSR: ${msg}\n` +
     `  If the component accesses browser-only globals (document, window, etc.),\n` +
     `  use directive: "only" or options: { ssr: false } to skip server rendering.\n` +
     `  For environment reads (matchMedia, localStorage, navigator) you may guard\n` +
-    `  the access with isSSR() from "@deijose/nix-js-kit".`,
+    `  the access with isSSR() from "@elurjs/kit".`,
     { cause },
   );
 }
 
-/** Renders the fallback (NixTemplate or string) to an HTML string on the server. */
+/** Renders the fallback (ElurTemplate or string) to an HTML string on the server. */
 async function renderFallback(
-  fallback: NixTemplate | string | undefined,
+  fallback: ElurTemplate | string | undefined,
   context: ServerRenderProtocolContext,
 ): Promise<string> {
   if (fallback == null || fallback === "") return "";
@@ -154,7 +154,7 @@ async function renderFallback(
 }
 
 /** Renders the fallback into a container and returns its innerHTML (client path). */
-function renderFallbackSync(fallback: NixTemplate | string | undefined, container: HTMLElement): string {
+function renderFallbackSync(fallback: ElurTemplate | string | undefined, container: HTMLElement): string {
   if (fallback == null || fallback === "") return "";
   if (typeof fallback === "string") return fallback;
   const dispose = fallback._render(container, null);

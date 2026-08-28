@@ -1,5 +1,5 @@
-import { html } from "@deijose/nix-js";
-import type { PageProps } from "@deijose/nix-js-kit";
+import { html } from "@elurjs/core";
+import type { PageProps } from "@elurjs/kit";
 
 export default function FeaturesPage(_props: PageProps) {
   return html`

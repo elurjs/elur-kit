@@ -3,13 +3,13 @@ import { isAbsolute, relative, resolve, sep } from "node:path";
 import { loadConfigFromFile } from "vite";
 import type { Adapter } from "../adapters/index.js";
 import type { ImageFormat } from "../image/index.js";
-import type { NixKitIntegration } from "../integrations/index.js";
+import type { ElurKitIntegration } from "../integrations/index.js";
 import { runIntegrationHook } from "../integrations/index.js";
 
-export type NixOutputMode = "static" | "server" | "hybrid";
+export type ElurOutputMode = "static" | "server" | "hybrid";
 export type TrailingSlashMode = "always" | "never" | "ignore";
 
-export interface NixConfig {
+export interface ElurConfig {
   root?: string;
   appDir?: string;
   islandsDir?: string;
@@ -19,7 +19,7 @@ export interface NixConfig {
   site?: string;
   base?: string;
   trailingSlash?: TrailingSlashMode;
-  output?: NixOutputMode;
+  output?: ElurOutputMode;
   adapter?: Adapter;
   images?: {
     formats?: ImageFormat[];
@@ -41,7 +41,7 @@ export interface NixConfig {
     enabled?: boolean;
     prefetch?: boolean;
   };
-  integrations?: NixKitIntegration[];
+  integrations?: ElurKitIntegration[];
 }
 
 /** Security headers configuration (runtime-security §14). */
@@ -63,7 +63,7 @@ export interface SecurityHeadersConfig {
   permissionsPolicy?: string;
 }
 
-export interface ResolvedNixConfig {
+export interface ResolvedElurConfig {
   root: string;
   appDir: string;
   islandsDir: string;
@@ -73,7 +73,7 @@ export interface ResolvedNixConfig {
   site?: string;
   base: string;
   trailingSlash: TrailingSlashMode;
-  output: NixOutputMode;
+  output: ElurOutputMode;
   adapter?: Adapter;
   images: {
     formats: ImageFormat[];
@@ -94,28 +94,28 @@ export interface ResolvedNixConfig {
     enabled: boolean;
     prefetch: boolean;
   };
-  integrations: NixKitIntegration[];
+  integrations: ElurKitIntegration[];
   configFile?: string;
 }
 
-export interface LoadNixConfigOptions {
+export interface LoadElurConfigOptions {
   root?: string;
   configFile?: string;
   command?: "dev" | "build" | "preview" | "start" | "check" | "routes" | "doctor";
   mode?: string;
-  overrides?: NixConfig;
+  overrides?: ElurConfig;
 }
 
-export function defineConfig(config: NixConfig): NixConfig {
+export function defineConfig(config: ElurConfig): ElurConfig {
   return config;
 }
 
-export async function loadNixConfig(options: LoadNixConfigOptions = {}): Promise<ResolvedNixConfig> {
+export async function loadElurConfig(options: LoadElurConfigOptions = {}): Promise<ResolvedElurConfig> {
   const initialRoot = resolve(options.root ?? process.cwd());
   const configFile = options.configFile
     ? resolve(initialRoot, options.configFile)
     : await findConfigFile(initialRoot);
-  let loaded: NixConfig = {};
+  let loaded: ElurConfig = {};
 
   if (configFile) {
     const result = await loadConfigFromFile(
@@ -123,8 +123,8 @@ export async function loadNixConfig(options: LoadNixConfigOptions = {}): Promise
       configFile,
       initialRoot,
     );
-    if (!result) throw new Error(`[nix-js-kit] Could not load config: ${configFile}`);
-    loaded = result.config as NixConfig;
+    if (!result) throw new Error(`[elur-kit] Could not load config: ${configFile}`);
+    loaded = result.config as ElurConfig;
   }
 
   const merged = mergeConfig(loaded, options.overrides ?? {});
@@ -137,12 +137,12 @@ export async function loadNixConfig(options: LoadNixConfigOptions = {}): Promise
   return resolved;
 }
 
-function resolveConfig(root: string, config: NixConfig, configFile?: string): ResolvedNixConfig {
+function resolveConfig(root: string, config: ElurConfig, configFile?: string): ResolvedElurConfig {
   if (config.site) new URL(config.site);
   const base = normalizeBase(config.base ?? "/");
   const imageQuality = config.images?.quality ?? 80;
   if (!Number.isFinite(imageQuality) || imageQuality < 1 || imageQuality > 100) {
-    throw new Error("[nix-js-kit] images.quality must be between 1 and 100");
+    throw new Error("[elur-kit] images.quality must be between 1 and 100");
   }
 
   return {
@@ -163,7 +163,7 @@ function resolveConfig(root: string, config: NixConfig, configFile?: string): Re
       strict: config.images?.strict ?? false,
     },
     cache: {
-      dir: resolveInside(root, config.cache?.dir ?? ".nix-js/cache", "cache.dir"),
+      dir: resolveInside(root, config.cache?.dir ?? ".elur/cache", "cache.dir"),
       defaultRevalidate: config.cache?.defaultRevalidate,
     },
     security: {
@@ -183,7 +183,7 @@ function resolveConfig(root: string, config: NixConfig, configFile?: string): Re
   };
 }
 
-function mergeConfig(base: NixConfig, override: NixConfig): NixConfig {
+function mergeConfig(base: ElurConfig, override: ElurConfig): ElurConfig {
   return {
     ...base,
     ...override,
@@ -199,20 +199,20 @@ function resolveInside(root: string, path: string, name: string): string {
   const resolved = isAbsolute(path) ? resolve(path) : resolve(root, path);
   const rel = relative(root, resolved);
   if (rel === ".." || rel.startsWith(`..${sep}`) || isAbsolute(rel)) {
-    throw new Error(`[nix-js-kit] ${name} must stay inside root: ${resolved}`);
+    throw new Error(`[elur-kit] ${name} must stay inside root: ${resolved}`);
   }
   return resolved;
 }
 
 function normalizeBase(base: string): string {
-  if (!base.startsWith("/")) throw new Error("[nix-js-kit] base must start with /");
+  if (!base.startsWith("/")) throw new Error("[elur-kit] base must start with /");
   return base === "/" ? base : `${base.replace(/\/+$/, "")}/`;
 }
 
-const PREFERRED_CONFIG_FILES = ["nix-js.config.ts", "nix-js.config.js", "nix-js.config.mjs"];
+const PREFERRED_CONFIG_FILES = ["elur.config.ts", "elur.config.js", "elur.config.mjs"];
 // Legacy names kept for backward compatibility. Emit a deprecation warning
-// when a project still uses them so authors migrate to `nix-js.config.*`.
-const LEGACY_CONFIG_FILES = ["nix.config.ts", "nix.config.js", "nix.config.mjs"];
+// when a project still uses them so authors migrate to `elur.config.*`.
+const LEGACY_CONFIG_FILES = ["elur.config.ts", "elur.config.js", "elur.config.mjs"];
 
 async function findConfigFile(root: string): Promise<string | undefined> {
   for (const name of PREFERRED_CONFIG_FILES) {
@@ -228,8 +228,8 @@ async function findConfigFile(root: string): Promise<string | undefined> {
     try {
       await access(path);
       console.warn(
-        `[nix-js-kit] "${name}" is deprecated and will be removed in a future release. ` +
-        `Rename it to "nix-js.config.${name.split(".").slice(1).join(".")}" to keep your config working.`,
+        `[elur-kit] "${name}" is deprecated and will be removed in a future release. ` +
+        `Rename it to "elur.config.${name.split(".").slice(1).join(".")}" to keep your config working.`,
       );
       return path;
     } catch {
