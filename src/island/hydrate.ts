@@ -77,7 +77,7 @@ function collectMarkers(): IslandMarker[] {
   return elements.map((el) => {
     const marker: IslandMarker = {
       el,
-      name: el.dataset.elurJsIsland ?? "",
+      name: el.dataset.elurIsland ?? "",
       directive: (el.dataset.directive as IslandDirective) ?? "load",
       props: null,
     };

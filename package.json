@@ -1,6 +1,6 @@
 {
   "name": "@elurjs/kit",
-  "version": "2.4.4",
+  "version": "2.4.5",
   "description": "Full-stack framework for Elur — file-based routing, SSG and islands.",
   "license": "MIT",
   "author": "Deiver Vasquez",
