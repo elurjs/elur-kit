@@ -1,6 +1,6 @@
 {
   "name": "@elurjs/kit",
-  "version": "2.4.5",
+  "version": "2.4.6",
   "description": "Full-stack framework for Elur — file-based routing, SSG and islands.",
   "license": "MIT",
   "author": "Deiver Vasquez",
@@ -262,7 +262,7 @@
     "tsx": "^4.23.12"
   },
   "peerDependencies": {
-    "@elurjs/core": "^3.5.0",
+    "@elurjs/core": "^3.5.1",
     "@elurjs/vite-plugin-elur": "^2.0.2",
     "vite": "^7.0.0 || ^8.0.0"
   },
@@ -281,10 +281,11 @@
     }
   },
   "devDependencies": {
-    "@elurjs/core": "^3.5.0",
+    "@elurjs/core": "^3.5.1",
     "@elurjs/vite-plugin-elur": "^2.0.2",
     "@playwright/test": "^1.62.1",
     "@types/node": "^22.20.1",
+    "happy-dom": "^20.11.6",
     "terser": "^5.50.0",
     "typescript": "^7.0.2",
     "vite": "^8.2.1"

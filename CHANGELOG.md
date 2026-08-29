@@ -5,6 +5,30 @@ All notable changes to Nix.js Kit are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.6]
+
+### Fixed
+
+- **`isSSR()` always returned `false`** — the kit's `ssr-flag.ts` used
+  `Symbol.for("@elurjs/core/reactivity-state")` while `@elurjs/core` < 3.5.1
+  used `Symbol.for("elur/reactivity-state")`. The mismatched symbols meant
+  the kit's `setSSR(true)` during `renderToString` never wrote to the core's
+  reactivity state, so `isSSR()` read `undefined` and defaulted to `false`.
+  Fixed in `@elurjs/core@3.5.1` which now namespaces its internal symbols
+  under `@elurjs/core/*`. Peer dependency bumped to `^3.5.1`.
+
+### Changed
+
+- **`happy-dom` re-added as a test-only `devDependency`** — it was fully
+  removed in v2.4, but 5 client-side test suites (`island.test.ts`,
+  `island-reactive-array.test.ts`, `island-client-only.test.ts`,
+  `client-router.test.ts`, `client-router-a11y.test.ts`) still imported it
+  and failed with `ERR_MODULE_NOT_FOUND`. It is now back **only** in
+  `devDependencies` to provide a DOM environment for those tests. It is
+  never imported by `src/`, never referenced by either vite build config,
+  and never shipped in the published bundle (`files` contains only
+  `dist/lib`). `test/happy-dom-optional.test.ts` guards this invariant.
+
 ## [2.4.4]
 
 ### Fixed

@@ -1,16 +1,17 @@
 // --- SSR flag utility ---
 //
-// Elur 2.6.0 (published on npm) does not export `_setSSR`/`_isSSR`. The
-// reactivity state lives on `globalThis[Symbol.for("@elurjs/core/reactivity-state")]`
-// and exposes an `ssr` boolean that, when true, makes effects run a single
-// pass without subscribing — exactly what we need during server rendering.
+// `@elurjs/core` does not export `_setSSR`/`_isSSR`. The reactivity state lives
+// on `globalThis[Symbol.for("@elurjs/core/reactivity-state")]` and the kit owns
+// the `ssr` boolean on it: `renderToString` sets it to `true` while server
+// rendering so `isSSR()` reflects the current render mode for user code
+// (environment reads, client-only guards, ...).
 //
 // This module manipulates that flag directly so the kit does not depend on
 // private exports that may or may not be present in a given elur release.
 
 const STATE_KEY = Symbol.for("@elurjs/core/reactivity-state");
 
-type ReactivityState = { ssr: boolean };
+type ReactivityState = { ssr?: boolean };
 
 function getState(): ReactivityState | undefined {
   return (globalThis as Record<symbol, unknown>)[STATE_KEY] as

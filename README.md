@@ -191,11 +191,17 @@ Options:
   manifest, no variants, no `<picture>`). The registry state is now in a
   dedicated shared chunk (`image/registry.js`) that both the CLI and the
   library import, ensuring a single module instance.
-- **`happy-dom` fully removed** — the kit no longer depends on
-  happy-dom in any form. SSR uses the core's DOM-free
+- **`happy-dom` removed from the runtime** — the kit no longer depends on
+  happy-dom at runtime. SSR uses the core's DOM-free
   `renderToString` (`@elurjs/core/server`) directly. The legacy DOM
   fallback (`renderWithDom`) was deleted along with all `external`/
-  `globals` references in the vite build configs.
+  `globals` references in the vite build configs. `happy-dom` is kept
+  **only** as a `devDependency` to provide a DOM environment for the
+  client-side test suites (`island.test.ts`, `client-router.test.ts`,
+  ...); it is never imported by `src/`, never referenced by either vite
+  build config, and never shipped in the published bundle (`files`
+  contains only `dist/lib`). See
+  `test/happy-dom-optional.test.ts` for the guard that enforces this.
 - **`raw()` now supports server rendering** — added
   `ELUR_RENDER_PROTOCOL.renderServer` to `raw()` so it works with the
   core's DOM-free SSR (previously relied on the happy-dom fallback).
