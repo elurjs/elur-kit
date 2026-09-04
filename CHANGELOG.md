@@ -5,6 +5,17 @@ All notable changes to Elur Kit are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.9]
+
+### Fixed
+
+- **Revert dynamic hydrator import** — 2.4.8 split the hydrator into a
+  separate chunk via dynamic `import()`, but the `elur:rendered` event
+  listener was registered inside the async function, so SPA navigations
+  fired before the listener was attached. Islands never re-hydrated
+  after navigation, causing broken pages and double-click issues.
+  Restored the static import; `requestIdleCallback` deferral is kept.
+
 ## [2.4.8]
 
 ### Changed
