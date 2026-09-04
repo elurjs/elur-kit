@@ -5,6 +5,17 @@ All notable changes to Elur Kit are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.8]
+
+### Changed
+
+- **Hydrator split into a separate chunk** — the auto-generated
+  `entry-client.ts` now dynamically imports `hydrateIslands` instead of
+  statically importing it. Vite emits the hydrator as its own chunk, so
+  the initial `entry-client.js` bundle contains only the SPA router
+  (~18 KB → ~9 KB gzipped). The hydrator loads on idle via
+  `requestIdleCallback`, after the first paint.
+
 ## [2.4.7]
 
 ### Changed
