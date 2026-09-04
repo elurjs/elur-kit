@@ -1,9 +1,22 @@
 # Changelog
 
-All notable changes to Nix.js Kit are documented in this file.
+All notable changes to Elur Kit are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [2.4.7]
+
+### Changed
+
+- **Client entry now defers hydration with `requestIdleCallback`** — the
+  auto-generated `entry-client.ts` wraps `hydrateIslands(registry)` in
+  `requestIdleCallback(hydrate, { timeout: 2000 })` (with a `setTimeout`
+  fallback) so the browser can paint the server-rendered HTML before
+  hydrating islands. This reduces LCP element render delay on mobile
+  devices where the main thread was blocked by synchronous hydration.
+  Islands with directive `"load"` already have SSR-rendered DOM, so
+  users see content immediately — hydration only adds interactivity.
 
 ## [2.4.6]
 

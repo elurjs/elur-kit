@@ -66,7 +66,15 @@ export function buildEntrySource(
     ? `const registry = {
 ${registryLines}
 };
-hydrateIslands(registry);
+// Defer hydration until the browser is idle so the first paint is not
+// blocked. Islands with directive "load" already have SSR-rendered DOM,
+// so the user sees content immediately — hydration only adds interactivity.
+const hydrate = () => hydrateIslands(registry);
+if ("requestIdleCallback" in window) {
+  requestIdleCallback(hydrate, { timeout: 2000 });
+} else {
+  setTimeout(hydrate, 0);
+}
 document.addEventListener("elur:rendered", () => {
   cleanupHydratedIslands();
   hydrateIslands(registry);
