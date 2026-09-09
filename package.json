@@ -264,7 +264,10 @@
   "peerDependencies": {
     "@elurjs/core": "^3.5.1",
     "@elurjs/vite-plugin-elur": "^2.0.2",
-    "vite": "^7.0.0 || ^8.0.0"
+    "marked": "^16.0.0 || ^17.0.0 || ^18.0.0",
+    "sharp": "^0.33.0 || ^0.34.0 || ^0.35.0",
+    "vite": "^7.0.0 || ^8.0.0",
+    "zod": "^4.0.0"
   },
   "peerDependenciesMeta": {
     "marked": {
@@ -281,11 +284,13 @@
     }
   },
   "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.5",
     "@elurjs/core": "^3.5.1",
     "@elurjs/vite-plugin-elur": "^2.0.2",
     "@playwright/test": "^1.62.1",
     "@types/node": "^22.20.1",
     "happy-dom": "^20.11.6",
+    "publint": "^0.3.24",
     "terser": "^5.50.0",
     "typescript": "^7.0.2",
     "vite": "^8.2.1"
