@@ -1,4 +1,4 @@
-import { describe, it, after } from "node:test";
+import { describe, it, after, before } from "node:test";
 import assert from "node:assert/strict";
 import { build } from "../src/build/build.ts";
 import { nodeAdapter } from "../src/adapters/node.ts";
@@ -9,6 +9,7 @@ import { rm, stat } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
+import { acquireFixtureLock, releaseFixtureLock } from "./helpers/fixture-lock.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, "fixtures/minimal");
@@ -56,7 +57,10 @@ async function buildFixture(): Promise<void> {
 }
 
 describe("adapters", () => {
+  before(acquireFixtureLock);
+
   after(async () => {
+    await releaseFixtureLock();
     await rm(outDir, { recursive: true, force: true });
     await rm(generatedDir, { recursive: true, force: true });
     await rm(resolve(root, ".vercel"), { recursive: true, force: true });

@@ -1,10 +1,11 @@
-import { describe, it, after } from "node:test";
+import { describe, it, after, before } from "node:test";
 import assert from "node:assert/strict";
 import { build } from "../src/build/build.ts";
 import { doPreview } from "../src/cli.ts";
 import { rm } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
+import { acquireFixtureLock, releaseFixtureLock } from "./helpers/fixture-lock.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, "fixtures/minimal");
@@ -18,7 +19,10 @@ function stripMarkers(html: string): string {
 }
 
 describe("preview server", () => {
+  before(acquireFixtureLock);
+
   after(async () => {
+    await releaseFixtureLock();
     await rm(outDir, { recursive: true, force: true });
     await rm(generatedDir, { recursive: true, force: true });
   });

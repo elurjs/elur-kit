@@ -10,6 +10,7 @@ import { rm } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
+import { acquireFixtureLock, releaseFixtureLock } from "./helpers/fixture-lock.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, "fixtures/minimal");
@@ -94,6 +95,7 @@ describe("cross-runtime parity (§8.2)", () => {
   const ssrServers: Awaited<ReturnType<typeof createSsrServer>>[] = [];
 
   before(async () => {
+    await acquireFixtureLock();
     const fixture = await buildFixture();
     routes = fixture.routes;
     actions = fixture.actions;
@@ -161,6 +163,7 @@ describe("cross-runtime parity (§8.2)", () => {
     for (const server of ssrServers) await server.close();
     await rm(outDir, { recursive: true, force: true });
     await rm(generatedDir, { recursive: true, force: true });
+    await releaseFixtureLock();
   });
 
   it("serves the same status and body semantics across runtimes", async () => {

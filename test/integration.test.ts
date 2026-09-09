@@ -1,4 +1,4 @@
-import { describe, it, after } from "node:test";
+import { describe, it, after, before } from "node:test";
 import assert from "node:assert/strict";
 import { build } from "../src/build/build.ts";
 import { createSsrServer } from "../src/ssr/server.ts";
@@ -7,6 +7,7 @@ import { request as httpRequest } from "node:http";
 import { getCachedHtml } from "../src/cache.ts";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
+import { acquireFixtureLock, releaseFixtureLock } from "./helpers/fixture-lock.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, "fixtures/minimal");
@@ -35,7 +36,10 @@ function rawGet(port: number, path: string): Promise<{ status: number; body: str
 }
 
 describe("integration: build + SSR", () => {
+  before(acquireFixtureLock);
+
   after(async () => {
+    await releaseFixtureLock();
     await rm(outDir, { recursive: true, force: true });
     await rm(publicDir, { recursive: true, force: true });
     await rm(secretPath, { force: true });
