@@ -5,6 +5,21 @@ All notable changes to Elur Kit are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.1]
+
+### Fixed
+
+- **`elur-kit build` never generated image variants** — the CLI bundle
+  (`dist/lib/cli.js`) had `import("sharp")` rewritten by Vite's
+  optional-peer-dep transform into a stub that always throws
+  (`Could not resolve "sharp"`), because `sharp` was missing from the
+  externals in `vite.cli.config.ts`. `loadSharp()` caught the error and
+  permanently returned `null`, so `processImageBatch` fell back to
+  manifest-only entries (`variants: []`) and every `image()` emitted a
+  plain `<img>` instead of a `<picture>` with WebP/AVIF sources. `sharp`
+  is now external in the CLI build, so the optional peer resolves from
+  the consuming project's `node_modules` at runtime.
+
 ## [2.5.0]
 
 All changes are additive and backwards-compatible: existing projects work

@@ -3,7 +3,7 @@
 [![npm version](https://img.shields.io/npm/v/@elurjs/kit.svg)](https://www.npmjs.com/package/@elurjs/kit)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-> Full-stack framework for Elur — file-based routing, SSG, SSR, ISR, streaming, islands, actions, content collections, cache adapters, and SPA-like navigation. Zero extra runtime dependencies on the client: Elur stays at ~15 KB. Optional build-time compiler lowers `html\`\`` templates to imperative DOM code for ~25–44% faster renders.
+> Full-stack framework for Elur — file-based routing, SSG, SSR, ISR, streaming, islands, actions, content collections, cache adapters, and SPA-like navigation. Zero extra runtime dependencies on the client: Elur stays at ~15 KB. Optional build-time compiler lowers ``html` `` templates to imperative DOM code for ~25–44% faster renders.
 
 ## What is Elur Kit?
 
@@ -22,7 +22,7 @@ Elur Kit is a framework built on top of [Elur](https://elur.dev/). It brings con
 
 - **Routing**: file-based with dynamic segments, optional catch-all `[[...slug]]`, route conflict detection, safe URL decoding, redirects/rewrites/route headers
 - **Rendering**: SSG, SSR, ISR with explicit cache policy (public/private/dynamic), opt-in streaming SSR with `loading.ts` boundaries (**experimental** — ver [Streaming SSR](#streaming-ssr-experimental))
-- **Build-time compiler** (optional, recommended): integrates [`@elurjs/core-compiler`](https://www.npmjs.com/package/@elurjs/core-compiler) via [`@elurjs/vite-plugin-elur`](https://www.npmjs.com/package/@elurjs/vite-plugin-elur) to lower `html\`\`` templates to imperative DOM code at build time — eliminates `detectContext`, `buildHTML`, and both `TreeWalker` passes in runtime
+- **Build-time compiler** (optional, recommended): integrates [`@elurjs/core-compiler`](https://www.npmjs.com/package/@elurjs/core-compiler) via [`@elurjs/vite-plugin-elur`](https://www.npmjs.com/package/@elurjs/vite-plugin-elur) to lower ``html` `` templates to imperative DOM code at build time — eliminates `detectContext`, `buildHTML`, and both `TreeWalker` passes in runtime
 - **Partial attribute interpolation**: `class="btn ${size}"` works out of the box via the Vite plugin's state-machine lexer (or the kit's legacy transform as fallback)
 - **Actions**: typed `defineAction()` with input validation, AbortSignal, idempotency, concurrency modes (latest/queue/parallel)
 - **Cache**: `CacheAdapter` with filesystem, Redis, and Cloudflare KV storage, SHA-256 keys, atomic writes, single-flight, stale-while-revalidate, tag-based invalidation
@@ -48,7 +48,7 @@ npm install @elurjs/vite-plugin-elur
 
 The plugin is an optional peer dependency. When installed, it activates:
 
-- **Build-time compiler** — lowers `html\`\`` to imperative DOM code
+- **Build-time compiler** — lowers ``html` `` to imperative DOM code
 - **Partial attribute interpolation** — state-machine lexer (replaces the kit's legacy transform)
 - **HMR with state preservation** — signals, stores, forms, routers survive hot updates
 - **Scroll/focus preservation** — restored after re-mount
@@ -266,6 +266,52 @@ routes you want cached.
 - Behind a reverse proxy, make sure buffering and gzip buffering are disabled
   for streamed routes (the `X-Accel-Buffering: no` header covers nginx).
 
+## What's new in v2.5
+
+**0% JavaScript by default + next-generation router.**
+
+- **Per-page JS gating** — the document shell scans the rendered body
+  for `data-elur-island` markers: pages without islands ship **0 KB of
+  JS** when `router.enabled: false`, or **only the router chunk** when
+  the router is on. Pages with islands get `entry-client.js` +
+  `router.js`, each with `<link rel="modulepreload">`. Escape hatch:
+  `defineConfig({ js: "legacy" })` restores the unconditional combined
+  entry. See [Per-page JavaScript emission](#per-page-javascript-emission).
+- **Split client entries** — the generated entry is hydrate-only and
+  the router lives in `.elur/router.ts` → `/_elur/router.js`.
+  Single-input `vite.client.config.*` files keep working (router
+  embedded = legacy mode de facto).
+- **Production head fix** — `/__elur-js/render` now returns
+  `{ title, body, head, data, actions, clearActionErrorCookie }` in
+  every runtime; head metadata updates on SPA navigations and the
+  action-error cookie is actually cleared.
+- **Navigation lifecycle events** — `elur:navigate-start` /
+  `elur:navigate-end` / `elur:navigate-error` with
+  `{ pathname, search, fromCache, popstate }`, plus
+  `elur:before-render` before the swap (islands dispose while still
+  attached; `detail.persisted` lists survivors).
+- **`data-elur-persist="key"`** — live DOM nodes are moved (not
+  re-rendered) across navigations via `Element.moveBefore()`
+  (`replaceWith` fallback); islands inside keep their state.
+- **Router robustness** — bounded LRU prefetch cache (32 entries,
+  30 s), `history.scrollRestoration = "manual"` with per-entry scroll,
+  prefetch on `pointerenter`/`focus`/`pointerdown` + opt-in viewport
+  (`data-prefetch="viewport"`), Save-Data/2g-aware, inline `<script>`
+  re-execution after navigation, `#elur-data`/`#elur-actions` refresh.
+- **Optional extras** — `router.morph` (idiomorph-based DOM morphing,
+  experimental), `router.loadingIndicator` (top progress bar, >200 ms
+  delay, reduced-motion aware), `router.speculation` (Speculation
+  Rules API on static pages).
+- **`directive: "load"` is real now** — the generated entry calls
+  `hydrateIslands()` immediately; the global `requestIdleCallback`
+  wrapper is gone. `idle`/`visible` keep their deferred scheduling.
+- **`startClientRouter(options)`** accepts
+  `{ prefetch, morph, loadingIndicator }`; `prefetch()` gains
+  `{ force: true }` to bypass network guards.
+
+All changes are backwards-compatible; existing projects keep working
+unchanged.
+
 ## What's new in v2.4
 
 - **Fixed: image pipeline silently no-op** — the CLI bundle was
@@ -315,7 +361,7 @@ routes you want cached.
   SSR errors are never silently swallowed — they propagate wrapped with
   the island name and remediation hints.
 
-#### Using the `build` hook for sitemaps
+### Using the `build` hook for sitemaps
 
 When `site` is set in your config, the build **already generates
 `sitemap.xml` automatically** from the scanned routes (dynamic routes,
@@ -396,7 +442,7 @@ When both plugins are installed:
 | Feature | Kit only | Kit + Vite plugin |
 | --- | --- | --- |
 | Partial attr interpolation | Legacy transform (heuristic) | State-machine lexer (compile-time) |
-| Build-time compiler | No | Yes (`html\`\`` → imperative DOM) |
+| Build-time compiler | No | Yes (``html` `` → imperative DOM) |
 | HMR state preservation | No | Yes (signals, stores, forms, routers) |
 | Scroll/focus preservation | No | Yes |
 | SSR | Works (kit handles it) | Works (plugin skips compiler in SSR) |
@@ -514,6 +560,7 @@ receive the full transform pipeline.
 | v2.4.2 | Integration `build` hook wired into `build()`, `BuildResult.outDir` for post-build artifacts ✅ |
 | v2.4.3 | Client-only islands (`directive: "only"`, `options: { ssr: false, fallback }`), `isSSR()` export, SSR error wrapping ✅ |
 | v2.4.4 | Fix: `"only"` directive now hydrates immediately like `"load"`. Fix: islands without SSR DOM use fresh `_render` mount instead of `hydrateTemplate` ✅ |
+| v2.5 | 0% JS por defecto (gating por página + split entry/router + `js:"legacy"`), router de nueva generación (eventos de ciclo de vida, `data-elur-persist`, LRU+network-aware prefetch, morph opcional, speculation rules, loading indicator), fix head/payload del render endpoint en prod, `load` real ✅ |
 
 ## API
 
@@ -996,7 +1043,7 @@ export default defineConfig({
 
 The Vite plugin activates:
 
-- **Build-time compiler** — lowers `html\`\`` templates to imperative DOM
+- **Build-time compiler** — lowers ``html` `` templates to imperative DOM
   code (`firstChild`/`nextSibling` navigation, inline `setAttribute`,
   grouped effects, event delegation). Eliminates `detectContext`,
   `buildHTML`, and both `TreeWalker` passes in runtime.

@@ -55,7 +55,12 @@ export default defineConfig({
         },
 
         rollupOptions: {
-            external: /^@elurjs\/core(?:\/.*)?$/,
+            // `sharp` must stay a runtime import: it is an optional peer
+            // installed by the consumer, not by the kit. Without the
+            // external entry Vite replaces `import("sharp")` with a
+            // throwing stub and the image pipeline silently emits no
+            // variants under `elur-kit build`.
+            external: [/^@elurjs\/core(?:\/.*)?$/, "sharp"],
             output: {
                 codeSplitting: false,
             },
