@@ -16,20 +16,23 @@ export type {
 
 export { renderToString } from "./render/render-to-string.js";
 export { isSSR } from "./render/ssr-flag.js";
-export { documentShell, buildHeadTags, type ShellOptions } from "./build/document-shell.js";
+export { documentShell, buildHeadTags, extractAppBody, APP_START_MARKER, APP_END_MARKER, type ShellOptions } from "./build/document-shell.js";
 export { build, scanRoutes, type BuildConfig, type BuildResult } from "./build/build.js";
 export type { PageRoute, ScannedRoutes, ApiRoute } from "./router/route-scanner.js";
-export { island, type IslandComponent, type IslandDirective, type IslandOptions } from "./island/island.js";
-export { hydrateIslands, type IslandRegistry } from "./island/hydrate.js";
+export { island, type IslandComponent, type IslandDirective, type IslandOptions, ISLAND_MARKER_ATTR, PERSIST_ATTR } from "./island/island.js";
+export { hydrateIslands, cleanupHydratedIslands, type IslandRegistry, type CleanupIslandsOptions } from "./island/hydrate.js";
 export { scanIslands, type IslandModule } from "./island/scan.js";
 export {
   generateClientEntry,
   buildEntrySource,
+  buildRouterEntrySource,
   type GenerateEntryOptions,
+  type RouterEntryOptions,
 } from "./island/generate-entry.js";
 export { matchRoute, matchApiRoute, type MatchResult, type ApiMatchResult } from "./ssr/match.js";
 export { renderPage, renderErrorPage, collectShellExtras, type RenderPageOptions, type RenderPageResult, type RenderErrorPageOptions } from "./ssr/render.js";
 export { renderStreamingPage, renderPageBody, type StreamingPageOptions, type RenderPageBodyOptions } from "./ssr/stream.js";
+export { createStreamingResponse, createBufferedResponse, type StreamResponseOptions } from "./ssr/stream-response.js";
 export { getCachedHtml, setCachedHtml, clearCache, type CacheEntry } from "./cache.js";
 export { createSsrServer, type SsrServer, type SsrServerOptions } from "./ssr/server.js";
 export { callAction, type ActionRequest } from "./action/index.js";
@@ -45,12 +48,13 @@ export {
 } from "./action/error-store.js";
 export { scanActions } from "./action/scan.js";
 export { fail, redirect, ActionFailure, RedirectResponse } from "./errors.js";
+export type { RedirectRule, RewriteRule, RouteHeadersRule } from "./router/redirects.js";
 export type { Adapter, AdapterOptions } from "./adapters/index.js";
 export { vercelAdapter } from "./adapters/vercel.js";
 export { netlifyAdapter } from "./adapters/netlify.js";
 export { bunAdapter } from "./adapters/bun.js";
 export { nodeAdapter } from "./adapters/node.js";
-export { startClientRouter } from "./router/client.js";
+export { startClientRouter, navigateTo, prefetch, type ClientRouterOptions, type NavigationEventDetail } from "./router/client.js";
 export { image, consumeImageRegistry, setImageManifest, type ImageOptions, type ImageFormat } from "./image/index.js";
 export { processImages, isSharpAvailable, type PipelineOptions, type ProcessedImage } from "./image/pipeline.js";
 export {
@@ -108,4 +112,9 @@ export {
   notFound,
   methodNotAllowed,
   serverError,
+  StructuredLogger,
+  createRequestLogger,
+  type LogLevel,
+  type LogEntry,
+  type ServerTimingMetric,
 } from "./runtime/index.js";

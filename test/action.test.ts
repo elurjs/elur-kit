@@ -9,6 +9,8 @@ import {
   ACTION_ERROR_COOKIE,
 } from "../src/action/error-store.ts";
 import { fail, redirect } from "../src/errors.ts";
+import { defineAction } from "../src/action/define.ts";
+import type { ActionContext } from "../src/action/define.ts";
 import { scanRoutes } from "../src/router/route-scanner.ts";
 import { resolveActionPageKey } from "../src/ssr/server.ts";
 import { fileURLToPath } from "node:url";
@@ -146,6 +148,32 @@ describe("handleActionRequest", () => {
     const response = await handleActionRequest(request, async () => redirectAction);
     assert.equal(response.status, 303);
     assert.equal(response.headers.get("Location"), "/login");
+  });
+
+  it("passes an ActionContext to defineAction actions (default concurrency)", async () => {
+    let receivedCtx: ActionContext | undefined;
+    const defined = defineAction({}, async (input, ctx) => {
+      receivedCtx = ctx;
+      return { ok: true, input };
+    });
+    const request = new Request("http://localhost/__elur-js/actions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        "Idempotency-Key": "key-123",
+      },
+      body: JSON.stringify({ name: "defined", args: [{ a: 1 }] }),
+    });
+    const response = await handleActionRequest(request, async () => defined);
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { ok: true, input: { a: 1 } });
+    assert.ok(receivedCtx, "defined action should receive a context");
+    assert.ok(receivedCtx!.signal instanceof AbortSignal, "ctx.signal should be an AbortSignal");
+    assert.equal(receivedCtx!.request, request);
+    assert.equal(receivedCtx!.idempotencyKey, "key-123");
+    assert.deepEqual(receivedCtx!.params, {});
+    assert.deepEqual(receivedCtx!.locals, {});
   });
 });
 

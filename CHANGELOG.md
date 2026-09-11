@@ -5,6 +5,304 @@ All notable changes to Elur Kit are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.0]
+
+All changes are additive and backwards-compatible: existing projects work
+unchanged without touching their config.
+
+### Added
+
+- **Structured request logging** — the unified web handler
+  (`createWebHandler`, used by the dev server, preview server, and the
+  generated Node/Bun servers) now creates a `StructuredLogger` per request
+  instead of bare `console.error` calls. Error logs are emitted as JSON in
+  production (readable `[LEVEL]` text in dev) with structured fields
+  (`path`, `method`, `route`, `error`, `stack`), sensitive-header
+  redaction, and a request ID taken from the incoming `X-Request-ID`
+  header or generated per request. Configure via
+  `defineConfig({ logger: { level: "debug" | "info" | "warn" | "error" } })`
+  (default: `debug` in dev, `info` in production).
+- **`X-Request-ID` response header** on every handler response, enabling
+  request correlation between clients, proxies, and logs.
+- **`Server-Timing` response header** with per-phase timings (`action`,
+  `render-endpoint`, `api`, `ssr`), visible in browser DevTools → Network
+  → Server Timing.
+- **Redirects, rewrites, and route headers** — the previously internal
+  `src/router/redirects.ts` module is now wired into the handler pipeline.
+  Configure via `defineConfig({ redirects, rewrites, headers })`:
+  - `redirects: [{ from, to, status? }]` are evaluated before all routing
+    and return a `Location` response (default status `308`; also `301`,
+    `302`, `307`).
+  - `rewrites: [{ from, to }]` rewrite the pathname transparently (the
+    browser URL does not change); the rewritten path drives static
+    serving, SSR, API routes, and the ISR cache key.
+  - `headers: [{ path, headers }]` merge custom headers into responses
+    matching the public (pre-rewrite) path; they may override security
+    headers, while `Server-Timing`/`X-Request-ID` always win.
+  - Patterns support literal segments, `:param`, `*` wildcards, and
+    `:param*` catch-alls, with `:param` interpolation in destinations.
+  - Works in dev, preview, and the generated Node/Bun servers. The
+    Vercel/Netlify bundled handlers do not pick this up yet.
+- **Public exports** — `StructuredLogger`, `createRequestLogger`, and the
+  `LogLevel`/`LogEntry`/`ServerTimingMetric` types are now exported from
+  the package root.
+- **Pluggable ISR cache adapters in the handler** — the unified web
+  handler now stores rendered pages through the `CacheAdapter` interface
+  instead of the legacy cache module. Configure via
+  `defineConfig({ cache: { adapter } })` (e.g. Redis or Cloudflare KV);
+  when omitted, a filesystem adapter rooted at `cache.dir` is created and
+  shared per directory. Page entries are keyed with `cacheKey(pathname)`
+  (SHA-256), the same scheme used by path-based invalidation.
+- **Cache policy tags are now honored** — `tags` declared in a route's
+  `cache` policy (`page.data.ts`) are stored with the cache entry, so
+  tag-based invalidation works end to end.
+- **Automatic cache invalidation from actions** — after a successful
+  action run, `invalidateTags`/`invalidatePaths` declared via
+  `defineAction()` are dispatched to the connected cache adapter
+  (`defaultInvalidator`). Actions that return `fail(...)` do not
+  invalidate anything.
+- **Stale-while-revalidate for ISR pages** — stale cache entries are
+  served immediately while the page re-renders in the background, instead
+  of blocking the request on a full re-render.
+- **New `@elurjs/kit/cache` subpath** — exports `CacheAdapter`,
+  `createFsCacheAdapter`, `createRedisCacheAdapter`,
+  `createCloudflareKVCacheAdapter`, `getWithSWR`, `cacheKey`, the cache
+  policy helpers, and the invalidation primitives.
+- **Automatic sitemap generation in `build`** — when `site` is configured
+  in `defineConfig`, the build now writes `sitemap.xml` from the scanned
+  route manifest (dynamic routes, error pages and internal namespaces are
+  excluded; sites over 50,000 URLs are split into `sitemap-N.xml` files
+  with a `sitemap.xml` index). An existing `sitemap.xml` — copied from
+  `public/` or written by an integration `build` hook — always takes
+  precedence and is never overwritten. `generateSitemapFromRoutes` and its
+  options type are re-exported from `@elurjs/kit/seo`.
+- **`--verbose` / `--quiet` CLI flags** — override `logger.level` from the
+  config: `--verbose` maps to `debug`, `--quiet` maps to `error` (only
+  errors are printed; `--quiet` wins if both are passed).
+- **Real streaming SSR in the unified handler (opt-in, experimental)** —
+  `defineConfig({ streaming: true })` enables true streaming for dynamic
+  routes that declare a `loading` boundary: the document shell + loading
+  fallback are flushed immediately, the page render continues in the
+  background, and the resolved content arrives as a `<template>` chunk that
+  swaps the boundary in-place. Details:
+  - Wired into `createWebHandler` (new `streaming` and `capabilities`
+    options), so `dev`, `preview`, `start` and the generated Node/Bun
+    servers all stream through the same code path. Hosts that declare
+    `capabilities.streaming: false` degrade to buffered rendering, and the
+    CLI `adapter` command validates the combination at build time.
+  - Streamed responses send `Content-Type: text/html` early, no
+    `Content-Length`, `X-Accel-Buffering: no` (nginx must not buffer) and
+    `Cache-Control: no-store`. `Server-Timing`'s `ssr` metric measures
+    time-to-shell.
+  - **ISR interaction**: streamed pages bypass the cache entirely (never
+    read, never written); buffered routes keep the existing ISR behavior.
+  - **Abort handling**: client disconnects cancel the stream via
+    `request.signal`; late background renders are discarded. The Node
+    server now writes responses with the new `sendWebResponse()` helper
+    (`@elurjs/kit/runtime`), which forwards chunks as they are produced
+    with backpressure and cancels the upstream stream on socket close.
+  - **Mid-stream failures**: a loader redirect `Response` navigates via an
+    inline script chunk; a render error swaps the boundary for an
+    inline-styled `role="alert"` notice instead of a dead spinner.
+  - `documentShell` now delimits the `#app` content with explicit
+    `<!--elur:app:start-->`/`<!--elur:app:end-->` markers (invisible HTML
+    comments), replacing the fragile `<div id="app">` regex extraction;
+    `extractAppBody()` is exported for adapters. `createStreamingResponse`
+    and `createBufferedResponse` are now exported from the package root.
+- **User middleware in the unified handler** — `src/middleware.ts` now runs
+  in `dev`, `preview` and `start` (previously only the legacy SSR server ran
+  it). Semantics: after redirects/rewrites and the internal endpoints,
+  before routing; a returned `Response` short-circuits through the standard
+  finalize step (security headers, `X-Request-ID`, `Server-Timing` still
+  apply); `next({ headers })` merges into the downstream request and
+  `next({ locals })` is exposed to API routes as `ctx.locals`. Middleware
+  errors return a sanitized 500 instead of crashing the request. The
+  generated Node/Bun adapter servers do not run the middleware file yet.
+- **`RedirectRule` / `RewriteRule` / `RouteHeadersRule` type exports** from
+  the package root, so config rule arrays can be annotated outside
+  `defineConfig`.
+- **0% JavaScript by default (per-page script gating)** — `documentShell`
+  no longer emits the client entry unconditionally. In the default
+  `js: "modern"` mode the shell inspects the rendered body for
+  `data-elur-island` markers: pages without islands ship **no client JS**
+  when the router is disabled, or **only the router chunk** when it is on.
+  Streaming shells are exempt (the body is not known when the shell is
+  sent, so streamed routes always emit the entry). Opt out entirely with
+  `defineConfig({ js: "legacy" })`, which restores the unconditional
+  combined entry.
+- **Split client entries (hydration vs router)** — the generated client
+  entry is now hydrate-only and the router lives in its own module
+  (`.elur/router.ts` → `/_elur/router.js`). The CLI decides the layout
+  before rendering pages: projects with a two-input
+  `vite.client.config.*` (or no client config at all — a default
+  two-input config is now synthesized) get the split; single-input
+  configs keep the router embedded in `entry-client.js` and the shell
+  emits it whenever islands exist *or* the router is enabled. Wired
+  through `ElurConfig.router`, `BuildConfig.router`,
+  `GenerateEntryOptions.router`, `WebHandlerOptions.router`,
+  `AdapterOptions.router`/`js`, `documentShell` (`routerEntry`,
+  `routerEnabled`), and the generated adapter SSR entries. The example
+  `vite.client.config.ts` now uses two named inputs.
+- **`<link rel="modulepreload">` for emitted entries** — every module
+  script the shell emits (hydration entry and/or router chunk) also gets
+  a `modulepreload` link so the fetch starts during HTML parsing.
+- **Navigation lifecycle events** — the client router dispatches
+  `elur:navigate-start`, `elur:navigate-end` and `elur:navigate-error`
+  with `{ pathname, search, fromCache, popstate }`, plus
+  `elur:before-render` right before the `#app` swap (with
+  `detail.persisted` listing the nodes that will survive). Islands are
+  now disposed on `elur:before-render` — while still attached — instead
+  of on `elur:rendered`.
+- **`data-elur-persist` element persistence** — mark an element with
+  `data-elur-persist="key"` and the router moves the *same live node*
+  into the matching position of the new page (matched by attribute
+  value) using `Element.moveBefore()` when available
+  (`replaceWith` fallback). Island state, media playback and scroll
+  positions survive navigations; islands inside persisted subtrees are
+  skipped by the navigation cleanup. When an island inside a persisted
+  node would receive different props, an `elur:persist-props-changed`
+  event bubbles from its marker. `cleanupHydratedIslands({ except })`
+  supports exclusion lists.
+- **Complete SPA render payload** — `/__elur-js/render` now returns
+  `{ title, body, head, data, actions, clearActionErrorCookie }` in every
+  runtime (unified handler, generated Node/Bun adapters, dev server and
+  the legacy `createSsrServer`): `head` carries the managed
+  `data-elur-head` tags (title/meta/OG/Twitter), `data`/`actions` carry
+  the serialized contents of `#elur-data`/`#elur-actions`, and
+  `clearActionErrorCookie` is also relayed as the
+  `X-Elur-Action-Clear-Cookie` response header. Loader-thrown
+  `Response`s propagate as first-class responses. After a navigation the
+  router refreshes the inert `#elur-data`/`#elur-actions` scripts, merges
+  the managed head tags, and re-executes inline `<script>` elements in
+  the new body (external `src` scripts are deduplicated across
+  navigations; `data-elur-no-reload` opts out).
+- **Router robustness** — the prefetch cache is now a bounded LRU (32
+  entries, 30 s TTL), `history.scrollRestoration` is set to `manual`
+  with per-entry scroll save/restore on back/forward, prefetching starts
+  on `pointerdown` in addition to hover/focus (and opt-in viewport via
+  `data-prefetch="viewport"`), and constrained networks are respected:
+  `Save-Data` and `slow-2g`/`2g` effective connection types skip prefetch
+  unless the link forces it with `data-prefetch="always"` (or
+  `prefetch(path, search, { force: true })` is called directly).
+- **Optional DOM morphing (`router.morph`)** — `defineConfig({ router: {
+  morph: true } })` swaps `#app` with idiomorph-based DOM morphing
+  instead of a wholesale `replaceChildren` (experimental). Hydrated
+  islands and `data-elur-persist` subtrees are treated as opaque. New
+  dependency: `idiomorph` — loaded via dynamic `import()` only when the
+  flag is on, so it stays out of the served bytes when morph is off
+  (a hard dependency is required because bundlers must resolve the
+  specifier at build time even when the chunk is lazy).
+- **Optional loading indicator (`router.loadingIndicator`)** — a minimal
+  top progress bar appears only when a navigation takes longer than
+  ~200 ms, driven by the lifecycle events; it honors
+  `prefers-reduced-motion` (static bar, no trickle) and never flashes on
+  cache hits.
+- **Speculation Rules (`router.speculation`)** —
+  `defineConfig({ router: { speculation: "prefetch" | "prerender" } })`
+  emits a `<script type="speculationrules">` block with document rules
+  (`eagerness: "moderate"`, internal same-origin links excluding actions,
+  downloads, `target`/`data-no-router`/`data-no-speculation` links) on
+  statically built pages. Chromium-only progressive enhancement; other
+  browsers ignore it.
+
+### Deprecated
+
+- **`createSsrServer`** (`@elurjs/kit`) — the legacy standalone SSR server
+  pipeline. All CLI commands (`dev`, `preview`, `start`) now run through
+  `createWebHandler`; the legacy server remains exported for backward
+  compatibility and will be removed in a future major release.
+- **`renderStreamingPage`** — the legacy shell + client-fetch streaming
+  approach, superseded by `createStreamingResponse` (real streaming).
+
+### Changed
+
+- **`elur-kit start` runs on the unified Web handler** — it previously used
+  the legacy `createSsrServer` pipeline. It now shares the dev/preview path:
+  startup banner with Local/Network URLs, busy-port fallback, per-request
+  structured logging with `Server-Timing`/`X-Request-ID`, security headers,
+  redirects/rewrites/route headers, pluggable ISR cache, user middleware, and
+  opt-in streaming SSR. `start` now requires a previous `elur-kit build`
+  (it fails fast with a clear message when `dist/` is missing) instead of
+  silently rendering everything on demand.
+- **CLI output formatting** — build, dev, preview, and adapter messages
+  now use a consistent format (`✓` success, `→` info, `!` warning, `✗`
+  error, `[tag]` lifecycle events) with ANSI colors when stdout is a TTY
+  (disabled via `NO_COLOR` or when piped; no new dependencies). The build
+  summary now includes the total duration plus page/island/file counts.
+  The fatal request-error catch in the dev/preview server now logs through
+  the structured logger (with `path`, `method`, `error`, `stack`) instead
+  of a bare `console.error`.
+- **Dev/preview/start startup banner** — the dev, preview and start servers
+  now print an Astro-style banner with the kit name and version and the
+  bound URLs:
+  `→ Local: http://…` plus `→ Network: http://<LAN-IP>:…` when the
+  machine has a non-internal IPv4 address. The banner reflects the port
+  actually bound after the busy-port fallback.
+- **Build phase timings and file sizes** — `elur-kit build` now reports
+  each phase with a checkmark and its duration (`transform`, `scan`,
+  `pages`, `images`, `integrations`, `sitemap`, `manifest`,
+  `client bundle`; phases that don't run are omitted) via a new optional
+  `BuildConfig.onPhase(name, durationMs)` observer, and lists the
+  generated files with their sizes (aligned, Vite-style). With more than
+  20 files, only the 10 largest are shown followed by a
+  `… and N more` summary. With `--quiet`, the client bundle step is now
+  silent too (new `quiet` option on `buildClientBundle`, which also sets
+  Vite's `logLevel: "silent"`).
+- **ISR storage backend** — `createWebHandler` no longer uses the legacy
+  `getCachedHtml`/`setCachedHtml` module for page caching (it remains
+  exported for backward compatibility). Existing on-disk cache entries use
+  the same SHA-256-of-pathname key, but entries written by older versions
+  lack tag metadata, so they simply miss tag-based invalidation until
+  re-rendered. What gets cached (cacheability gates, TTL rules) is
+  unchanged.
+
+### Fixed
+
+- **Dead legacy config lookup removed** — `findConfigFile` carried a legacy
+  config-name fallback that could never fire (its file list was identical to
+  the preferred one) and referenced pre-rename names that are no longer
+  supported. Config files are now exclusively `elur.config.ts/js/mjs`.
+- **Missing type declarations for `@elurjs/kit/cache`** — the subpath
+  shipped its runtime bundle but no `index.d.ts`/`index.d.cts` because
+  `src/cache/index.ts` was absent from the declaration build inputs
+  (publint error). The `./cache` subpath is now fully typed (including
+  `redis-adapter`).
+- **Infinite restart loop when the dev port is busy** — with port 3000
+  occupied, the dev supervisor restarted the crashed worker forever on the
+  same `EADDRINUSE`. The dev and preview servers now retry on the next
+  port (up to 20 candidates) with a clear warning
+  (`! Puerto 3000 ocupado, usando 3001`), and the startup message shows
+  the port actually bound. If the whole range is busy, the worker exits
+  with a dedicated code (78) that the supervisor treats as fatal instead
+  of restarting. Fallback also applies to an explicit `--port` (with the
+  same warning).
+- **Actions defined with `defineAction()` crashed at the action
+  endpoint** — `handleActionRequest` invoked actions as `action(...args)`
+  without building an `ActionContext`, so any action using the default
+  `concurrency: "latest"` failed with `ctx undefined` (`ctx.signal`
+  access). Defined actions (detected via their `__elurAction` metadata)
+  now receive `(input, ctx)` with `ctx.request`, `ctx.signal` (from the
+  request), `ctx.idempotencyKey` (from the `Idempotency-Key` header),
+  and empty `params`/`locals`. Legacy plain actions keep the `(...args)`
+  call convention unchanged.
+- **Head metadata lost on SPA navigations in production** — the
+  production render endpoint (`/__elur-js/render`) only returned
+  `{ title, body }`, so pages navigated via the client router kept stale
+  `<head>` tags and the consumed action-error cookie was never cleared.
+  The endpoint now ships the full payload and the cookie is relayed as
+  `Set-Cookie` (HTML mode) / `X-Elur-Action-Clear-Cookie` (JSON mode).
+- **`directive: "load"` did not hydrate on load** — the generated client
+  entry wrapped the whole hydration pass in `requestIdleCallback`, so
+  `load` islands were really `idle` islands. The entry now calls
+  `hydrateIslands()` immediately (module scripts are already deferred);
+  `idle`/`visible` keep their deferred scheduling inside the hydrator.
+- **Islands were disposed after the DOM swap** — the generated entry
+  listened only for `elur:rendered` (post-swap), so disposers ran on
+  detached DOM and could not read live state. Cleanup now runs on
+  `elur:before-render`, dispatched before `#app` is replaced, with a
+  compat fallback on `elur:rendered` for hosts that only emit the old
+  event (e.g. the streaming swap chunk).
+
 ## [2.4.10]
 
 ### Fixed

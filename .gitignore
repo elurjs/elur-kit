@@ -32,6 +32,11 @@ coverage/
 # Example output
 example/dist/
 example/dist2/
+example/.elur/
+
+# Test artifacts (fixture builds + file mutex)
+test/fixtures/minimal/.elur/
+test/fixtures/minimal/.test-lock
 example/.vercel/
 example/netlify/
 example/netlify.toml

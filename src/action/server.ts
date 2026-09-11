@@ -1,6 +1,8 @@
 import type { ActionRequest } from "./index.js";
 import { isActionFailure, isRedirectResponse, publicErrorResponse } from "../errors.js";
 import { verifyOrigin, originForbidden, type OriginCheckOptions } from "./origin.js";
+import type { ActionContext } from "./define.js";
+import { defaultInvalidator } from "../cache/invalidation.js";
 import {
   encodeActionErrorCookie,
   setActionErrorCookieHeader,
@@ -255,7 +257,35 @@ export async function handleActionRequest(
       });
     }
 
-    const result = await action(...args);
+    // defineAction() functions take (input, ctx) and carry __elurAction
+    // metadata; legacy plain actions take (...args). Route params are not
+    // known at this endpoint (actions resolve by page path), so params and
+    // locals start empty — middleware/page context can fill them elsewhere.
+    const actionMeta = (action as { __elurAction?: { invalidateTags?: readonly string[]; invalidatePaths?: readonly string[] } }).__elurAction;
+    let result: unknown;
+    if (actionMeta) {
+      const ctx: ActionContext = {
+        request,
+        signal: request.signal,
+        idempotencyKey: request.headers.get("Idempotency-Key") ?? undefined,
+        params: {},
+        locals: {},
+      };
+      result = await action(args[0], ctx);
+    } else {
+      result = await action(...args);
+    }
+
+    // Cache invalidation (§9.4): actions defined with defineAction() declare
+    // invalidateTags/invalidatePaths metadata; dispatch them to connected
+    // cache adapters after a successful run (not on ActionFailure).
+    if (!isActionFailure(result) && actionMeta) {
+      const tags = actionMeta.invalidateTags ?? [];
+      const paths = actionMeta.invalidatePaths ?? [];
+      if (tags.length > 0 || paths.length > 0) {
+        await defaultInvalidator.emit({ tags, paths, source: name });
+      }
+    }
 
     if (isActionFailure(result)) {
       if (wantsJson) {

@@ -23,7 +23,10 @@ const ROUTES = ["/", "/api/posts", "/does-not-exist"];
 
 interface RuntimeProbe {
   name: string;
-  fetch(pathname: string): Promise<{ status: number; type: string; body: string }>;
+  fetch(
+    pathname: string,
+    init?: { headers?: Record<string, string> },
+  ): Promise<{ status: number; type: string; body: string }>;
   close(): Promise<void>;
 }
 
@@ -59,8 +62,8 @@ async function buildFixture(): Promise<{ routes: Awaited<ReturnType<typeof scanR
 function toProbe(handler: (req: Request) => Promise<Response>): RuntimeProbe {
   return {
     name: "web-handler",
-    async fetch(pathname) {
-      const res = await handler(new Request(`http://127.0.0.1${pathname}`));
+    async fetch(pathname, init) {
+      const res = await handler(new Request(`http://127.0.0.1${pathname}`, { headers: init?.headers }));
       return { status: res.status, type: res.headers.get("Content-Type") ?? "", body: await res.text() };
     },
     async close() { },
@@ -127,8 +130,8 @@ describe("cross-runtime parity (§8.2)", () => {
     await waitForServer("http://127.0.0.1:3471/");
     probesArr.push({
       name: "node-adapter",
-      async fetch(pathname) {
-        const res = await fetch(`http://127.0.0.1:3471${pathname}`);
+      async fetch(pathname, init) {
+        const res = await fetch(`http://127.0.0.1:3471${pathname}`, { headers: init?.headers });
         return { status: res.status, type: res.headers.get("Content-Type") ?? "", body: await res.text() };
       },
       async close() { },
@@ -148,8 +151,8 @@ describe("cross-runtime parity (§8.2)", () => {
     ssrServers.push(ssr);
     probesArr.push({
       name: "ssr-server",
-      async fetch(pathname) {
-        const res = await fetch(`http://127.0.0.1:3472${pathname}`);
+      async fetch(pathname, init) {
+        const res = await fetch(`http://127.0.0.1:3472${pathname}`, { headers: init?.headers });
         return { status: res.status, type: res.headers.get("Content-Type") ?? "", body: await res.text() };
       },
       async close() { },
@@ -196,6 +199,38 @@ describe("cross-runtime parity (§8.2)", () => {
     // Every runtime answers 404 (never 500) for unknown paths.
     for (const [name, status] of statuses) {
       assert.equal(status, 404, `[${name}] should be 404`);
+    }
+  });
+
+  it("returns the complete SPA render payload across runtimes", async () => {
+    // A1: every runtime must answer /__elur-js/render with the same payload
+    // shape — title + body + head + the inert JSON payloads + the
+    // action-error cookie field — so the client router behaves identically
+    // in dev, preview, adapters and the legacy server.
+    const shapes = new Map<string, string>();
+    for (const probe of probes) {
+      const res = await probe.fetch("/__elur-js/render?page=/", {
+        headers: { Accept: "application/json" },
+      });
+      assert.equal(res.status, 200, `[${probe.name}] render endpoint status`);
+      const payload = JSON.parse(res.body) as Record<string, unknown>;
+      for (const key of ["title", "body", "head", "data", "actions", "clearActionErrorCookie"]) {
+        assert.ok(key in payload, `[${probe.name}] payload missing "${key}"`);
+      }
+      assert.ok(
+        typeof payload.head === "string" && payload.head.includes("fixture description"),
+        `[${probe.name}] head should carry the page metadata`,
+      );
+      assert.ok((payload.body as string).includes("Hello from test"), `[${probe.name}] body`);
+      assert.ok(
+        typeof payload.data === "string" && payload.data.includes("Hello from test"),
+        `[${probe.name}] data should carry the serialized loader payload`,
+      );
+      shapes.set(probe.name, Object.keys(payload).sort().join(","));
+    }
+    const [first, ...rest] = [...shapes.values()];
+    for (const shape of rest) {
+      assert.equal(shape, first, "render payload shape must match across runtimes");
     }
   });
 });

@@ -18,8 +18,20 @@ import { elurJsInterpolationPlugin, shouldUseLegacyInterpolation, type Interpola
 export interface ClientBuildOptions {
   /** Project root (absolute). */
   root: string;
-  /** Absolute path to the user's Vite client config (e.g. vite.client.config.ts). */
-  userConfigPath: string;
+  /**
+   * Absolute path to the user's Vite client config (e.g.
+   * vite.client.config.ts). When omitted, a default config is generated
+   * from `defaultInputs` — the generated entry plus, in split builds, the
+   * generated router module — so projects get a working bundle with zero
+   * client config.
+   */
+  userConfigPath?: string;
+  /**
+   * Default bundle inputs (name → absolute entry path) used when no user
+   * config is present. With `entry-client` + `router` keys the output is
+   * `entry-client.js` + `router.js`.
+   */
+  defaultInputs?: Record<string, string>;
   /** Absolute path to the app directory (used by the interpolation plugin). */
   appDir: string;
   /** Absolute path to the islands directory (used by the interpolation plugin). */
@@ -30,6 +42,8 @@ export interface ClientBuildOptions {
   base?: string;
   /** Optional log prefix. */
   logPrefix?: string;
+  /** Suppress bundle logs (kit's and Vite's); errors still surface. */
+  quiet?: boolean;
   /**
    * How the legacy interpolation transform is handled (default: "auto").
    * With a Elur core that supports partial attribute interpolation natively
@@ -55,20 +69,24 @@ export interface ClientBuildResult {
  */
 export async function buildClientBundle(options: ClientBuildOptions): Promise<ClientBuildResult> {
   const log = options.logPrefix ?? "[client]";
-  console.log(`${log} Building hydration bundle...`);
+  const quiet = options.quiet ?? false;
+  if (!quiet) console.log(`${log} Building hydration bundle...`);
 
-  const userConfig = await loadUserConfig(options.userConfigPath, options.root);
+  const userConfig = options.userConfigPath
+    ? await loadUserConfig(options.userConfigPath, options.root)
+    : defaultClientConfig(options.defaultInputs);
   const pluginOptions: PluginOption = shouldUseLegacyInterpolation(options.interpolation ?? "auto")
     ? elurJsInterpolationPlugin({
-        appDir: options.appDir,
-        islandsDir: options.islandsDir,
-      })
+      appDir: options.appDir,
+      islandsDir: options.islandsDir,
+    })
     : [];
 
   const config: InlineConfig = {
     ...userConfig,
     root: options.root,
     base: options.base ?? userConfig.base ?? "/",
+    logLevel: quiet ? "silent" : userConfig.logLevel,
     build: {
       ...(userConfig.build ?? {}),
       outDir: options.outDir,
@@ -84,15 +102,50 @@ export async function buildClientBundle(options: ClientBuildOptions): Promise<Cl
     (n, r) => n + ("output" in r ? (r.output?.length ?? 0) : 0),
     0,
   );
-  console.log(`${log} ✓ ${outputCount} asset(s) emitted → ${relative(options.root, options.outDir)}`);
+  if (!quiet) console.log(`${log} ✓ ${outputCount} asset(s) emitted → ${relative(options.root, options.outDir)}`);
   return { outDir: options.outDir, outputCount };
 }
 
-async function loadUserConfig(path: string, _root: string): Promise<InlineConfig> {
+export async function loadUserConfig(path: string, _root: string): Promise<InlineConfig> {
   const mod = await import(path);
   const raw = mod.default ?? mod;
   const resolved = typeof raw === "function" ? await raw({ command: "build", mode: "production" }) : raw;
   return (resolved && typeof resolved.then === "function" ? await resolved : resolved) ?? {};
+}
+
+/**
+ * Resolves a user Vite config's `build.rollupOptions.input` to a list of
+ * absolute entry paths. Used to detect whether the bundle will emit the
+ * generated router module as its own chunk (split build) or not (legacy
+ * single-entry bundle — the router stays embedded in the entry).
+ */
+export async function resolveClientInputs(userConfigPath: string, root: string): Promise<string[]> {
+  const config = await loadUserConfig(userConfigPath, root);
+  const input = config.build?.rollupOptions?.input;
+  if (!input || typeof input === "string") {
+    return input ? [resolve(root, input)] : [];
+  }
+  const list = Array.isArray(input) ? input : Object.values(input);
+  return list
+    .filter((v): v is string => typeof v === "string")
+    .map((v) => resolve(root, v));
+}
+
+/**
+ * The synthesized client bundle config used when the project does not ship
+ * its own `vite.client.config.*`: named inputs with `[name].js` filenames in
+ * ES format — the same contract the docs give to hand-written client
+ * configs, so `entry-client` → `entry-client.js` and `router` → `router.js`.
+ */
+function defaultClientConfig(defaultInputs?: Record<string, string>): InlineConfig {
+  return {
+    build: {
+      rollupOptions: {
+        input: defaultInputs ?? {},
+        output: { entryFileNames: "[name].js", format: "es" },
+      },
+    },
+  };
 }
 
 // --- Atomic output staging ---

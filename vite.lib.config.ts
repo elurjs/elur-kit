@@ -29,6 +29,7 @@ export default defineConfig({
                 "adapters/bun": resolve("src/adapters/bun.ts"),
                 "adapters/node": resolve("src/adapters/node.ts"),
                 "action/index": resolve("src/action/index.ts"),
+                "cache/index": resolve("src/cache/index.ts"),
                 "router/client": resolve("src/router/client.ts"),
                 "content/index": resolve("src/content/index.ts"),
                 "image/index": resolve("src/image/index.ts"),

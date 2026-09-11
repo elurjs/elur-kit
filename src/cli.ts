@@ -1,18 +1,21 @@
 import { stat } from "node:fs/promises";
 import { createServer } from "node:http";
-import { join, resolve, relative } from "node:path";
+import { dirname, join, resolve, relative } from "node:path";
 import { existsSync, watch } from "node:fs";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
 import { build, type BuildConfig } from "./build/build.js";
 import { transformProjectFiles, transformedAppDir as transformedAppDirOf } from "./build/transform-source.js";
-import { createSsrServer } from "./ssr/server.js";
 import { scanActions } from "./action/scan.js";
 import { scanRoutes } from "./router/route-scanner.js";
-import { incomingMessageToRequest } from "./runtime/node-http.js";
+import { incomingMessageToRequest, sendWebResponse } from "./runtime/node-http.js";
+import { createRequestLogger, type LogLevel } from "./runtime/logger.js";
 import { loadElurConfig, type ResolvedElurConfig } from "./config/index.js";
 import { createAppManifest, writeAppManifest, writeRouteTypes } from "./manifest/index.js";
 import { validateCapabilities } from "./runtime/capabilities.js";
+import * as out from "./cli/output.js";
+import { listenWithFallback, PORT_UNAVAILABLE_EXIT_CODE } from "./cli/ports.js";
 
 // --- CLI ---
 //
@@ -51,6 +54,26 @@ export interface CliOptions {
   defaultRevalidate?: number;
   configFile?: string;
   resolvedConfig?: ResolvedElurConfig;
+  /**
+   * Verbosity override from `--verbose` ("debug") / `--quiet` ("error").
+   * Overrides `logger.level` from the config file.
+   */
+  logLevel?: LogLevel;
+  /**
+   * Internal: whether the client bundle emits the router as its own chunk
+   * (`router.js`). Computed by `doBuild` from the resolved config and the
+   * client bundle inputs — `true` for the kit-generated default config and
+   * for user configs that declare the generated router module as an input.
+   */
+  routerSeparate?: boolean;
+  /** Internal: whether the last build found any islands. */
+  hasIslands?: boolean;
+  /**
+   * Internal: public URL of the router chunk when the emitted bundle
+   * actually contains it (`/_elur/router.js` exists in the output).
+   * Computed once per server start for dev/preview/start.
+   */
+  routerEntry?: string;
 }
 
 function parseArgs(argv: string[]): CliOptions {
@@ -100,6 +123,7 @@ function parseArgs(argv: string[]): CliOptions {
   let cacheDir: string | undefined;
   let defaultRevalidate: number | undefined;
   let configFile: string | undefined;
+  let logLevel: LogLevel | undefined;
 
   for (let i = optionStart; i < args.length; i++) {
     const arg = args[i];
@@ -168,6 +192,13 @@ function parseArgs(argv: string[]): CliOptions {
         defaultRevalidate = Number(next);
         i++;
         break;
+      case "--verbose":
+        // --quiet wins when both are passed.
+        if (logLevel !== "error") logLevel = "debug";
+        break;
+      case "--quiet":
+        logLevel = "error";
+        break;
       case "--help":
       case "-?":
         printHelp();
@@ -196,6 +227,7 @@ function parseArgs(argv: string[]): CliOptions {
     cacheDir: cacheDir ? resolve(root, cacheDir) : undefined,
     defaultRevalidate,
     configFile: configFile ? resolve(root, configFile) : undefined,
+    logLevel,
   };
 }
 
@@ -228,7 +260,27 @@ Options:
   --config <path>           Elur config file (default: elur.config.ts/js/mjs)
   --cache-dir <dir>         Directory for ISR cache (only used by start)
   --default-revalidate <s>  Default ISR revalidate interval in seconds
+  --verbose                 Debug logging (overrides logger.level)
+  --quiet                   Only errors are printed (overrides logger.level)
 `);
+}
+
+/**
+ * Reads the kit's own version from package.json. The CLI runs from two
+ * layouts: src/cli.ts in the repo (../package.json) and dist/lib/cli.js when
+ * installed (../../package.json).
+ */
+function getKitVersion(): string {
+  const require = createRequire(import.meta.url);
+  for (const rel of ["../package.json", "../../package.json"]) {
+    try {
+      const pkg = require(rel) as { version?: unknown };
+      if (typeof pkg.version === "string") return pkg.version;
+    } catch {
+      // Try the next layout.
+    }
+  }
+  return "unknown";
 }
 
 function toBuildConfig(options: CliOptions): BuildConfig {
@@ -245,18 +297,37 @@ function toBuildConfig(options: CliOptions): BuildConfig {
     routerImport: options.routerImport,
     imageFormats: options.resolvedConfig?.images.formats,
     integrations: options.resolvedConfig?.integrations,
+    site: options.resolvedConfig?.site,
+    js: options.resolvedConfig?.js,
+    router: options.resolvedConfig
+      ? {
+        enabled: options.resolvedConfig.router.enabled,
+        prefetch: options.resolvedConfig.router.prefetch,
+        morph: options.resolvedConfig.router.morph,
+        loadingIndicator: options.resolvedConfig.router.loadingIndicator,
+        speculation: options.resolvedConfig.router.speculation,
+        // Whether the bundle emits the router as its own chunk — computed
+        // before pages render so the shell knows to advertise router.js.
+        separate: options.routerSeparate,
+        entry: "/_elur/router.js",
+        outFile: join(dirname(options.generatedEntry), "router.ts"),
+      }
+      : undefined,
   };
 }
 
 async function doBuild(options: CliOptions): Promise<void> {
+  const buildStart = Date.now();
   const transformedRoot = join(options.root, ".elur", "transformed");
   const transformedAppDir = transformedAppDirOf(options.root, options.appDir, options.islandsDir, transformedRoot);
+  let phaseStart = performance.now();
   await transformProjectFiles({
     root: options.root,
     appDir: options.appDir,
     islandsDir: options.islandsDir,
     outDir: transformedRoot,
   });
+  out.phase("transform", performance.now() - phaseStart);
 
   // Atomic output staging: build into a temp directory, then swap to the final
   // outDir so a crashed build never leaves a half-written dist.
@@ -264,40 +335,53 @@ async function doBuild(options: CliOptions): Promise<void> {
   const stage = await beginAtomicStage({ outDir: options.outDir });
   const tempOutDir = stage.tempDir;
 
+  // Resolve the client bundle layout BEFORE rendering pages: whether the
+  // router is emitted as its own chunk decides both the generated entry
+  // (hydrate-only vs combined) and which scripts the shell advertises.
+  if (options.islandsDir && !options.clientConfig) {
+    const autoConfig = await findClientConfig(options.root);
+    if (autoConfig) options.clientConfig = autoConfig;
+  }
+  options.routerSeparate = await resolveRouterSeparate(options);
+
   try {
     const buildConfig = toBuildConfig(options);
     buildConfig.appDir = transformedAppDir;
     buildConfig.outDir = tempOutDir;
+    buildConfig.onPhase = (name, ms) => out.phase(name, ms);
     const result = await build(buildConfig);
+    options.hasIslands = result.islands.length > 0;
 
     // Emit the portable application manifest and route types when a resolved
     // config is available. The manifest is the source of truth for adapters,
     // the client island registry and runtime route metadata.
     if (options.resolvedConfig) {
+      phaseStart = performance.now();
       try {
         const manifest = await createAppManifest(options.resolvedConfig);
         const manifestPath = join(tempOutDir, ".elur", "manifest.json");
         await writeAppManifest(manifest, manifestPath);
         const typesPath = join(options.root, ".elur", "routes.d.ts");
         await writeRouteTypes(manifest, typesPath);
-        console.log(`  - manifest: ${relative(options.root, join(options.outDir, ".elur", "manifest.json"))}`);
+        out.phase("manifest", performance.now() - phaseStart);
       } catch (err) {
-        console.warn("[elur-kit] manifest generation failed:", err);
+        out.warn(`manifest generation failed: ${err instanceof Error ? err.message : String(err)}`);
       }
     }
 
-    if (options.islandsDir && !options.clientConfig) {
-      const autoConfig = await findClientConfig(options.root);
-      if (autoConfig) {
-        options.clientConfig = autoConfig;
-      }
-    }
-    if (options.clientConfig) {
+    // Build the client bundle when there is something to ship: islands to
+    // hydrate, a router to run, or an explicit user config (which may bundle
+    // extra client code beyond the generated entry). Without a user config,
+    // the kit synthesizes a default one from the generated inputs.
+    const routerEnabled = options.resolvedConfig?.router.enabled !== false;
+    if (options.clientConfig || options.hasIslands || routerEnabled) {
       // Temporarily redirect the client build to the staging directory.
       const originalOutDir = options.outDir;
       options.outDir = tempOutDir;
       try {
+        phaseStart = performance.now();
         await buildClient(options);
+        out.phase("client bundle", performance.now() - phaseStart);
       } finally {
         options.outDir = originalOutDir;
       }
@@ -306,23 +390,35 @@ async function doBuild(options: CliOptions): Promise<void> {
     // Atomically swap the staged output into the final destination.
     await stage.commit();
 
-    console.log(`✓ Build completo: ${result.pages} páginas generadas`);
+    const elapsed = ((Date.now() - buildStart) / 1000).toFixed(2);
+    out.success(`${out.bold("Build completo")} ${out.dim(`en ${elapsed}s`)}`);
+    out.info(`${result.pages} página(s), ${result.islands.length} island(s), ${result.files.length} archivo(s)`);
+    const fileEntries: out.FileEntry[] = [];
     for (const file of result.files) {
-      console.log("  -", relative(options.root, file));
+      // result.files point at the staging directory; display the final path.
+      const finalPath = join(options.outDir, relative(tempOutDir, file));
+      let bytes = 0;
+      try {
+        bytes = (await stat(finalPath)).size;
+      } catch {
+        // File may have been moved by an integration; size stays 0.
+      }
+      fileEntries.push({ path: relative(options.root, finalPath), bytes });
     }
+    out.fileList(fileEntries);
     if (result.islands.length > 0) {
-      console.log(`\n✓ ${result.islands.length} island(s) detectada(s):`);
+      out.success(`${result.islands.length} island(s) detectada(s):`);
       for (const island of result.islands) {
-        console.log("  -", island.name);
+        out.detail(island.name);
       }
       if (result.generatedEntry) {
-        console.log("  entry:", relative(options.root, result.generatedEntry));
+        out.detail(`entry: ${relative(options.root, result.generatedEntry)}`);
       }
     }
     if (result.skipped.length > 0) {
-      console.log("\nRutas dinámicas omitidas (necesitan generateStaticParams):");
+      out.warn("Rutas dinámicas omitidas (necesitan generateStaticParams):");
       for (const path of result.skipped) {
-        console.log("  -", path);
+        out.detail(path);
       }
     }
   } catch (err) {
@@ -347,7 +443,9 @@ async function doDev(options: CliOptions): Promise<void> {
 
   const actions = await scanActions(transformedAppDir);
   const routes = await scanRoutes(transformedAppDir);
-  const server = createServer((req, res) => handleRequest(req, res, options, actions, routes, true));
+  const middleware = await loadUserMiddleware(options.root);
+  options.routerEntry = detectRouterEntry(options);
+  const server = createServer((req, res) => handleRequest(req, res, options, actions, routes, true, middleware));
 
   const shutdown = () => {
     server.close(() => process.exit(0));
@@ -356,9 +454,26 @@ async function doDev(options: CliOptions): Promise<void> {
   process.on("SIGTERM", shutdown);
   process.on("SIGINT", shutdown);
 
-  server.listen(options.port, options.host, () => {
-    console.log(`\n  → Dev server http://${options.host}:${options.port}`);
-  });
+  try {
+    const usedPort = await listenWithFallback(server, options.host, options.port, {
+      onFallback: (busyPort, nextPort) => out.warn(`Puerto ${busyPort} ocupado, usando ${nextPort}`),
+    });
+    const network = out.getNetworkAddress();
+    out.serverBanner({
+      name: "elur-kit",
+      version: `v${getKitVersion()}`,
+      command: "dev",
+      localUrl: `http://${options.host}:${usedPort}/`,
+      networkUrl: network ? `http://${network}:${usedPort}/` : undefined,
+    });
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === "EADDRINUSE") {
+      out.error(`No hay puerto disponible entre ${options.port} y ${options.port + 20}.`);
+      // Distinct exit code so the supervisor does not restart-loop.
+      process.exit(PORT_UNAVAILABLE_EXIT_CODE);
+    }
+    throw err;
+  }
 }
 
 /**
@@ -383,7 +498,8 @@ async function doDevSupervisor(options: CliOptions): Promise<void> {
 
   const startWorker = () => {
     intentional = false;
-    console.log("\n[dev] Starting dev server...");
+    console.log();
+    out.event("dev", "Starting dev server...");
     child = spawn(process.execPath, [spawnPath, ...args], {
       env: { ...process.env, [DEV_WORKER_ENV]: "1" },
       stdio: "inherit",
@@ -397,7 +513,13 @@ async function doDevSupervisor(options: CliOptions): Promise<void> {
         return;
       }
       if (code !== 0) {
-        console.error(`[dev] Dev server exited with code ${code}; restarting...`);
+        if (code === PORT_UNAVAILABLE_EXIT_CODE) {
+          // The worker already reported that no port is available; restarting
+          // would loop forever on the same EADDRINUSE.
+          out.error("[dev] Stopping: no available port.");
+          process.exit(code);
+        }
+        out.error(`[dev] Dev server exited with code ${code}; restarting...`);
         respawnTimer = setTimeout(startWorker, 600);
       }
     });
@@ -413,7 +535,8 @@ async function doDevSupervisor(options: CliOptions): Promise<void> {
   if (watchedDirs.length > 0) {
     let timer: ReturnType<typeof setTimeout> | null = null;
     const scheduleRestart = () => {
-      console.log("\n[change] Restarting dev server...");
+      console.log();
+      out.event("change", "Restarting dev server...");
       if (timer) clearTimeout(timer);
       timer = setTimeout(() => restart(), 150);
     };
@@ -431,7 +554,7 @@ async function doDevSupervisor(options: CliOptions): Promise<void> {
           }
         });
       } catch (err) {
-        console.error(`[dev] failed to watch ${dir}:`, err);
+        out.error(`[dev] failed to watch ${dir}: ${err instanceof Error ? err.message : String(err)}`);
       }
     }
   }
@@ -451,7 +574,16 @@ async function doDevSupervisor(options: CliOptions): Promise<void> {
   startWorker();
 }
 
-export async function doPreview(options: CliOptions): Promise<import("node:http").Server> {
+/**
+ * Shared production-serving path for `preview` and `start`: serves the build
+ * output plus dynamic SSR through the unified Web handler, with middleware,
+ * streaming, port fallback and the startup banner. Both commands behave
+ * identically; the label only differs in the banner.
+ */
+async function startProductionServer(
+  options: CliOptions,
+  command: "preview" | "start",
+): Promise<import("node:http").Server> {
   try {
     const s = await stat(options.outDir);
     if (!s.isDirectory()) {
@@ -467,7 +599,7 @@ export async function doPreview(options: CliOptions): Promise<import("node:http"
     throw err;
   }
 
-  const transformedRoot = join(options.root, ".elur", "preview-transformed");
+  const transformedRoot = join(options.root, ".elur", command === "preview" ? "preview-transformed" : "transformed");
   const transformedAppDir = transformedAppDirOf(options.root, options.appDir, options.islandsDir, transformedRoot);
   await transformProjectFiles({
     root: options.root,
@@ -478,35 +610,31 @@ export async function doPreview(options: CliOptions): Promise<import("node:http"
 
   const actions = await scanActions(transformedAppDir);
   const routes = await scanRoutes(transformedAppDir);
-  const server = createServer((req, res) => handleRequest(req, res, options, actions, routes));
-  server.listen(options.port, options.host, () => {
-    console.log(`\n  → Preview server http://${options.host}:${options.port}`);
+  const middleware = await loadUserMiddleware(options.root);
+  options.routerEntry = detectRouterEntry(options);
+  const server = createServer((req, res) => handleRequest(req, res, options, actions, routes, false, middleware));
+  const usedPort = await listenWithFallback(server, options.host, options.port, {
+    onFallback: (busyPort, nextPort) => out.warn(`Puerto ${busyPort} ocupado, usando ${nextPort}`),
+  });
+  const network = out.getNetworkAddress();
+  out.serverBanner({
+    name: "elur-kit",
+    version: `v${getKitVersion()}`,
+    command,
+    localUrl: `http://${options.host}:${usedPort}/`,
+    networkUrl: network ? `http://${network}:${usedPort}/` : undefined,
   });
   return server;
 }
 
-async function doStart(options: CliOptions): Promise<void> {
-  const transformedRoot = join(options.root, ".elur", "transformed");
-  const transformedAppDir = transformedAppDirOf(options.root, options.appDir, options.islandsDir, transformedRoot);
-  await transformProjectFiles({
-    root: options.root,
-    appDir: options.appDir,
-    islandsDir: options.islandsDir,
-    outDir: transformedRoot,
-  });
+export async function doPreview(options: CliOptions): Promise<import("node:http").Server> {
+  return startProductionServer(options, "preview");
+}
 
-  const ssr = await createSsrServer({
-    root: options.root,
-    appDir: transformedAppDir,
-    publicDir: options.outDir,
-    clientEntry: options.clientEntry,
-    lang: options.lang,
-    port: options.port,
-    host: options.host,
-    cacheDir: options.cacheDir,
-    defaultRevalidate: options.defaultRevalidate,
-  });
-  await ssr.listen();
+async function doStart(options: CliOptions): Promise<void> {
+  // `start` now runs on the unified Web handler like dev/preview (it used to
+  // rely on the legacy createSsrServer pipeline).
+  await startProductionServer(options, "start");
 }
 
 async function findClientConfig(root: string): Promise<string | undefined> {
@@ -522,9 +650,45 @@ async function findClientConfig(root: string): Promise<string | undefined> {
   return undefined;
 }
 
-async function buildClient(options: CliOptions): Promise<void> {
-  if (!options.clientConfig) return;
+/**
+ * Decides whether the client bundle emits the router as its own chunk.
+ *
+ * - `js: "legacy"` or `router.enabled: false` → never split (the entry is
+ *   hydrate-only when the router is off; legacy embeds the router).
+ * - A user-provided client config splits only when it declares the generated
+ *   router module (`.elur/router.ts`) as a bundle input — a single input is
+ *   "legacy de facto": the router stays embedded in `entry-client.js`.
+ * - Without a user config, the kit synthesizes a default two-input config →
+ *   split.
+ */
+async function resolveRouterSeparate(options: CliOptions): Promise<boolean> {
+  const rc = options.resolvedConfig;
+  if (!rc || rc.js === "legacy" || rc.router.enabled === false) return false;
+  const routerFile = join(dirname(options.generatedEntry), "router.ts");
+  if (!options.clientConfig) return true;
+  try {
+    const { resolveClientInputs } = await import("./build/vite-build.js");
+    const inputs = await resolveClientInputs(options.clientConfig, options.root);
+    return inputs.includes(routerFile);
+  } catch {
+    return false;
+  }
+}
 
+/**
+ * Public URL of the router chunk when the built bundle actually contains it.
+ * The file check keeps `preview`/`start` consistent with whatever layout the
+ * last build produced (split or legacy single-entry).
+ */
+function detectRouterEntry(options: CliOptions): string | undefined {
+  const rc = options.resolvedConfig;
+  if (!rc || rc.js === "legacy" || rc.router.enabled === false) return undefined;
+  return existsSync(join(options.outDir, "_elur", "router.js"))
+    ? "/_elur/router.js"
+    : undefined;
+}
+
+async function buildClient(options: CliOptions): Promise<void> {
   // Use the programmatic Vite build API instead of spawnSync("npx", ["vite", ...]).
   // This avoids child-process overhead, shares the module cache, and gives us
   // structured errors instead of exit-code parsing.
@@ -534,15 +698,41 @@ async function buildClient(options: CliOptions): Promise<void> {
   // project's deployment base. The deployment base is applied to page HTML,
   // not to the internal hydration bundle path.
   const clientBase = "/_elur/";
+  // Inputs for the kit-synthesized default config (used only when the
+  // project does not ship its own vite.client.config.*).
+  const defaultInputs: Record<string, string> = {
+    "entry-client": options.generatedEntry,
+  };
+  if (options.routerSeparate) {
+    defaultInputs.router = join(dirname(options.generatedEntry), "router.ts");
+  }
   await buildClientBundle({
     root: options.root,
-    userConfigPath: resolve(options.clientConfig),
+    userConfigPath: options.clientConfig ? resolve(options.clientConfig) : undefined,
+    defaultInputs,
     appDir: join(options.root, "src", "app"),
     islandsDir: join(options.root, "src", "islands"),
     outDir: clientOutDir,
     base: clientBase,
     logPrefix: "[client]",
+    quiet: options.logLevel === "error",
   });
+}
+
+/**
+ * Loads the project's `src/middleware.ts` for dev/preview/start. A missing
+ * file is fine; a broken one warns but does not stop the server.
+ */
+async function loadUserMiddleware(
+  root: string,
+): Promise<import("./middleware/index.js").LoadedMiddleware | null> {
+  const { loadMiddleware } = await import("./middleware/index.js");
+  try {
+    return await loadMiddleware(root);
+  } catch (err) {
+    out.warn(err instanceof Error ? err.message : String(err));
+    return null;
+  }
 }
 
 async function handleRequest(
@@ -552,6 +742,7 @@ async function handleRequest(
   actions: import("./action/scan.js").ActionRegistry,
   routes: import("./router/route-scanner.js").ScannedRoutes,
   noCache = false,
+  middleware?: import("./middleware/index.js").LoadedMiddleware | null,
 ): Promise<void> {
   // Unified pipeline: actions, render endpoint, API routes, static files and
   // dynamic SSR all run through `createWebHandler`, the same code used by the
@@ -571,7 +762,19 @@ async function handleRequest(
       lang: options.lang,
       clientEntry: options.clientEntry,
       renderEndpoint: true,
+      router: {
+        enabled: options.resolvedConfig?.router.enabled ?? true,
+        entry: options.routerEntry,
+      },
+      js: options.resolvedConfig?.js,
       securityHeaders: securityHeaders === undefined ? false : (securityHeaders as never),
+      logLevel: options.resolvedConfig?.logger?.level,
+      cacheAdapter: options.resolvedConfig?.cache?.adapter,
+      redirects: options.resolvedConfig?.redirects,
+      rewrites: options.resolvedConfig?.rewrites,
+      routeHeaders: options.resolvedConfig?.headers,
+      streaming: options.resolvedConfig?.streaming,
+      middleware: middleware ?? undefined,
     },
   );
 
@@ -583,13 +786,22 @@ async function handleRequest(
   try {
     response = await webHandler(request);
   } catch (err) {
-    console.error("[elur-kit] request error:", err);
+    // Last-resort failure outside the unified handler: log through the
+    // structured logger at server level (a fresh per-request logger, since
+    // the handler's own logger is unreachable here).
+    createRequestLogger(request, options.resolvedConfig?.logger?.level).error("[elur-kit] request error", {
+      path: new URL(request.url).pathname,
+      method: request.method,
+      error: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
+    });
     res.writeHead(500, { "Content-Type": "text/plain; charset=utf-8" });
     res.end("Internal Server Error");
     return;
   }
-  res.writeHead(response.status, Object.fromEntries(response.headers.entries()));
-  res.end(Buffer.from(await response.arrayBuffer()));
+  // Stream the response body to the socket: for streaming SSR responses the
+  // chunks are flushed as they are produced instead of being buffered whole.
+  await sendWebResponse(res, response);
 }
 
 function readRequestBody(req: import("node:http").IncomingMessage): Promise<string> {
@@ -614,39 +826,52 @@ async function doAdapter(options: CliOptions): Promise<void> {
     clientEntry: options.clientEntry,
     lang: options.lang,
     hydrateImport: options.hydrateImport,
+    logLevel: options.resolvedConfig?.logger?.level,
+    cacheAdapter: options.resolvedConfig?.cache?.adapter,
+    redirects: options.resolvedConfig?.redirects,
+    rewrites: options.resolvedConfig?.rewrites,
+    routeHeaders: options.resolvedConfig?.headers,
+    streaming: options.resolvedConfig?.streaming,
+    router: { enabled: options.resolvedConfig?.router.enabled ?? true },
+    js: options.resolvedConfig?.js,
   };
-  const resolvedConfig = options.resolvedConfig as { images?: { strict?: boolean }; cache?: { defaultRevalidate?: number } } | undefined;
+  const resolvedConfig = options.resolvedConfig as { images?: { strict?: boolean }; cache?: { defaultRevalidate?: number }; streaming?: boolean } | undefined;
   const features = {
     isr: typeof resolvedConfig?.cache?.defaultRevalidate === "number" && resolvedConfig.cache.defaultRevalidate > 0,
     images: resolvedConfig?.images?.strict === true,
+    streaming: resolvedConfig?.streaming === true,
   };
   let adapterName = options.adapterName;
   if (adapterName === "vercel") {
     const { vercelAdapter } = await import("./adapters/vercel.js");
     assertCapabilities(vercelAdapter, features, adapterName);
     await vercelAdapter.build(adapterOptions);
-    console.log("\n  → Vercel output generated at .vercel/output");
+    console.log();
+    out.info("Vercel output generated at .vercel/output");
   } else if (adapterName === "netlify") {
     const { netlifyAdapter } = await import("./adapters/netlify.js");
     assertCapabilities(netlifyAdapter, features, adapterName);
     await netlifyAdapter.build(adapterOptions);
-    console.log("\n  → Netlify output generated at netlify/functions/__elur-js-kit.mjs");
+    console.log();
+    out.info("Netlify output generated at netlify/functions/__elur-js-kit.mjs");
   } else if (adapterName === "bun") {
     const { bunAdapter } = await import("./adapters/bun.js");
     assertCapabilities(bunAdapter, features, adapterName);
     await bunAdapter.build(adapterOptions);
-    console.log("\n  → Bun server generated at .elur/bun-server.ts");
+    console.log();
+    out.info("Bun server generated at .elur/bun-server.ts");
   } else if (adapterName === "node") {
     const { nodeAdapter } = await import("./adapters/node.js");
     assertCapabilities(nodeAdapter, features, adapterName);
     await nodeAdapter.build(adapterOptions);
-    console.log("\n  → Node server generated at .elur/node-server.mjs");
+    console.log();
+    out.info("Node server generated at .elur/node-server.mjs");
   }
 }
 
 function assertCapabilities(
   adapter: { capabilities?: import("./runtime/capabilities.js").AdapterCapabilities },
-  features: { isr: boolean; images: boolean },
+  features: { isr: boolean; images: boolean; streaming?: boolean },
   adapterName: string,
 ): void {
   if (!adapter.capabilities) return;
@@ -677,12 +902,15 @@ async function applyProjectConfig(options: CliOptions, argv: string[]): Promise<
   if (!has("--public")) options.publicDir = config.publicDir;
   if (!has("--cache-dir")) options.cacheDir = config.cache.dir;
   if (!has("--default-revalidate")) options.defaultRevalidate = config.cache.defaultRevalidate;
+  // --verbose/--quiet override logger.level from the config file.
+  if (options.logLevel) config.logger.level = options.logLevel;
   options.generatedEntry = resolve(config.root, ".elur/entry-client.ts");
   options.resolvedConfig = config;
 }
 
 export async function run(argv: string[]): Promise<void> {
   const options = parseArgs(argv);
+  if (options.logLevel === "error") out.setQuiet(true);
 
   // Commands that don't need project config resolution.
   if (options.command === "doctor") {

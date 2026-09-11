@@ -8,6 +8,7 @@ import { scanActions, actionNames } from "../action/scan.js";
 import { consumeImageRegistry, setImageManifest, type ImageFormat } from "../image/index.js";
 import { processImageBatch, type ImageManifest } from "../image/service.js";
 import { runIntegrationHook, type ElurKitIntegration } from "../integrations/index.js";
+import { generateSitemapFromRoutes } from "../seo/sitemap-from-routes.js";
 import type { RouteParams, GenerateStaticParams } from "../types.js";
 
 export interface BuildConfig {
@@ -55,12 +56,52 @@ export interface BuildConfig {
    */
   renderEndpoint?: boolean;
   /**
+   * Client router options (Fase 8.3 + §9). `enabled`/`prefetch`/`morph`/
+   * `loadingIndicator` are baked into the generated entry; `separate` makes
+   * the router its own generated module (emitted as its own chunk when the
+   * client bundle declares it as an input) so pages without islands only
+   * load `router.js`; `entry` is that chunk's public URL; `speculation`
+   * emits a Speculation Rules block on static pages.
+   */
+  router?: {
+    enabled?: boolean;
+    prefetch?: boolean;
+    morph?: boolean;
+    loadingIndicator?: boolean;
+    speculation?: "prefetch" | "prerender";
+    /** Generate a standalone router module next to the client entry. */
+    separate?: boolean;
+    /** Public URL of the router chunk (default: "/_elur/router.js"). */
+    entry?: string;
+    /** Path of the generated router module (default: sibling "router.ts"). */
+    outFile?: string;
+  };
+  /**
+   * Client JS emission mode: `"modern"` gates the entry per page (0% JS);
+   * `"legacy"` emits the combined entry unconditionally on every page.
+   */
+  js?: "modern" | "legacy";
+  /**
+   * Public site URL (e.g. "https://example.com"). When set, the build
+   * generates `sitemap.xml` from the scanned routes automatically, unless
+   * one already exists in the output (from `public/` or an integration).
+   */
+  site?: string;
+  /**
    * Integrations to invoke during the build lifecycle. When provided, the
    * `build` hook fires after all pages and image variants are generated,
    * giving integrations a chance to write post-build artifacts (sitemaps,
    * robots.txt, search indexes, etc.) into the output directory.
    */
   integrations?: ElurKitIntegration[];
+  /**
+   * Optional observer invoked once per build phase with its duration in
+   * milliseconds ("scan", "pages", "images", "integrations", "sitemap").
+   * Phases that don't run (no images, no integrations, no site URL) are not
+   * reported. Used by the CLI to render progress; the build itself stays
+   * silent.
+   */
+  onPhase?: (name: string, durationMs: number) => void;
 }
 
 export interface BuildResult {
@@ -129,8 +170,14 @@ export async function build(config: BuildConfig): Promise<BuildResult> {
     }
   }
 
+  const reportPhase = (name: string, start: number): void => {
+    config.onPhase?.(name, performance.now() - start);
+  };
+
+  let phaseStart = performance.now();
   const routes = await scanRoutes(config.appDir);
   const actions = await scanActions(config.appDir);
+  reportPhase("scan", phaseStart);
   // Only action names are serialized into the HTML shell; full paths stay on the server.
   const publicActions = actionNames(actions);
   const result: BuildResult = { pages: 0, skipped: [], files: [], islands: [], imagesProcessed: 0, outDir: config.outDir };
@@ -147,9 +194,20 @@ export async function build(config: BuildConfig): Promise<BuildResult> {
       outFile: config.generatedEntry,
       hydrateImport: config.hydrateImport,
       routerImport: config.routerImport,
+      router: config.router
+        ? {
+          enabled: config.router.enabled !== false,
+          prefetch: config.router.prefetch,
+          morph: config.router.morph,
+          loadingIndicator: config.router.loadingIndicator,
+          separate: config.router.separate === true && config.js !== "legacy",
+          outFile: config.router.outFile,
+        }
+        : undefined,
     });
   }
 
+  phaseStart = performance.now();
   for (const route of routes.pages) {
     if (!isDynamic(route.path)) {
       const filePath = await buildPage(config, route, publicActions);
@@ -168,7 +226,13 @@ export async function build(config: BuildConfig): Promise<BuildResult> {
   }
 
   // Generate static 404 and 500 error pages when they exist.
-  const errorConfig = { lang: config.lang, clientEntry: config.clientEntry, renderEndpoint: false };
+  const errorConfig = {
+    lang: config.lang,
+    clientEntry: config.clientEntry,
+    renderEndpoint: false,
+    router: pageRouterConfig(config),
+    js: config.js,
+  };
   if (routes.error404) {
     const result404 = await renderErrorPage({
       routes,
@@ -198,6 +262,7 @@ export async function build(config: BuildConfig): Promise<BuildResult> {
       result.files.push(filePath);
     }
   }
+  reportPhase("pages", phaseStart);
 
   // Process registered images with the ImageService (if sharp is installed).
   // This is a two-pass process:
@@ -208,6 +273,7 @@ export async function build(config: BuildConfig): Promise<BuildResult> {
   const registeredImages = consumeImageRegistry();
   let manifest: ImageManifest | null = null;
   if (registeredImages.length > 0 && config.publicDir) {
+    phaseStart = performance.now();
     const manifestPath = join(config.outDir, ".elur", "image-manifest.json");
     const processResult = await processImageBatch(registeredImages, {
       publicDir: config.publicDir,
@@ -270,6 +336,7 @@ export async function build(config: BuildConfig): Promise<BuildResult> {
         }
       }
     }
+    reportPhase("images", phaseStart);
   }
 
   // Clear the manifest so subsequent builds start fresh.
@@ -281,10 +348,34 @@ export async function build(config: BuildConfig): Promise<BuildResult> {
   // and the manifest are written, but before the atomic staging commit
   // (when called via the CLI), so integration artifacts survive the swap.
   if (config.integrations && config.integrations.length > 0) {
+    phaseStart = performance.now();
     await runIntegrationHook(config.integrations, "build", [
       result,
       { root: config.root ?? config.outDir, command: "build" },
     ]);
+    reportPhase("integrations", phaseStart);
+  }
+
+  // Automatic sitemap from the scanned routes when the site URL is known.
+  // Runs after the integration hook; an existing sitemap.xml (copied from
+  // public/ or written by an integration) always takes precedence.
+  if (config.site) {
+    phaseStart = performance.now();
+    let sitemapExists = false;
+    try {
+      sitemapExists = (await stat(join(config.outDir, "sitemap.xml"))).isFile();
+    } catch {
+      // No sitemap yet.
+    }
+    if (!sitemapExists) {
+      const sitemapFiles = await generateSitemapFromRoutes({
+        siteUrl: config.site,
+        outDir: config.outDir,
+        routes,
+      });
+      result.files.push(...sitemapFiles);
+    }
+    reportPhase("sitemap", phaseStart);
   }
 
   return result;
@@ -333,7 +424,13 @@ async function buildConcretePage(
     route,
     params,
     searchParams: new URLSearchParams(),
-    config: { lang: config.lang, clientEntry: config.clientEntry, renderEndpoint: false },
+    config: {
+      lang: config.lang,
+      clientEntry: config.clientEntry,
+      renderEndpoint: false,
+      router: pageRouterConfig(config),
+      js: config.js,
+    },
     actions,
   });
 
@@ -343,6 +440,21 @@ async function buildConcretePage(
   await writeFile(filePath, htmlOut, "utf8");
 
   return filePath;
+}
+
+/**
+ * The router slice of the per-page render config: `enabled` gates script/meta
+ * emission, `entry` is advertised only for split bundles, and `speculation`
+ * produces the Speculation Rules block on static pages.
+ */
+function pageRouterConfig(config: BuildConfig) {
+  if (!config.router) return undefined;
+  const separate = config.router.separate === true && config.js !== "legacy";
+  return {
+    enabled: config.router.enabled !== false,
+    entry: separate ? config.router.entry ?? "/_elur/router.js" : undefined,
+    speculation: config.router.speculation,
+  };
 }
 
 export { scanRoutes, type PageRoute, type ScannedRoutes };

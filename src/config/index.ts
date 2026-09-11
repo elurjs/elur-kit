@@ -5,6 +5,9 @@ import type { Adapter } from "../adapters/index.js";
 import type { ImageFormat } from "../image/index.js";
 import type { ElurKitIntegration } from "../integrations/index.js";
 import { runIntegrationHook } from "../integrations/index.js";
+import type { LogLevel } from "../runtime/logger.js";
+import type { CacheAdapter } from "../cache/adapter.js";
+import type { RedirectRule, RewriteRule, RouteHeadersRule } from "../router/redirects.js";
 
 export type ElurOutputMode = "static" | "server" | "hybrid";
 export type TrailingSlashMode = "always" | "never" | "ignore";
@@ -29,6 +32,11 @@ export interface ElurConfig {
   cache?: {
     dir?: string;
     defaultRevalidate?: number;
+    /**
+     * Pluggable ISR cache adapter (programmatic only — not serializable).
+     * Default: filesystem adapter rooted at `cache.dir`.
+     */
+    adapter?: CacheAdapter;
   };
   security?: {
     allowedOrigins?: string[];
@@ -37,10 +45,67 @@ export interface ElurConfig {
     /** Security response headers. Set to `false` to disable defaults. */
     headers?: SecurityHeadersConfig | false;
   };
+  /**
+   * Client-side router options.
+   */
   router?: {
+    /**
+     * Enable the SPA router on the client (default: `true`). When `false`,
+     * no router code is generated and pages without islands ship 0 KB of
+     * client JavaScript.
+     */
     enabled?: boolean;
+    /**
+     * Enable link prefetching on hover/focus/pointerdown (default: `true`).
+     * Prefetch already opts out on Save-Data and 2g-class connections.
+     */
     prefetch?: boolean;
+    /**
+     * Swap `#app` via idiomorph DOM morphing instead of replacing children
+     * (default: `false`, experimental). Hydrated islands and
+     * `data-elur-persist` nodes are treated as opaque.
+     */
+    morph?: boolean;
+    /**
+     * Emit a `<script type="speculationrules">` block on statically built
+     * pages (default: off). Chromium-only progressive enhancement; other
+     * browsers ignore it.
+     */
+    speculation?: "prefetch" | "prerender";
+    /**
+     * Show a minimal top progress bar on SPA navigations slower than
+     * ~200 ms (default: `false`).
+     */
+    loadingIndicator?: boolean;
   };
+  /**
+   * Client JavaScript emission mode (default: `"modern"`).
+   *
+   * - `"modern"`: per-page gating — pages without islands emit only the
+   *   router chunk (or nothing when `router.enabled: false`), and split
+   *   client builds emit `entry-client.js` + `router.js` separately.
+   * - `"legacy"`: escape hatch restoring the pre-0%-JS behavior — the
+   *   combined client entry (hydration + router) is emitted unconditionally
+   *   on every page.
+   */
+  js?: "modern" | "legacy";
+  logger?: {
+    /** Minimum log level. Default: "info" in production, "debug" otherwise. */
+    level?: LogLevel;
+  };
+  /** Redirect rules (first match wins; default status 308). */
+  redirects?: RedirectRule[];
+  /**
+   * Opt-in streaming SSR (experimental). When `true`, dynamic routes with a
+   * `loading` boundary stream the document shell immediately and swap in the
+   * resolved content as a follow-up chunk. Streamed pages bypass the ISR
+   * cache. Default: `false` (fully buffered rendering).
+   */
+  streaming?: boolean;
+  /** Rewrite rules: transparently change the pathname before routing. */
+  rewrites?: RewriteRule[];
+  /** Extra response headers applied to matching request paths. */
+  headers?: RouteHeadersRule[];
   integrations?: ElurKitIntegration[];
 }
 
@@ -83,6 +148,7 @@ export interface ResolvedElurConfig {
   cache: {
     dir: string;
     defaultRevalidate?: number;
+    adapter?: CacheAdapter;
   };
   security: {
     allowedOrigins: string[];
@@ -93,7 +159,20 @@ export interface ResolvedElurConfig {
   router: {
     enabled: boolean;
     prefetch: boolean;
+    morph: boolean;
+    speculation?: "prefetch" | "prerender";
+    loadingIndicator: boolean;
   };
+  /** Client JS emission mode: "modern" (0% JS gating) or "legacy". */
+  js: "modern" | "legacy";
+  logger: {
+    level?: LogLevel;
+  };
+  redirects: RedirectRule[];
+  rewrites: RewriteRule[];
+  /** Opt-in streaming SSR (experimental). Default: `false`. */
+  streaming: boolean;
+  headers: RouteHeadersRule[];
   integrations: ElurKitIntegration[];
   configFile?: string;
 }
@@ -165,6 +244,7 @@ function resolveConfig(root: string, config: ElurConfig, configFile?: string): R
     cache: {
       dir: resolveInside(root, config.cache?.dir ?? ".elur/cache", "cache.dir"),
       defaultRevalidate: config.cache?.defaultRevalidate,
+      adapter: config.cache?.adapter,
     },
     security: {
       allowedOrigins: config.security?.allowedOrigins ?? [],
@@ -177,7 +257,20 @@ function resolveConfig(root: string, config: ElurConfig, configFile?: string): R
     router: {
       enabled: config.router?.enabled ?? true,
       prefetch: config.router?.prefetch ?? true,
+      morph: config.router?.morph ?? false,
+      speculation: config.router?.speculation,
+      loadingIndicator: config.router?.loadingIndicator ?? false,
     },
+    js: config.js ?? "modern",
+    // No forced level: the StructuredLogger defaults to "info" in production
+    // and "debug" in development when `level` is undefined.
+    logger: {
+      level: config.logger?.level,
+    },
+    redirects: config.redirects ?? [],
+    rewrites: config.rewrites ?? [],
+    streaming: config.streaming ?? false,
+    headers: config.headers ?? [],
     integrations: config.integrations ?? [],
     configFile,
   };
@@ -191,6 +284,12 @@ function mergeConfig(base: ElurConfig, override: ElurConfig): ElurConfig {
     cache: { ...base.cache, ...override.cache },
     security: { ...base.security, ...override.security },
     router: { ...base.router, ...override.router },
+    logger: { ...base.logger, ...override.logger },
+    // Rule arrays match first-match-wins, so override rules go first: they
+    // win over base rules for the same path while base keeps the rest.
+    redirects: [...(override.redirects ?? []), ...(base.redirects ?? [])],
+    rewrites: [...(override.rewrites ?? []), ...(base.rewrites ?? [])],
+    headers: [...(override.headers ?? []), ...(base.headers ?? [])],
     integrations: override.integrations ?? base.integrations,
   };
 }
@@ -210,27 +309,12 @@ function normalizeBase(base: string): string {
 }
 
 const PREFERRED_CONFIG_FILES = ["elur.config.ts", "elur.config.js", "elur.config.mjs"];
-// Legacy names kept for backward compatibility. Emit a deprecation warning
-// when a project still uses them so authors migrate to `elur.config.*`.
-const LEGACY_CONFIG_FILES = ["elur.config.ts", "elur.config.js", "elur.config.mjs"];
 
 async function findConfigFile(root: string): Promise<string | undefined> {
   for (const name of PREFERRED_CONFIG_FILES) {
     const path = resolve(root, name);
     try {
       await access(path);
-      return path;
-    } catch {
-    }
-  }
-  for (const name of LEGACY_CONFIG_FILES) {
-    const path = resolve(root, name);
-    try {
-      await access(path);
-      console.warn(
-        `[elur-kit] "${name}" is deprecated and will be removed in a future release. ` +
-        `Rename it to "elur.config.${name.split(".").slice(1).join(".")}" to keep your config working.`,
-      );
       return path;
     } catch {
     }

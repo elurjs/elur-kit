@@ -7,6 +7,9 @@
 import { writeFile, mkdir } from "node:fs/promises";
 import { join, dirname } from "node:path";
 
+// Sitemap generation from the scanned route manifest (wired into `build`).
+export { generateSitemapFromRoutes, type SitemapFromRoutesOptions } from "./sitemap-from-routes.js";
+
 // Types
 
 export interface SitemapEntry {

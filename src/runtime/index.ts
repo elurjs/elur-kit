@@ -31,12 +31,19 @@ export {
 } from "./handler.js";
 
 export { resolveStaticFile } from "./static.js";
-export { incomingMessageToRequest } from "./node-http.js";
+export { incomingMessageToRequest, sendWebResponse } from "./node-http.js";
 export {
   buildSecurityHeaders,
   applySecurityHeaders,
   DEFAULT_SECURITY_HEADERS,
 } from "./security-headers.js";
+export {
+  StructuredLogger,
+  createRequestLogger,
+  type LogLevel,
+  type LogEntry,
+  type ServerTimingMetric,
+} from "./logger.js";
 export {
   DEFAULT_CAPABILITIES,
   SERVERLESS_CAPABILITIES,

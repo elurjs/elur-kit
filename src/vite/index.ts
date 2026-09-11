@@ -30,6 +30,17 @@ export interface ElurJsKitViteOptions {
   hydrateImport?: string;
   /** Import specifier for startClientRouter in the generated entry. */
   routerImport?: string;
+  /**
+   * Client router flags baked into the generated dev entry. In dev the entry
+   * is never gated (HMR needs it on every page), but `enabled`/`prefetch`
+   * are honored so behavior matches production.
+   */
+  router?: {
+    enabled?: boolean;
+    prefetch?: boolean;
+    morph?: boolean;
+    loadingIndicator?: boolean;
+  };
   /** CSRF / origin policy applied to the server actions endpoint in dev. */
   actionSecurity?: ActionSecurityOptions;
   /**
@@ -71,7 +82,7 @@ export function elurJsKit(options: ElurJsKitViteOptions = {}): Plugin[] {
       root = config.root;
       const entryPath = resolve(root, generatedEntry);
       const islands = await scanIslands(resolve(root, islandsDir));
-      const source = buildEntrySource(islands, entryPath, hydrateImport, routerImport);
+      const source = buildEntrySource(islands, entryPath, hydrateImport, routerImport, options.router);
       await mkdir(dirname(entryPath), { recursive: true });
       await writeFile(entryPath, source, "utf8");
 
@@ -94,7 +105,7 @@ export function elurJsKit(options: ElurJsKitViteOptions = {}): Plugin[] {
       const appDirPath = resolve(root, appDir);
       const islandsDirPath = resolve(root, islandsDir);
       const contentDirPath = resolve(root, contentDir);
-      setupHmr(server, appDirPath, islandsDirPath, contentDirPath, root, generatedEntry, hydrateImport, routerImport, () => {
+      setupHmr(server, appDirPath, islandsDirPath, contentDirPath, root, generatedEntry, hydrateImport, routerImport, options.router, () => {
         routes = null;
         actions = {};
         clearContentCache();
@@ -145,7 +156,7 @@ export function elurJsKit(options: ElurJsKitViteOptions = {}): Plugin[] {
             const search = requestUrl.searchParams.get("search") ?? "";
             const wantsJson = (req.headers["accept"] ?? "").includes("application/json");
             const request = incomingMessageToRequest(req);
-            const { body, title, head, clearActionErrorCookie } = await renderPageBody({
+            const result = await renderPageBody({
               routes: currentRoutes,
               pathname: page,
               searchParams: new URLSearchParams(search),
@@ -154,11 +165,24 @@ export function elurJsKit(options: ElurJsKitViteOptions = {}): Plugin[] {
               importer: ssrLoad,
               request,
             });
+            if (result.response) {
+              res.writeHead(result.response.status, Object.fromEntries(result.response.headers.entries()));
+              res.end(Buffer.from(await result.response.arrayBuffer()));
+              return;
+            }
+            const { body, title, head, clearActionErrorCookie, data, actions: actionsPayload } = result;
             if (wantsJson) {
               const headers: Record<string, string> = { "Content-Type": "application/json; charset=utf-8" };
               if (clearActionErrorCookie) headers["X-Elur-Action-Clear-Cookie"] = clearActionErrorCookie;
               res.writeHead(200, headers);
-              res.end(JSON.stringify({ title, body, head, clearActionErrorCookie }));
+              res.end(JSON.stringify({
+                title,
+                body,
+                head: head ?? null,
+                data: data ?? null,
+                actions: actionsPayload ?? null,
+                clearActionErrorCookie: clearActionErrorCookie ?? null,
+              }));
             } else {
               const headers: Record<string, string> = { "Content-Type": "text/html; charset=utf-8" };
               if (clearActionErrorCookie) headers["Set-Cookie"] = clearActionErrorCookie;
@@ -250,6 +274,7 @@ function setupHmr(
   generatedEntry: string,
   hydrateImport: string,
   routerImport: string,
+  routerOptions: ElurJsKitViteOptions["router"],
   invalidate: () => void,
 ) {
   const isRelevant = (path: string) =>
@@ -258,7 +283,7 @@ function setupHmr(
   async function regenerateIslandEntry() {
     const islands = await scanIslands(islandsDirPath);
     const entryPath = resolve(root, generatedEntry);
-    const source = buildEntrySource(islands, entryPath, hydrateImport, routerImport);
+    const source = buildEntrySource(islands, entryPath, hydrateImport, routerImport, routerOptions);
     await mkdir(dirname(entryPath), { recursive: true });
     await writeFile(entryPath, source, "utf8");
     const entryMod = server.moduleGraph.getModuleById(entryPath);

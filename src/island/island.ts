@@ -27,6 +27,23 @@ import { ELUR_RENDER_PROTOCOL, type ElurTemplate, type ServerRenderProtocolConte
 
 export type IslandDirective = "load" | "idle" | "visible" | "only";
 
+/**
+ * HTML attribute that marks an island marker element. The renderer scans the
+ * rendered body for this attribute to decide whether the page needs the
+ * hydration entry at all (0% JS gating); the client hydrator queries the DOM
+ * with `[data-elur-island]`.
+ */
+export const ISLAND_MARKER_ATTR = "data-elur-island";
+
+/**
+ * HTML attribute that marks an element whose live DOM node is moved (not
+ * re-rendered) across SPA navigations — the Astro `transition:persist` /
+ * Turbo `data-turbo-permanent` pattern. The client router matches nodes by
+ * the attribute value (`data-elur-persist="key"`) between the old and new
+ * page, preserving component state, media playback, scroll position, etc.
+ */
+export const PERSIST_ATTR = "data-elur-persist";
+
 export interface IslandComponent<TProps = unknown> {
   (props: TProps): ElurTemplate | null | false | undefined;
 }
@@ -70,7 +87,7 @@ export function island<TProps>(
   const fallback = options?.fallback;
 
   const markerHtml = (innerHtml: string) =>
-    `<div data-elur-island="${escapeHtml(name)}" data-directive="${directive}" data-props='${serializeProps(props)}'>${innerHtml}</div>`;
+    `<div ${ISLAND_MARKER_ATTR}="${escapeHtml(name)}" data-directive="${directive}" data-props='${serializeProps(props)}'>${innerHtml}</div>`;
 
   return {
     __isElurTemplate: true as const,

@@ -1,6 +1,6 @@
 {
   "name": "@elurjs/kit",
-  "version": "2.4.10",
+  "version": "2.5.0",
   "description": "Full-stack framework for Elur — file-based routing, SSG and islands.",
   "license": "MIT",
   "author": "Deiver Vasquez",
@@ -103,6 +103,14 @@
       "import": "./dist/lib/action/index.js",
       "require": "./dist/lib/action/index.cjs"
     },
+    "./cache": {
+      "types": {
+        "import": "./dist/lib/cache/index.d.ts",
+        "require": "./dist/lib/cache/index.d.cts"
+      },
+      "import": "./dist/lib/cache/index.js",
+      "require": "./dist/lib/cache/index.cjs"
+    },
     "./router": {
       "types": {
         "import": "./dist/lib/router/client.d.ts",
@@ -197,6 +205,9 @@
       "action": [
         "./dist/lib/action/index.d.ts"
       ],
+      "cache": [
+        "./dist/lib/cache/index.d.ts"
+      ],
       "router": [
         "./dist/lib/router/client.d.ts"
       ],
@@ -259,6 +270,7 @@
     "test:e2e:hmr": "playwright test --config example/playwright.config.ts"
   },
   "dependencies": {
+    "idiomorph": "^0.7.4",
     "tsx": "^4.23.12"
   },
   "peerDependencies": {

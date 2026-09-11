@@ -1,6 +1,7 @@
 import type { ElurTemplate } from "@elurjs/core";
 import { renderToString } from "../render/render-to-string.js";
 import { documentShell, buildHeadTags } from "../build/document-shell.js";
+import { ISLAND_MARKER_ATTR } from "../island/island.js";
 import type { PageRoute, ScannedRoutes } from "../router/route-scanner.js";
 import type { BuildConfig } from "../build/build.js";
 import type { PageDataLoad, PageProps, RouteParams, PageMetadata, GenerateMetadata } from "../types.js";
@@ -12,7 +13,7 @@ export interface RenderPageOptions {
   route: PageRoute;
   params?: RouteParams;
   searchParams?: URLSearchParams;
-  config: Pick<BuildConfig, "lang" | "clientEntry" | "renderEndpoint">;
+  config: Pick<BuildConfig, "lang" | "clientEntry" | "renderEndpoint" | "router" | "js">;
   /** Custom module loader. Defaults to native dynamic import. */
   importer?: (path: string) => Promise<unknown>;
   /** Per-page action names exposed in the HTML shell. */
@@ -34,6 +35,12 @@ export interface RenderPageResult {
   head?: string;
   /** Resolved page title (from metadata or fallback). */
   resolvedTitle?: string;
+  /**
+   * Loader data as rendered into `<script id="elur-data">`. Exposed so the
+   * SPA render endpoint can ship it in the payload and the client router can
+   * keep the serialized data fresh across navigations.
+   */
+  data?: unknown;
   /**
    * When a loader or layout throws a `Response` (e.g. `throw new Response(...,
    * { status: 404 })`), it is captured here as a first-class response instead
@@ -218,6 +225,35 @@ export async function renderPage(options: RenderPageOptions): Promise<RenderPage
   // The title from metadata takes precedence over the data.title fallback.
   const resolvedTitle = metadata?.title ?? title;
 
+  // --- 0% JS gating (Fase 8.2) ---
+  // Scan the rendered body for island markers. A false positive (e.g. a
+  // `data-elur-island` string inside user markdown) only loads the hydration
+  // entry unnecessarily — benign. A false negative would mean dead islands in
+  // production, which is why we scan output instead of tracking render context.
+  const hasIslands = body.includes(ISLAND_MARKER_ATTR);
+
+  // Decide which module scripts the shell emits. Three modes:
+  //   legacy   (`js: "legacy"` or no router config at all): the combined
+  //            entry is emitted unconditionally — the pre-Fase-8 behavior.
+  //   split    (router.entry set): entry-client hydrates islands only, the
+  //            router lives in its own chunk → emit router.js whenever the
+  //            router is enabled, and entry-client only when islands exist.
+  //   combined (router configured, no entry): the entry embeds the router
+  //            (single-input bundles) → emit it when there are islands or the
+  //            router is on; a page with neither ships 0 KB of JS.
+  const routerCfg = config.router;
+  const routerEnabled = routerCfg?.enabled !== false;
+  let clientEntry: string | undefined;
+  let routerEntry: string | undefined;
+  if (!routerCfg || config.js === "legacy") {
+    clientEntry = config.clientEntry;
+  } else if (routerCfg.entry) {
+    if (hasIslands) clientEntry = config.clientEntry;
+    if (routerEnabled) routerEntry = routerCfg.entry;
+  } else if (hasIslands || routerEnabled) {
+    clientEntry = config.clientEntry;
+  }
+
   const html = documentShell({
     title: resolvedTitle,
     lang: config.lang,
@@ -228,12 +264,15 @@ export async function renderPage(options: RenderPageOptions): Promise<RenderPage
     headScripts,
     headLinks,
     metadata,
-    clientEntry: config.clientEntry,
+    clientEntry,
+    routerEntry,
+    routerEnabled: routerCfg ? routerEnabled : undefined,
+    speculation: routerCfg?.speculation,
     renderEndpoint: config.renderEndpoint,
   });
 
   const head = metadata ? buildHeadTags(metadata, resolvedTitle) : "";
-  return { html, revalidate, clearActionErrorCookie, head, resolvedTitle, cachePolicy };
+  return { html, revalidate, clearActionErrorCookie, head, resolvedTitle, cachePolicy, data };
 }
 
 /** Extracts a `metadata` field from a loader data object, if present. */
@@ -258,7 +297,7 @@ export interface RenderErrorPageOptions {
   routes: ScannedRoutes;
   status: 404 | 500;
   error?: unknown;
-  config: Pick<BuildConfig, "lang" | "clientEntry" | "renderEndpoint">;
+  config: Pick<BuildConfig, "lang" | "clientEntry" | "renderEndpoint" | "router" | "js">;
   actions?: Record<string, string[]>;
   importer?: (path: string) => Promise<unknown>;
 }

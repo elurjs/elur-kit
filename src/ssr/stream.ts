@@ -1,6 +1,6 @@
 import type { ElurTemplate } from "@elurjs/core";
 import { renderToString } from "../render/render-to-string.js";
-import { documentShell } from "../build/document-shell.js";
+import { documentShell, extractAppBody, serializeData } from "../build/document-shell.js";
 import type { PageRoute, ScannedRoutes } from "../router/route-scanner.js";
 import type { BuildConfig } from "../build/build.js";
 import type { PageDataLoad } from "../types.js";
@@ -54,6 +54,11 @@ function streamingScript(page: string, search: string): string {
 /**
  * Render a page shell that shows the loading boundary while the real content
  * is fetched and injected by the client.
+ *
+ * @deprecated Legacy shell + client-fetch approach, only used by the
+ * deprecated `createSsrServer`. Real streaming SSR (shell first, resolved
+ * content streamed as a swap chunk) lives in `createStreamingResponse`
+ * (`src/ssr/stream-response.ts`, exported from the package root).
  */
 export async function renderStreamingPage(options: StreamingPageOptions): Promise<string> {
   const { route, params, searchParams, config, importer = defaultImport, actions } = options;
@@ -113,7 +118,7 @@ export interface RenderPageBodyOptions {
   routes: ScannedRoutes;
   pathname: string;
   searchParams: URLSearchParams;
-  config: Pick<BuildConfig, "lang" | "clientEntry">;
+  config: Pick<BuildConfig, "lang" | "clientEntry" | "router" | "js">;
   actions?: Record<string, string[]>;
   importer?: (path: string) => Promise<unknown>;
   request?: Request;
@@ -130,6 +135,16 @@ export interface RenderPageBodyResult {
   clearActionErrorCookie?: string;
   /** `<head>` tags (title, meta, OG, twitter) for the SPA router to merge. */
   head?: string;
+  /**
+   * Serialized contents of `<script id="elur-data">` for this page, when the
+   * shell emitted it. Lets the SPA router refresh the inert data script after
+   * navigation instead of leaving the initial page's data frozen.
+   */
+  data?: string;
+  /**
+   * Serialized contents of `<script id="elur-actions">`, when emitted.
+   */
+  actions?: string;
   /** First-class Response when a loader threw one (A-22). */
   response?: Response;
 }
@@ -172,8 +187,9 @@ export async function renderPageBody(options: RenderPageBodyOptions): Promise<Re
     };
   }
 
-  const bodyMatch = result.html.match(/<div id="app">([\s\S]*)<\/div>\s*(<script|$)/);
-  const body = bodyMatch ? bodyMatch[1].trim() : result.html;
+  const body = extractAppBody(result.html)?.trim()
+    ?? result.html.match(/<div id="app">([\s\S]*)<\/div>\s*(<script|$)/)?.[1]?.trim()
+    ?? result.html;
   const titleMatch = result.html.match(/<title[^>]*>([^<]*)<\/title>/);
   return {
     body,
@@ -181,5 +197,7 @@ export async function renderPageBody(options: RenderPageBodyOptions): Promise<Re
     fullHtml: result.html,
     clearActionErrorCookie: result.clearActionErrorCookie,
     head: result.head,
+    data: result.data !== undefined ? serializeData(result.data) : undefined,
+    actions: actions && Object.keys(actions).length > 0 ? serializeData(actions) : undefined,
   };
 }

@@ -45,6 +45,13 @@ export interface SsrServer {
 
 /**
  * Create an SSR server that renders pages on demand and serves static files.
+ *
+ * @deprecated Legacy pipeline superseded by the unified Web handler
+ * (`createWebHandler` from `@elurjs/kit/runtime`), which adds structured
+ * logging, security headers, redirects/rewrites, streaming SSR and the
+ * pluggable ISR cache. The CLI no longer uses this server (`dev`, `preview`
+ * and `start` all run through `createWebHandler`); it remains exported for
+ * backward compatibility and will be removed in a future major release.
  */
 export async function createSsrServer(options: SsrServerOptions): Promise<SsrServer> {
   const routes = await scanRoutes(options.appDir);
@@ -101,6 +108,8 @@ export async function createSsrServer(options: SsrServerOptions): Promise<SsrSer
         let title: string;
         let lastRenderedCookie: string | undefined;
         let lastRenderedHead: string | undefined;
+        let lastRenderedData: string | undefined;
+        let lastRenderedActions: string | undefined;
         const ttl = await resolveTtl(options, page, routes);
         const cacheKey = `/__elur-js/render${page}?${search}`;
         if (options.cacheDir && typeof ttl === "number" && canUsePublicCache(request)) {
@@ -108,6 +117,9 @@ export async function createSsrServer(options: SsrServerOptions): Promise<SsrSer
           if (cached) {
             body = extractBody(cached.html);
             title = extractTitle(cached.html);
+            lastRenderedHead = extractHeadTags(cached.html);
+            lastRenderedData = extractScriptJson(cached.html, "elur-data");
+            lastRenderedActions = extractScriptJson(cached.html, "elur-actions");
           } else {
             const rendered = await renderPageBody({
               routes,
@@ -121,6 +133,8 @@ export async function createSsrServer(options: SsrServerOptions): Promise<SsrSer
             title = rendered.title;
             lastRenderedCookie = rendered.clearActionErrorCookie;
             lastRenderedHead = rendered.head;
+            lastRenderedData = rendered.data;
+            lastRenderedActions = rendered.actions;
             await setCachedHtml(options.cacheDir, cacheKey, rendered.fullHtml ?? "", ttl);
           }
         } else {
@@ -136,6 +150,8 @@ export async function createSsrServer(options: SsrServerOptions): Promise<SsrSer
           title = rendered.title;
           lastRenderedCookie = rendered.clearActionErrorCookie;
           lastRenderedHead = rendered.head;
+          lastRenderedData = rendered.data;
+          lastRenderedActions = rendered.actions;
         }
 
         if (wantsJson) {
@@ -145,7 +161,14 @@ export async function createSsrServer(options: SsrServerOptions): Promise<SsrSer
           const setCookie = lastRenderedCookie;
           if (setCookie) headers["X-Elur-Action-Clear-Cookie"] = setCookie;
           res.writeHead(200, headers);
-          res.end(JSON.stringify({ title, body, head: lastRenderedHead, clearActionErrorCookie: setCookie }));
+          res.end(JSON.stringify({
+            title,
+            body,
+            head: lastRenderedHead ?? null,
+            data: lastRenderedData ?? null,
+            actions: lastRenderedActions ?? null,
+            clearActionErrorCookie: setCookie ?? null,
+          }));
         } else {
           const headers: Record<string, string> = { "Content-Type": "text/html; charset=utf-8" };
           if (lastRenderedCookie) headers["Set-Cookie"] = lastRenderedCookie;
@@ -451,4 +474,18 @@ function extractBody(fullHtml: string): string {
 function extractTitle(fullHtml: string): string {
   const match = fullHtml.match(/<title>([^<]*)<\/title>/);
   return match ? match[1] : "";
+}
+
+/** Extracts the serialized contents of a `<script id="...">` from a cached shell. */
+function extractScriptJson(fullHtml: string, id: string): string | undefined {
+  const match = fullHtml.match(
+    new RegExp(`<script[^>]*id="${id}"[^>]*>([\\s\\S]*?)</script>`),
+  );
+  return match?.[1];
+}
+
+/** Extracts managed `<head>` tags (`data-elur-head`) from a cached shell. */
+function extractHeadTags(fullHtml: string): string | undefined {
+  const tags = fullHtml.match(/<title[^>]*data-elur-head[^>]*>[\s\S]*?<\/title>|<[^>]+data-elur-head[^>]*>/g);
+  return tags && tags.length > 0 ? tags.join("") : undefined;
 }

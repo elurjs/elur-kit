@@ -21,7 +21,7 @@ Elur Kit is a framework built on top of [Elur](https://elur.dev/). It brings con
 ### Key features
 
 - **Routing**: file-based with dynamic segments, optional catch-all `[[...slug]]`, route conflict detection, safe URL decoding, redirects/rewrites/route headers
-- **Rendering**: SSG, SSR, ISR with explicit cache policy (public/private/dynamic), streaming with `ReadableStream` (**experimental** — fallback buffered por adapter; ver nota de streaming)
+- **Rendering**: SSG, SSR, ISR with explicit cache policy (public/private/dynamic), opt-in streaming SSR with `loading.ts` boundaries (**experimental** — ver [Streaming SSR](#streaming-ssr-experimental))
 - **Build-time compiler** (optional, recommended): integrates [`@elurjs/core-compiler`](https://www.npmjs.com/package/@elurjs/core-compiler) via [`@elurjs/vite-plugin-elur`](https://www.npmjs.com/package/@elurjs/vite-plugin-elur) to lower `html\`\`` templates to imperative DOM code at build time — eliminates `detectContext`, `buildHTML`, and both `TreeWalker` passes in runtime
 - **Partial attribute interpolation**: `class="btn ${size}"` works out of the box via the Vite plugin's state-machine lexer (or the kit's legacy transform as fallback)
 - **Actions**: typed `defineAction()` with input validation, AbortSignal, idempotency, concurrency modes (latest/queue/parallel)
@@ -160,10 +160,10 @@ Options:
 
 - **File-based routing** — `src/app/page.ts` maps to URLs with dynamic segments (`[slug]`), catch-all (`[...slug]`), optional catch-all (`[[...slug]]`), route groups `(group)`, and route conflict detection.
 - **SSG, SSR, ISR** — static generation, on-demand SSR, and incremental static regeneration with explicit cache policy (`public`/`private`/`dynamic`), SHA-256 cache keys, atomic writes, single-flight, and tag-based invalidation.
-- **Streaming (experimental)** — `ReadableStream`-based streaming with `loading.ts` boundaries, `createStreamingResponse()`, and `createBufferedResponse()` fallback for adapters without streaming. **Etiquetado como experimental** hasta completar la matriz de paridad streaming/buffered cross-host y la implementación de `renderToChunks()` en el core.
+- **Streaming (experimental)** — real streaming SSR in the unified handler: opt-in via `defineConfig({ streaming: true })`, routes with `loading.ts` stream the shell + fallback immediately and swap in the resolved content with a `<template>` chunk. See [Streaming SSR (experimental)](#streaming-ssr-experimental).
 - **Server actions** — typed `defineAction()` with input validation (`.parse()`), AbortSignal propagation, idempotency metadata, concurrency modes (`latest`/`queue`/`parallel`), and progressive enhancement (plain HTML forms).
 - **RequestContext** — per-request context with `params`, `locals`, `cookies` (CookieJar), `signal` (AbortSignal), `requestId`, `platform`, `route`, and mutable `response` state (headers, Set-Cookie, status). Aligned with runtime-security §4.
-- **Unified Web handler** — `createWebHandler()` is the single entry point for all runtimes (Node, Bun, Vercel, Netlify, Vite dev **y el CLI `dev`/`preview`**). Every runtime is a thin wrapper; no duplicated routing/actions/static pipelines.
+- **Unified Web handler** — `createWebHandler()` is the single entry point for all runtimes (Node, Bun, Vercel, Netlify, Vite dev **y el CLI `dev`/`preview`/`start`**). Every runtime is a thin wrapper; no duplicated routing/actions/static pipelines.
 - **Cache security** — `shouldCachePublic()` rejects requests with cookies/Authorization. `isResultCacheable()` rejects HTML with action error markers. No personalized ISR cache leakage.
 - **Public error sanitization** — production 500s use `toPublicErrorInfo()`/`publicErrorResponse()` (JSON, `no-store`), never exposing stacks, paths or secrets; request id is kept in internal logs.
 - **CSRF protection** — `verifyOrigin()` checks `Origin`, `Referer`, `Host`, and `Sec-Fetch-Site` with allow-list and `strictOrigin` mode.
@@ -173,8 +173,8 @@ Options:
 - **SEO** — sitemap generation from route manifest, sitemap index for >50,000 URLs, robots.txt, JSON-LD with safe escaping (`<`, `>`, `&`, U+2028, U+2029).
 - **Image optimization** — manifest-driven `<picture>` with content-addressed hashed variants, `<source>` per format, real dimensions, no upscales, Sharp optional.
 - **Islands** — lazy `import()` per island, null/error isolation, `load`/`idle`/`visible` directives, auto-scan of `src/islands/`.
-- **Client router** — AbortController + navigation token (no races), head/assets merge, aria-live announcer, canonical URL, View Transitions with reduced-motion fallback.
-- **Middleware** — `src/middleware.ts` with path matchers, `next()` carries params/locals, cleanup in `finally`, runs in dev/preview/adapters.
+- **Client router** — navigation lifecycle events (`elur:navigate-*`, `elur:before-render`), per-page JS gating (0 KB on island-free pages), `data-elur-persist` element persistence, bounded LRU prefetch cache (network-aware, `pointerdown`), `history.scrollRestoration = "manual"`, head/payload/script refresh on navigation, optional idiomorph morphing (`router.morph`), optional loading indicator, Speculation Rules (`router.speculation`), head/assets merge, aria-live announcer, canonical URL, View Transitions with reduced-motion fallback.
+- **Middleware** — `src/middleware.ts` with path matchers, `next()` carries headers/locals into the request pipeline, cleanup in `finally`, runs in `dev`/`preview`/`start` (the unified Web handler).
 - **Integrations** — typed hooks for `elur-i18n`, `elur-auth`, `elur-query`, `elur-testing` without adding them as dependencies.
 - **CLI** — `dev`, `build`, `preview`, `start`, `check`, `routes`, `doctor`, `adapter` with reliable exit codes.
 - **Observability** — structured logger with request ID, Server-Timing, sensitive data redaction (cookies, auth, tokens).
@@ -182,6 +182,89 @@ Options:
 - **Atomic build** — staging outside `dist/`, Vite JS API (no `npx`), `copyPublicAssets()`, final swap only on success.
 - **`throw new Response()`** — first-class HTTP control flow from loaders and layout loaders (redirects, 404, etc.).
 - **HMAC-signed action errors** — action error cookies signed with SHA-256, rejects tampered/forged values.
+
+## Streaming SSR (experimental)
+
+Real streaming for dynamic routes, wired into the unified Web handler
+(`createWebHandler`) — so it works identically in `dev`, `preview`, `start`
+and the generated Node/Bun servers.
+
+### Enabling it
+
+Streaming is **opt-in** (default `false` — every route renders buffered
+exactly as before unless you enable it):
+
+```ts
+// elur.config.ts
+import { defineConfig } from "@elurjs/kit";
+
+export default defineConfig({
+  streaming: true,
+});
+```
+
+Requirements:
+
+- The route must define a **loading boundary** (`src/app/<route>/loading.ts`).
+  Routes without one render buffered, unchanged.
+- The host adapter must declare `capabilities.streaming: true`. Node, Bun and
+  the CLI dev/preview servers do; hosts that cannot stream fall back to
+  buffered rendering automatically instead of breaking. The CLI `adapter`
+  command validates the combination at build time.
+
+### What you get
+
+1. The browser receives the **document shell + loading fallback immediately**
+   (low TTFB), with status 200 and `Content-Type: text/html; charset=utf-8`.
+2. The page render (loaders included) runs **in the background**.
+3. When it finishes, the server appends a `<template>` chunk plus a small
+   script that **swaps the loading boundary in-place** (`replaceWith`), then
+   dispatches `elur:rendered`. No full re-render, no client fetch.
+
+Emitted headers on streamed responses:
+
+| Header | Why |
+| --- | --- |
+| `Content-Type: text/html; charset=utf-8` | sent early so the browser parses progressively |
+| `Transfer-Encoding: chunked` | no `Content-Length`; each chunk flushes as produced |
+| `X-Accel-Buffering: no` | tells nginx and similar reverse proxies not to buffer the stream |
+| `Cache-Control: no-store` | a half-sent dynamic stream must never be cached by intermediaries |
+
+The usual observability headers (`X-Request-ID`, `Server-Timing`,
+security headers, route headers) apply as always. Note that `Server-Timing`'s
+`ssr` metric measures **time-to-shell**, not the full background render.
+
+### Redirects, errors and disconnects mid-stream
+
+- A loader throwing a redirect `Response` emits a
+  `<script>window.location.href=…</script>` chunk — the browser navigates
+  even though the shell was already sent.
+- A loader failure after the shell went out swaps the boundary for a sober,
+  inline-styled error notice (`role="alert"`) and logs the detail via
+  `console.error`.
+- If the client disconnects, the request's `AbortSignal` cancels the stream;
+  a render completing late is discarded and never writes to a dead stream.
+  The Node server also cancels the upstream stream when the socket closes.
+
+### Interaction with the ISR cache
+
+**Streamed pages bypass the ISR cache entirely** — they are not read from it
+nor written to it, and render live on every request. Nobody caches a stream
+mid-flight; if a route is cacheable, buffered + ISR is the better delivery
+mode. Keep `streaming: false` (or remove the `loading.ts` boundary) for
+routes you want cached.
+
+### Limitations
+
+- **Experimental**: the streaming/buffered parity matrix across hosts is not
+  complete yet, and the API may change.
+- The swap script is inline: a strict `Content-Security-Policy` without
+  `unsafe-inline` (or a nonce) blocks it. Configure CSP accordingly.
+- Verified on Node (dev/preview/`start`, generated Node server) and Bun
+  (`Bun.serve` streams natively). The Vercel/Netlify adapters are out of
+  scope for now.
+- Behind a reverse proxy, make sure buffering and gzip buffering are disabled
+  for streamed routes (the `X-Accel-Buffering: no` header covers nginx).
 
 ## What's new in v2.4
 
@@ -233,6 +316,14 @@ Options:
   the island name and remediation hints.
 
 #### Using the `build` hook for sitemaps
+
+When `site` is set in your config, the build **already generates
+`sitemap.xml` automatically** from the scanned routes (dynamic routes,
+error pages and internal namespaces excluded; sites over 50,000 URLs are
+split into a sitemap index). You only need the manual hook below for full
+control over the entries (per-URL `priority`/`changefreq`, dynamic-route
+URLs, extra files). An existing `sitemap.xml` — from `public/` or written
+by an integration — always takes precedence over the automatic one.
 
 ```ts
 // elur.config.ts
@@ -1291,15 +1382,110 @@ export const config = {
 };
 ```
 
-### Prefetch and View Transitions
+The middleware runs in `dev`, `preview` and `start` through the unified Web
+handler: after redirects/rewrites and the internal endpoints, before routing.
+Returning a `Response` short-circuits the pipeline (security headers and
+`X-Request-ID` still apply); `next({ headers })` merges headers into the
+downstream request and `next({ locals })` is exposed to API routes as
+`ctx.locals`. The generated Node/Bun adapter servers do not run the
+middleware file yet.
 
-The SPA router automatically prefetches pages when links enter the viewport
-(IntersectionObserver) and on hover/focus. Prefetched pages are cached for
-30 seconds. Add `data-no-prefetch` to any link to opt out.
+### Redirects, rewrites and route headers
+
+Declare redirects, rewrites and extra response headers in `elur.config.ts`.
+All patterns support `:param` segments, `*` wildcards and `:name*` catch-alls,
+with `:param` interpolation in destinations:
+
+```ts
+import { defineConfig } from "@elurjs/kit";
+
+export default defineConfig({
+  redirects: [
+    { from: "/old-blog/:slug", to: "/blog/:slug", status: 301 },
+  ],
+  rewrites: [
+    { from: "/api/legacy/*", to: "/api/v2/*" },
+  ],
+  headers: [
+    { path: "/admin/*", headers: { "X-Robots-Tag": "noindex" } },
+  ],
+});
+```
+
+Redirects are evaluated before any routing (default status `308`). Rewrites
+transparently change the pathname used for routing — API routes, static files
+and SSR all see the rewritten path. Route headers are matched against the
+original request path and applied to the response.
+
+### Router, prefetch and navigation lifecycle
+
+The SPA router prefetches pages on `pointerenter`, `focus` and `pointerdown`
+(the "tap" strategy — earlier than the click on touch devices), and on links
+that opt into viewport prefetching with `data-prefetch="viewport"`
+(IntersectionObserver, 200px root margin). Prefetched pages live in a
+bounded LRU cache (32 entries, 30 s TTL). Prefetching is skipped on
+constrained networks — `Save-Data` or `slow-2g`/`2g` effective types —
+unless a link forces it with `data-prefetch="always"`. Add
+`data-no-prefetch` to any link to opt out entirely.
+
+Navigation lifecycle events (on `document`) carry
+`{ pathname, search, fromCache, popstate }`:
+
+- `elur:navigate-start` — a navigation begins.
+- `elur:navigate-end` — the DOM swap completed.
+- `elur:navigate-error` — the navigation failed (e.g. render endpoint
+  unavailable); the router falls back to a full page load.
+- `elur:before-render` — fires *before* the `#app` swap; the generated
+  entry disposes islands here (except islands inside persisted nodes,
+  listed in `detail.persisted`).
+- `elur:rendered` — fires after the swap; islands re-hydrate here.
+
+Elements marked `data-elur-persist="key"` survive SPA navigations: the
+router moves the *same live DOM node* into its position in the new page
+(matched by the attribute value), using `Element.moveBefore()` when
+available — media playback, island state and scroll positions are
+preserved. Islands inside persisted subtrees are not disposed/rehydrated;
+if their incoming props differ, an `elur:persist-props-changed` event
+bubbles from the island marker.
+
+Scroll is managed by the router (`history.scrollRestoration = "manual"`):
+the position is saved per history entry and restored on back/forward.
 
 When the browser supports the View Transitions API, page transitions use
 `document.startViewTransition()` for smooth cross-fade animations. This is
 automatically disabled when the user has `prefers-reduced-motion: reduce`.
+
+Router options (`defineConfig`):
+
+```ts
+export default defineConfig({
+  router: {
+    enabled: true,          // SPA navigation; false → MPA + 0 KB JS on island-free pages
+    prefetch: true,         // link prefetching (network-aware)
+    morph: false,           // experimental: idiomorph DOM morphing for the swap
+    loadingIndicator: false,// top progress bar on navigations slower than ~200 ms
+    speculation: undefined, // "prefetch" | "prerender" → Speculation Rules on static pages
+  },
+  js: "modern",             // "legacy" restores the unconditional combined entry
+});
+```
+
+### Per-page JavaScript emission
+
+With `js: "modern"` (default) the document shell inspects the rendered body
+and only ships what the page needs:
+
+| Page contents | `router.enabled: true` | `router.enabled: false` |
+|---|---|---|
+| With islands | `entry-client.js` + `router.js` | `entry-client.js` only |
+| Without islands | `router.js` only | **0 KB of JS** |
+
+The split requires the router to be its own bundle chunk — automatic when
+the project has no `vite.client.config.*` (the CLI synthesizes a default
+two-input config) or when that config declares `.elur/router.ts` as a
+second input. A single-input config keeps the router embedded in
+`entry-client.js` (emitted whenever islands exist *or* the router is on).
+Set `js: "legacy"` to restore the pre-split behavior unconditionally.
 
 ## Project conventions
 

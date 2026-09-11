@@ -1,13 +1,15 @@
 import type { ElurTemplate } from "@elurjs/core";
 import { hydrate as hydrateTemplate } from "@elurjs/core/hydrate";
-import type { IslandDirective } from "./island.js";
+import { ISLAND_MARKER_ATTR, PERSIST_ATTR, type IslandDirective } from "./island.js";
 
 // --- Client-side island hydration ---
 
-// Keep track of every active island dispose so we can clean them up before a
-// client-side navigation swaps the whole #app content.
-const _islandDisposes = new Set<() => void>();
-const _islandSchedules = new Set<() => void>();
+// Keep track of every active island dispose keyed by its marker element so
+// `cleanupHydratedIslands({ except })` can spare islands inside persisted
+// nodes (`data-elur-persist`) that the router moves — not recreates — across
+// SPA navigations.
+const _islandDisposes = new Map<HTMLElement, () => void>();
+const _islandSchedules = new Map<HTMLElement, () => void>();
 
 // Finds [data-elur-island] markers in the current document and mounts the
 // corresponding interactive components over them. This runs in the browser.
@@ -72,7 +74,7 @@ interface IslandMarker {
 
 function collectMarkers(): IslandMarker[] {
   const elements = Array.from(
-    document.querySelectorAll<HTMLElement>("[data-elur-island]"),
+    document.querySelectorAll<HTMLElement>(`[${ISLAND_MARKER_ATTR}]`),
   );
   return elements.map((el) => {
     const marker: IslandMarker = {
@@ -101,7 +103,10 @@ async function hydrate(marker: IslandMarker, registry: IslandRegistry): Promise<
 
     const entry = registry[marker.name];
     if (!entry) {
-      console.warn(`[elur-kit] No island registered for "${marker.name}"`);
+      console.warn(
+        `[elur-kit] No island registered for "${marker.name}". ` +
+        `Check that src/islands/${marker.name}.ts exists and rebuild so the client entry is regenerated.`,
+      );
       return;
     }
 
@@ -125,7 +130,10 @@ async function hydrate(marker: IslandMarker, registry: IslandRegistry): Promise<
     }
 
     if (typeof Component !== "function") {
-      console.warn(`[elur-kit] Island "${marker.name}" did not resolve to a component function`);
+      console.warn(
+        `[elur-kit] Island "${marker.name}" did not resolve to a component function. ` +
+        `Check that the island module exports the component as default export.`,
+      );
       return;
     }
 
@@ -147,18 +155,23 @@ async function hydrate(marker: IslandMarker, registry: IslandRegistry): Promise<
 
     const wrappedDispose = () => {
       handle.unmount();
-      _islandDisposes.delete(wrappedDispose);
+      if (_islandDisposes.get(marker.el) === wrappedDispose) {
+        _islandDisposes.delete(marker.el);
+      }
       delete (marker.el as any).__elur_js_island_dispose;
     };
     (marker.el as any).__elur_js_island_dispose = wrappedDispose;
-    _islandDisposes.add(wrappedDispose);
+    _islandDisposes.set(marker.el, wrappedDispose);
   } catch (error) {
     reportIslandError(marker, error);
   }
 }
 
 function reportIslandError(marker: IslandMarker, error: unknown): void {
-  console.error(`[elur-kit] Failed to hydrate island "${marker.name}":`, error);
+  console.error(
+    `[elur-kit] Failed to hydrate island "${marker.name}" — the server-rendered HTML was left as-is. Cause:`,
+    error,
+  );
   const EventConstructor = marker.el.ownerDocument.defaultView?.CustomEvent;
   if (EventConstructor) {
     marker.el.dispatchEvent(new EventConstructor("elur:island-error", {
@@ -180,19 +193,41 @@ function freshMount(template: ElurTemplate, container: Element): { unmount: () =
 }
 
 /**
- * Hydrates all islands on the page using the provided registry.
- *
- * @param registry Map from island name to component factory.
+ * Options for {@link cleanupHydratedIslands}.
  */
+export interface CleanupIslandsOptions {
+  /**
+   * Root elements whose islands must NOT be disposed — used by the SPA router
+   * to keep the live state of islands inside `data-elur-persist` nodes that
+   * are moved (not re-rendered) into the new page. The router passes them via
+   * the `elur:before-render` event detail (`detail.persisted`).
+   */
+  except?: Iterable<Element>;
+}
+
 /**
- * Dispose all currently hydrated islands. Called by the client router before
- * swapping the page body to prevent leaked effects and stale DOM writes.
+ * Dispose all currently hydrated islands. Runs on the `elur:before-render`
+ * event — dispatched by the client router BEFORE it swaps the page body — so
+ * effects are cleaned up while their DOM is still attached, and islands inside
+ * `except` roots keep running untouched.
+ *
+ * Hosts that only dispatch the legacy `elur:rendered` event keep working: the
+ * generated entry runs this cleanup on `elur:rendered` as a compat fallback
+ * when no `elur:before-render` preceded it.
  */
-export function cleanupHydratedIslands(): void {
-  for (const cancel of _islandSchedules) cancel();
-  _islandSchedules.clear();
-  for (const dispose of _islandDisposes) dispose();
-  _islandDisposes.clear();
+export function cleanupHydratedIslands(options?: CleanupIslandsOptions): void {
+  const except = options?.except ? Array.from(options.except) : undefined;
+  const kept = (el: Element): boolean =>
+    except?.some((root) => root === el || root.contains(el)) ?? false;
+  for (const [el, cancel] of _islandSchedules) {
+    if (kept(el)) continue;
+    _islandSchedules.delete(el);
+    cancel();
+  }
+  for (const [el, dispose] of _islandDisposes) {
+    if (kept(el)) continue;
+    dispose();
+  }
 }
 
 export function hydrateIslands(registry: IslandRegistry): void {
@@ -201,6 +236,19 @@ export function hydrateIslands(registry: IslandRegistry): void {
   const markers = collectMarkers();
 
   for (const marker of markers) {
+    const el = marker.el as HTMLElement & { __elur_js_island_dispose?: () => void };
+    if (typeof el.__elur_js_island_dispose === "function") {
+      // Already hydrated. Islands inside `data-elur-persist` nodes keep their
+      // live instance across navigations (persist wins over prop changes);
+      // anything else — e.g. a stale marker after a non-router re-render — is
+      // disposed and re-hydrated fresh.
+      if (el.closest(`[${PERSIST_ATTR}]`)) continue;
+      el.__elur_js_island_dispose();
+    }
+    // Skip markers that already have a pending hydration schedule — e.g. a
+    // "visible" island inside a persisted node keeps its observer.
+    if (_islandSchedules.has(marker.el)) continue;
+
     if (marker.directive === "load" || marker.directive === "only") {
       // "only" is client-only (no SSR) but hydrates immediately on the
       // client, just like "load" — the difference is purely server-side.
@@ -212,18 +260,18 @@ export function hydrateIslands(registry: IslandRegistry): void {
       let cancel = () => { };
       if ("requestIdleCallback" in window) {
         const id = window.requestIdleCallback(() => {
-          _islandSchedules.delete(cancel);
+          _islandSchedules.delete(marker.el);
           void hydrate(marker, registry);
         });
         cancel = () => window.cancelIdleCallback(id);
       } else {
         const id = globalThis.setTimeout(() => {
-          _islandSchedules.delete(cancel);
+          _islandSchedules.delete(marker.el);
           void hydrate(marker, registry);
         }, 0);
         cancel = () => globalThis.clearTimeout(id);
       }
-      _islandSchedules.add(cancel);
+      _islandSchedules.set(marker.el, cancel);
       continue;
     }
 
@@ -234,7 +282,7 @@ export function hydrateIslands(registry: IslandRegistry): void {
           (entries) => {
             for (const entry of entries) {
               if (entry.isIntersecting) {
-                _islandSchedules.delete(cancel);
+                _islandSchedules.delete(marker.el);
                 observer.disconnect();
                 void hydrate(marker, registry);
               }
@@ -243,7 +291,7 @@ export function hydrateIslands(registry: IslandRegistry): void {
           { rootMargin: "0px", threshold: 0 },
         );
         cancel = () => observer.disconnect();
-        _islandSchedules.add(cancel);
+        _islandSchedules.set(marker.el, cancel);
         observer.observe(marker.el);
       } else {
         void hydrate(marker, registry);

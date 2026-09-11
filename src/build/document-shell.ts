@@ -3,6 +3,8 @@
 // and the client entry — are injected here at build time.
 
 import type { PageMetadata } from "../types.js";
+export type SpeculationMode = "prefetch" | "prerender";
+
 export interface ShellOptions {
   /** Rendered inner HTML that goes inside `#app`. */
   body: string;
@@ -29,8 +31,33 @@ export interface ShellOptions {
   data?: unknown;
   /** Per-page action names serialized into `<script id="elur-actions">`. */
   actions?: Record<string, string[]>;
-  /** Path to the client entry module, e.g. `/_elur/entry-client.js`. */
+  /**
+   * Path to the client entry module, e.g. `/_elur/entry-client.js`. In split
+   * builds this is the hydrate-only entry; callers gate it per page so it is
+   * only emitted when the rendered body actually contains islands.
+   */
   clientEntry?: string;
+  /**
+   * Path to the standalone client router module, e.g. `/_elur/router.js`
+   * (split builds only). Emitted as a second `<script type="module">` so pages
+   * without islands still get SPA navigation without paying for the islands
+   * entry.
+   */
+  routerEntry?: string;
+  /**
+   * Whether the client router is enabled for this page. When `false`, the
+   * `elur:render-endpoint` meta is omitted entirely: no client router will run,
+   * so there is nothing to advertise endpoint availability to.
+   */
+  routerEnabled?: boolean;
+  /**
+   * Speculation Rules API mode emitted as
+   * `<script type="speculationrules">` with document rules and
+   * `eagerness: "moderate"`. Chromium-only progressive enhancement — other
+   * browsers ignore the unknown script type. Only set this for static builds;
+   * never apply to URLs reachable via server actions.
+   */
+  speculation?: SpeculationMode;
   /** Page metadata emitted as `<meta>`, `<link>` and OG/Twitter tags in `<head>`. */
   metadata?: PageMetadata;
   /**
@@ -51,6 +78,29 @@ const HTML_ESCAPES: Record<string, string> = {
   "'": "&#39;",
 };
 
+/**
+ * Explicit delimiters around the `#app` content. The streaming pipeline
+ * (`createStreamingResponse`) and adapter render endpoints extract the page
+ * body with these markers instead of parsing the shell layout by hand, so
+ * changes to the shell markup never break extraction. They are HTML comments:
+ * invisible, and ignored by hydration and the SPA router.
+ */
+export const APP_START_MARKER = "<!--elur:app:start-->";
+export const APP_END_MARKER = "<!--elur:app:end-->";
+
+/**
+ * Extracts the inner HTML of `#app` from a full document produced by
+ * `documentShell`. Returns `undefined` when the markers are missing (e.g. a
+ * hand-written document).
+ */
+export function extractAppBody(html: string): string | undefined {
+  const start = html.indexOf(APP_START_MARKER);
+  if (start < 0) return undefined;
+  const end = html.indexOf(APP_END_MARKER, start + APP_START_MARKER.length);
+  if (end < 0) return undefined;
+  return html.slice(start + APP_START_MARKER.length, end);
+}
+
 function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, (c) => HTML_ESCAPES[c]);
 }
@@ -59,7 +109,7 @@ function escapeHtml(value: string): string {
  * Serializes data for embedding inside a `<script>` tag. Escapes `<` so a
  * `</script>` sequence in the data cannot break out of the tag.
  */
-function serializeData(data: unknown): string {
+export function serializeData(data: unknown): string {
   return JSON.stringify(data ?? null).replace(/</g, "\\u003c");
 }
 
@@ -126,9 +176,42 @@ export function buildHeadTags(metadata: PageMetadata, fallbackTitle: string): st
   return tags.map((t) => `\n    ${t}`).join("");
 }
 
+/**
+ * Document-level Speculation Rules (Chromium-only, ignored elsewhere).
+ *
+ * `href_matches: "/*"` scopes the rule to same-origin path links; the
+ * `selector_matches` exclusions keep downloads, new-tab links, router-opt-outs
+ * and explicit `data-no-speculation` links out of speculation. Actions are
+ * POST endpoints reached through forms/`callAction`, never through document
+ * links, so they are not speculated. `eagerness: "moderate"` speculates on
+ * hover — the same trigger as the client router's prefetch.
+ */
+function speculationRulesScript(mode: SpeculationMode): string {
+  const rules = {
+    [mode]: [
+      {
+        source: "document",
+        where: {
+          and: [
+            { href_matches: "/*" },
+            {
+              not: {
+                selector_matches:
+                  "a[download], a[target], a[data-no-router], a[data-no-speculation]",
+              },
+            },
+          ],
+        },
+        eagerness: "moderate",
+      },
+    ],
+  };
+  return `\n    <script type="speculationrules">${JSON.stringify(rules)}</script>`;
+}
+
 /** Wraps rendered body HTML into a full HTML document. */
 export function documentShell(opts: ShellOptions): string {
-  const { body, title = "Elur Kit App", lang = "es", data, actions, clientEntry, htmlAttributes, headScripts, headLinks, metadata } = opts;
+  const { body, title = "Elur Kit App", lang = "es", data, actions, clientEntry, routerEntry, htmlAttributes, headScripts, headLinks, metadata } = opts;
 
   const dataScript =
     data !== undefined
@@ -139,8 +222,26 @@ export function documentShell(opts: ShellOptions): string {
     ? `\n    <script type="application/json" id="elur-actions">${serializeData(actions)}</script>`
     : "";
 
+  // Every emitted module script also gets a <link rel="modulepreload"> so the
+  // fetch starts during HTML parsing instead of waiting for the deferred
+  // script discovery (Fase 8.5 — paso 1).
+  const modulePreload = (src: string) =>
+    `\n    <link rel="modulepreload" href="${escapeHtml(src)}" />`;
+
+  const preloads =
+    (clientEntry ? modulePreload(clientEntry) : "") +
+    (routerEntry ? modulePreload(routerEntry) : "");
+
   const entryScript = clientEntry
     ? `\n    <script type="module" src="${escapeHtml(clientEntry)}"></script>`
+    : "";
+
+  const routerScript = routerEntry
+    ? `\n    <script type="module" src="${escapeHtml(routerEntry)}"></script>`
+    : "";
+
+  const speculationScript = opts.speculation
+    ? speculationRulesScript(opts.speculation)
     : "";
 
   const htmlAttrs = htmlAttributes
@@ -176,8 +277,10 @@ export function documentShell(opts: ShellOptions): string {
       .join("")
     : "";
 
+  // The render-endpoint marker only exists for the client router; when the
+  // router is disabled for the page there is nothing to advertise.
   const renderEndpointMeta =
-    opts.renderEndpoint === false
+    opts.renderEndpoint === false && opts.routerEnabled !== false
       ? '\n    <meta name="elur:render-endpoint" content="off" />'
       : "";
 
@@ -185,10 +288,10 @@ export function documentShell(opts: ShellOptions): string {
 <html lang="${escapeHtml(lang)}"${htmlAttrs}>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />${renderEndpointMeta}${titleTag}${headTags}${headLinksHtml}${headScriptsHtml}
+    <meta name="viewport" content="width=device-width, initial-scale=1" />${renderEndpointMeta}${titleTag}${headTags}${headLinksHtml}${headScriptsHtml}${preloads}${speculationScript}
   </head>
   <body>
-    <div id="app">${body}</div>${dataScript}${actionsScript}${entryScript}
+    <div id="app">${APP_START_MARKER}${body}${APP_END_MARKER}</div>${dataScript}${actionsScript}${entryScript}${routerScript}
   </body>
 </html>
 `;
