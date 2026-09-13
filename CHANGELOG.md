@@ -5,6 +5,22 @@ All notable changes to Elur Kit are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.0-beta.0]
+
+Prerelease del canal beta alineada con `@elurjs/core@3.7.0-beta.0`
+(motor `next-2` por defecto) y `@elurjs/vite-plugin-elur@2.2.0-beta.0`
+(emit gating + writers especializados). Sin cambios funcionales en Kit:
+todas las features de router next-gen y zero-JS ya shippearon en 2.5.x.
+
+### Changed
+
+- **Peer ranges ampliados** — `@elurjs/core` acepta
+  `^3.6.2 || ^3.7.0-beta.0` y `@elurjs/vite-plugin-elur` acepta
+  `^2.1.0 || ^2.2.0-beta.0`, permitiendo instalar el stack beta completo
+  sin warnings de peer deps.
+- **Lockfile migrado a `bun.lock`** — `package-lock.json` eliminado del
+  repo (el workspace usa bun).
+
 ## [2.5.1]
 
 ### Fixed
