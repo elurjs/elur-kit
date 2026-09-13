@@ -10,7 +10,7 @@
       },
       "devDependencies": {
         "@arethetypeswrong/cli": "^0.18.5",
-        "@elurjs/core": "^4.0.0",
+        "@elurjs/core": "^4.0.1",
         "@elurjs/vite-plugin-elur": "^2.2.0",
         "@playwright/test": "^1.62.1",
         "@types/node": "^26.5.0",
@@ -79,7 +79,7 @@
 
     "@colors/colors": ["@colors/colors@1.5.0", "", {}, "sha512-ooWCrlZP11i8GImSjTHYHLkvFDP48nS4+204nGb1RiX/WXYHmJA2III9/e2DWVabCESdW7hBAEzHRqUn9OUVvQ=="],
 
-    "@elurjs/core": ["@elurjs/core@4.0.0", "", {}, "sha512-ma6Jkod2DruzjFt5E2ZGknk4ELLQC1L3WfbnJ3pSUS7/9mlF3LFr8l6aEBy20v69qU5XyeuFAedPx/wBCjMK+A=="],
+    "@elurjs/core": ["@elurjs/core@4.0.1", "", {}, "sha512-YHDNFnfKebAIs9DnrsNkv0ttvkLcLS8OD98uK4Yxt1T/EyKdgUaq72EXVva1jskDZzFnCP65nx7D6W6DiegZsA=="],
 
     "@elurjs/core-compiler": ["@elurjs/core-compiler@1.0.0", "", {}, "sha512-PG2wWeI9kpRw4oWvtYqIenZn9K7aqkPXkqOjvzVoSS//tkMCy1HOBRd1a6xNiLzSlAZVgyNBl8gyh742yq9PdA=="],
 

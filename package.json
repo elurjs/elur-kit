@@ -297,7 +297,7 @@
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",
-    "@elurjs/core": "^4.0.0",
+    "@elurjs/core": "^4.0.1",
     "@elurjs/vite-plugin-elur": "^2.2.0",
     "@playwright/test": "^1.62.1",
     "@types/node": "^26.5.0",
