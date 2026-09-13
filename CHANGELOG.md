@@ -5,6 +5,12 @@ All notable changes to Elur Kit are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.0]
+
+Promoción a estable del canal beta `2.6.0-beta.x`. Compatible con
+`@elurjs/core@^4.0.0` (motor next-2 por defecto) además de la línea 3.x;
+suite completa 575/575 verificada contra el stack estable publicado.
+
 ## [2.6.0-beta.0]
 
 Prerelease del canal beta alineada con `@elurjs/core@3.7.0-beta.0`

@@ -10,8 +10,8 @@
       },
       "devDependencies": {
         "@arethetypeswrong/cli": "^0.18.5",
-        "@elurjs/core": "^3.7.0-beta.1",
-        "@elurjs/vite-plugin-elur": "^2.2.0-beta.0",
+        "@elurjs/core": "^4.0.0",
+        "@elurjs/vite-plugin-elur": "^2.2.0",
         "@playwright/test": "^1.62.1",
         "@types/node": "^26.5.0",
         "happy-dom": "^20.11.6",
@@ -21,7 +21,7 @@
         "vite": "^8.2.1",
       },
       "peerDependencies": {
-        "@elurjs/core": "^3.7.0-beta.1",
+        "@elurjs/core": "^3.6.2 || ^3.7.0-beta.0 || ^4.0.0",
         "@elurjs/vite-plugin-elur": "^2.1.0 || ^2.2.0-beta.0",
         "marked": "^16.0.0 || ^17.0.0 || ^18.0.0",
         "sharp": "^0.33.0 || ^0.34.0 || ^0.35.0",
@@ -79,11 +79,11 @@
 
     "@colors/colors": ["@colors/colors@1.5.0", "", {}, "sha512-ooWCrlZP11i8GImSjTHYHLkvFDP48nS4+204nGb1RiX/WXYHmJA2III9/e2DWVabCESdW7hBAEzHRqUn9OUVvQ=="],
 
-    "@elurjs/core": ["@elurjs/core@3.7.0-beta.1", "", {}, "sha512-jABur3Dz6tIBuxYh+293K5pUNZOicmNEscSOXSUN7xN8wzrY+VxrHMtl5zEZLdZQdT6MGfnN8uzk/ikdwTMsFg=="],
+    "@elurjs/core": ["@elurjs/core@4.0.0", "", {}, "sha512-ma6Jkod2DruzjFt5E2ZGknk4ELLQC1L3WfbnJ3pSUS7/9mlF3LFr8l6aEBy20v69qU5XyeuFAedPx/wBCjMK+A=="],
 
     "@elurjs/core-compiler": ["@elurjs/core-compiler@1.0.0", "", {}, "sha512-PG2wWeI9kpRw4oWvtYqIenZn9K7aqkPXkqOjvzVoSS//tkMCy1HOBRd1a6xNiLzSlAZVgyNBl8gyh742yq9PdA=="],
 
-    "@elurjs/vite-plugin-elur": ["@elurjs/vite-plugin-elur@2.2.0-beta.0", "", { "dependencies": { "@babel/core": "^7.26.0", "@babel/generator": "^7.26.0", "@babel/parser": "^7.26.0", "@babel/traverse": "^7.26.0", "@babel/types": "^7.26.0", "@elurjs/core-compiler": "^1.0.0 || ^1.1.0-beta.0" }, "peerDependencies": { "@elurjs/core": "^3.6.2 || ^3.7.0-beta.0", "vite": "^7.0.0 || ^8.0.0" } }, "sha512-BAQvcjWc+FnhCapRTiE0pVCjrUK9BJQQKSTuZW5TtPltCCwzFw729ru4lTHPKN7/HOALCrpb5Rt1diLmI6L4WA=="],
+    "@elurjs/vite-plugin-elur": ["@elurjs/vite-plugin-elur@2.2.0", "", { "dependencies": { "@babel/core": "^7.26.0", "@babel/generator": "^7.26.0", "@babel/parser": "^7.26.0", "@babel/traverse": "^7.26.0", "@babel/types": "^7.26.0", "@elurjs/core-compiler": "^1.0.0 || ^1.1.0-beta.0" }, "peerDependencies": { "@elurjs/core": "^3.6.2 || ^3.7.0-beta.0 || ^4.0.0", "vite": "^7.0.0 || ^8.0.0" } }, "sha512-ndWNoDgoMUWDOYKS1dGmyelpkATVk6rTO07D0Q5LoNWwGL9oFHzpbZPVO9OrtgZ2OrV0OePdaqO9yPYYIKpkfA=="],
 
     "@esbuild/aix-ppc64": ["@esbuild/aix-ppc64@0.28.2", "", { "os": "aix", "cpu": "ppc64" }, "sha512-XExcO+dvLKvVtNTibSTBej1NCAbaGhWn9Ww1ZPx80qsahhPFe/8jgWP0IchNe0F3HwkU7n8ejhH8bjonqht8mQ=="],
 
