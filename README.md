@@ -3,7 +3,7 @@
 [![npm version](https://img.shields.io/npm/v/@elurjs/kit.svg)](https://www.npmjs.com/package/@elurjs/kit)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-> Full-stack framework for Elur — file-based routing, SSG, SSR, ISR, streaming, islands, actions, content collections, cache adapters, and SPA-like navigation. Zero extra runtime dependencies on the client: Elur stays at ~15 KB. Optional build-time compiler lowers ``html` `` templates to imperative DOM code for ~25–44% faster renders.
+> Full-stack framework for Elur — file-based routing, SSG, SSR, ISR, streaming, islands, actions, content collections, cache adapters, and SPA-like navigation. Zero extra runtime dependencies on the client: Elur stays at ~21 KB. Optional build-time compiler lowers ``html` `` templates to imperative DOM code for ~25–44% faster renders.
 
 ## What is Elur Kit?
 
@@ -266,9 +266,11 @@ routes you want cached.
 - Behind a reverse proxy, make sure buffering and gzip buffering are disabled
   for streamed routes (the `X-Accel-Buffering: no` header covers nginx).
 
-## What's new in v2.5
+## What's new in v2.5 / v2.6
 
-**0% JavaScript by default + next-generation router.**
+**v2.6:** stable release line on top of the v2.5 feature set — `@elurjs/core` peer widened to `^3.6.2 || ^3.7.0-beta.0 || ^4.0.0` (full Elur 4 support).
+
+**v2.5: 0% JavaScript by default + next-generation router.**
 
 - **Per-page JS gating** — the document shell scans the rendered body
   for `data-elur-island` markers: pages without islands ship **0 KB of
@@ -561,6 +563,7 @@ receive the full transform pipeline.
 | v2.4.3 | Client-only islands (`directive: "only"`, `options: { ssr: false, fallback }`), `isSSR()` export, SSR error wrapping ✅ |
 | v2.4.4 | Fix: `"only"` directive now hydrates immediately like `"load"`. Fix: islands without SSR DOM use fresh `_render` mount instead of `hydrateTemplate` ✅ |
 | v2.5 | 0% JS por defecto (gating por página + split entry/router + `js:"legacy"`), router de nueva generación (eventos de ciclo de vida, `data-elur-persist`, LRU+network-aware prefetch, morph opcional, speculation rules, loading indicator), fix head/payload del render endpoint en prod, `load` real ✅ |
+| v2.6 | Línea estable sobre el set de v2.5: peer de `@elurjs/core` ampliado a `^3.6.2 \|\| ^3.7.0-beta.0 \|\| ^4.0.0` (soporte completo de Elur 4) ✅ |
 
 ## API
 
@@ -983,8 +986,22 @@ elur-kit build          # build the client bundle and any static files
 elur-kit start          # SSR server on http://127.0.0.1:3000
 ```
 
-You can also use the lower-level API to embed the SSR server in a custom Node
-app:
+You can also embed SSR in a custom Node app. The unified Web handler is the
+current entry point — `createSsrServer` remains for compatibility but is
+deprecated (v2.5):
+
+```ts
+import { createWebHandler } from "@elurjs/kit";
+
+const handler = createWebHandler(routes, actions, {
+  staticRoot: "./dist",
+  cacheDir: "./.cache",
+  clientEntry: "/_elur/entry-client.js",
+});
+const response = await handler(new Request("https://example.com/blog"));
+```
+
+Legacy API:
 
 ```ts
 import { createSsrServer } from "@elurjs/kit";
