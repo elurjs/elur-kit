@@ -7,25 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.6.0]
 
-Promoción a estable del canal beta `2.6.0-beta.x`. Compatible con
-`@elurjs/core@^4.0.0` (motor next-2 por defecto) además de la línea 3.x;
-suite completa 575/575 verificada contra el stack estable publicado.
+Stable promotion of the `2.6.0-beta.x` channel. Compatible with
+`@elurjs/core@^4.0.0` (next-2 engine by default) in addition to the
+3.x line; full 575/575 suite verified against the published stable
+stack.
 
 ## [2.6.0-beta.0]
 
-Prerelease del canal beta alineada con `@elurjs/core@3.7.0-beta.0`
-(motor `next-2` por defecto) y `@elurjs/vite-plugin-elur@2.2.0-beta.0`
-(emit gating + writers especializados). Sin cambios funcionales en Kit:
-todas las features de router next-gen y zero-JS ya shippearon en 2.5.x.
+Beta channel prerelease aligned with `@elurjs/core@3.7.0-beta.0`
+(`next-2` engine by default) and `@elurjs/vite-plugin-elur@2.2.0-beta.0`
+(emit gating + specialized writers). No functional changes in Kit:
+all next-gen router and zero-JS features already shipped in 2.5.x.
 
 ### Changed
 
-- **Peer ranges ampliados** — `@elurjs/core` acepta
-  `^3.6.2 || ^3.7.0-beta.0` y `@elurjs/vite-plugin-elur` acepta
-  `^2.1.0 || ^2.2.0-beta.0`, permitiendo instalar el stack beta completo
-  sin warnings de peer deps.
-- **Lockfile migrado a `bun.lock`** — `package-lock.json` eliminado del
-  repo (el workspace usa bun).
+- **Peer ranges widened** — `@elurjs/core` now accepts
+  `^3.6.2 || ^3.7.0-beta.0` and `@elurjs/vite-plugin-elur` accepts
+  `^2.1.0 || ^2.2.0-beta.0`, allowing the full beta stack to install
+  without peer dependency warnings.
+- **Lockfile migrated to `bun.lock`** — `package-lock.json` removed
+  from the repo (the workspace uses bun).
 
 ## [2.5.1]
 
@@ -727,7 +728,7 @@ unchanged without touching their config.
 - **RequestContext tests** — `test/request-context.test.ts` (17 tests) verifies per-request state: `params`, `locals` isolation, `cookies` (read/write), `signal`, `requestId` uniqueness, `platform`, `response` state, and `applyToResponse()` merging.
 - **`bun audit`** — zero vulnerabilities after lockfile cleanup (A-24).
 - **`publint`** — `All good!` after splitting `types` conditions into `import`/`require` and adding `.d.cts` declaration copies.
-- **Pendientes documentados** — `docs/nix-js-kit/pendientes-infraestructura.md` lista los items que requieren infraestructura externa (Playwright E2E, CI matrix, Provenance/SBOM, `arethetypeswrong`, examples, Lighthouse).
+- **Documented pending items** — `docs/nix-js-kit/pendientes-infraestructura.md` lists the items requiring external infrastructure (Playwright E2E, CI matrix, Provenance/SBOM, `arethetypeswrong`, examples, Lighthouse).
 
 ### Changed — Phase 13
 
