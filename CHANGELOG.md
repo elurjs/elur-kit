@@ -5,6 +5,16 @@ All notable changes to Elur Kit are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.1]
+
+### Changed
+
+- `peerDependencies`: `@elurjs/core` now requires `^4.0.5` — drops the Elur 3
+  range so the package always resolves the v4 engine, which includes
+  duplicate-instance detection. `@elurjs/vite-plugin-elur` peer raised to
+  `^2.2.1` (the release that injects `resolve.dedupe: ["@elurjs/core"]`).
+  Projects still on Elur 3 should stay on `2.5.x`.
+
 ## [2.6.0]
 
 Stable promotion of the `2.6.0-beta.x` channel. Compatible with
