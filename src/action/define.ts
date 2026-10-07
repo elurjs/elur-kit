@@ -79,7 +79,8 @@ export interface DefinedAction<TInput, TOutput> {
  * invalidation metadata.
  *
  * ```ts
- * import { defineAction, fail } from "@elurjs/kit/action";
+ * import { defineAction } from "@elurjs/kit/action";
+ * import { fail } from "@elurjs/kit";
  *
  * export const submitContact = defineAction({
  *   input: { parse: (v) => v as { name: string; email: string } },
