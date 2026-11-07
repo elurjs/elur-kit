@@ -1,5 +1,5 @@
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
-import { dirname, extname, relative, resolve, sep } from "node:path";
+import { dirname, extname, isAbsolute, relative, resolve, sep } from "node:path";
 import { shouldUseLegacyInterpolation, transformPartialInterpolations, type InterpolationMode } from "../vite/interpolation-plugin.js";
 
 export interface TransformProjectOptions {
@@ -65,7 +65,10 @@ function commonBase(a: string, b: string): string {
     if (sa[i] === sb[i]) prefix.push(sa[i]);
     else break;
   }
-  return resolve("/" + prefix.join(sep));
+  const joined = prefix.join(sep);
+  // On Windows the first segment is the drive ("D:"), so joining already
+  // yields an absolute path. On POSIX, prefix starts below the root.
+  return isAbsolute(joined) ? joined : resolve("/" + joined);
 }
 
 /**
