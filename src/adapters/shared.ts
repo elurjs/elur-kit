@@ -4,6 +4,7 @@ import { dirname, join, relative, resolve } from "node:path";
 import { scanRoutes } from "../router/route-scanner.js";
 import type { AdapterOptions } from "./index.js";
 import type { PageRoute } from "../router/route-scanner.js";
+import { importFile } from "../utils/import-module.js";
 
 /**
  * Shared helper: copy a directory recursively.
@@ -115,7 +116,7 @@ export async function buildSsrEntry(
   const actionsRegistry: Record<string, string[]> = {};
   for (const page of routes.pages) {
     if (!page.actionPath) continue;
-    const mod = (await import(page.actionPath)) as Record<string, unknown>;
+    const mod = (await importFile(page.actionPath)) as Record<string, unknown>;
     const names: string[] = [];
     for (const [name, value] of Object.entries(mod)) {
       if (name === "default") continue;

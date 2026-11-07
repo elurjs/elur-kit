@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { resolveStaticFile } from "../src/runtime/static.ts";
@@ -11,7 +11,7 @@ describe("resolveStaticFile", () => {
     try {
       await mkdir(join(root, "about"));
       await writeFile(join(root, "about/index.html"), "about");
-      assert.equal(await resolveStaticFile(root, "/about"), join(root, "about/index.html"));
+      assert.equal(await resolveStaticFile(root, "/about"), await realpath(join(root, "about/index.html")));
     } finally {
       await rm(root, { recursive: true, force: true });
     }

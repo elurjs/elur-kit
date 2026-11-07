@@ -1,6 +1,7 @@
 import { createServer, type IncomingMessage, type Server } from "node:http";
 import { readFile } from "node:fs/promises";
 import { extname } from "node:path";
+import { importFile } from "../utils/import-module.js";
 import { scanRoutes } from "../router/route-scanner.js";
 import { scanActions, actionNames } from "../action/scan.js";
 import { handleActionRequest, type ActionSecurityOptions } from "../action/server.js";
@@ -66,7 +67,7 @@ export async function createSsrServer(options: SsrServerOptions): Promise<SsrSer
     const pageActions = pageKey ? actions[pageKey] : Object.values(actions).find((p) => p[name]) ?? undefined;
     const actionPath = pageActions ? pageActions[name] : undefined;
     if (!actionPath) return undefined;
-    const mod = (await import(actionPath)) as Record<string, unknown>;
+    const mod = (await importFile(actionPath)) as Record<string, unknown>;
     const action = mod[name];
     if (typeof action === "function") {
       return action as (...args: unknown[]) => unknown;
@@ -205,7 +206,7 @@ export async function createSsrServer(options: SsrServerOptions): Promise<SsrSer
     const apiMatch = matchApiRoute(urlPath, routes.api);
     if (apiMatch) {
       try {
-        const mod = (await import(apiMatch.route.routePath)) as Record<
+        const mod = (await importFile(apiMatch.route.routePath)) as Record<
           string,
           (request: Request, context?: { params: Record<string, string | string[]> }) => unknown
         >;
@@ -250,7 +251,7 @@ export async function createSsrServer(options: SsrServerOptions): Promise<SsrSer
         let html: string;
         let clearActionErrorCookie: string | undefined;
         const revalidate = match.route.dataPath
-          ? ((await import(match.route.dataPath)) as { revalidate?: number }).revalidate
+          ? ((await importFile(match.route.dataPath)) as { revalidate?: number }).revalidate
           : undefined;
         const ttl = revalidate ?? options.defaultRevalidate;
         const useStreaming = options.streaming !== false && match.route.loadingPath;
@@ -461,7 +462,7 @@ async function resolveTtl(
   const match = matchRoute(pathname, routes.pages);
   if (!match) return undefined;
   const revalidate = match.route.dataPath
-    ? ((await import(match.route.dataPath)) as { revalidate?: number }).revalidate
+    ? ((await importFile(match.route.dataPath)) as { revalidate?: number }).revalidate
     : undefined;
   return revalidate ?? options.defaultRevalidate;
 }

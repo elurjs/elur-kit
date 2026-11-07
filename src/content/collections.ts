@@ -21,6 +21,7 @@ import { parseDocument } from "./frontmatter.js";
 import { renderMarkdown } from "./markdown.js";
 import { createValidator, type SchemaValidator } from "./schema.js";
 import { AsyncLocalStorage } from "node:async_hooks";
+import { importFile } from "../utils/import-module.js";
 
 export interface CollectionDefinition {
   /** Schema for frontmatter validation (zod schema or plain function). */
@@ -116,7 +117,7 @@ async function loadCollectionsConfig(root: string): Promise<CollectionsConfig | 
   }
 
   try {
-    const mod = await import(configPath);
+    const mod = (await importFile(configPath)) as Record<string, unknown>;
     const config = (mod.collections ?? mod.default) as CollectionsConfig;
     configCache.set(cacheKey, config);
     return config;

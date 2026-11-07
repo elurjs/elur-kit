@@ -1,5 +1,6 @@
 import { resolve, relative } from "node:path";
 import { scanRoutes } from "../router/route-scanner.js";
+import { importFile } from "../utils/import-module.js";
 
 /**
  * Registry of server actions grouped by page path.
@@ -24,7 +25,7 @@ export async function scanActions(appDir: string): Promise<ActionRegistry> {
   for (const page of routes.pages) {
     if (!page.actionPath) continue;
     const actionPath = resolve(page.actionPath);
-    const mod = (await import(actionPath)) as Record<string, unknown>;
+    const mod = (await importFile(actionPath)) as Record<string, unknown>;
     const pageActions: Record<string, string> = {};
     for (const [name, value] of Object.entries(mod)) {
       if (name === "default") continue;

@@ -3,6 +3,7 @@ import { existsSync } from "node:fs";
 import { join, resolve, dirname, relative } from "node:path";
 import { build as viteBuild, type InlineConfig, type PluginOption } from "vite";
 import { elurJsInterpolationPlugin, shouldUseLegacyInterpolation, type InterpolationMode } from "../vite/interpolation-plugin.js";
+import { importFile } from "../utils/import-module.js";
 
 // --- Programmatic Vite build orchestration ---
 //
@@ -107,7 +108,7 @@ export async function buildClientBundle(options: ClientBuildOptions): Promise<Cl
 }
 
 export async function loadUserConfig(path: string, _root: string): Promise<InlineConfig> {
-  const mod = await import(path);
+  const mod = (await importFile(path)) as Record<string, unknown>;
   const raw = mod.default ?? mod;
   const resolved = typeof raw === "function" ? await raw({ command: "build", mode: "production" }) : raw;
   return (resolved && typeof resolved.then === "function" ? await resolved : resolved) ?? {};

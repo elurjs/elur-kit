@@ -10,6 +10,7 @@ import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { acquireFixtureLock, releaseFixtureLock } from "./helpers/fixture-lock.js";
+import { importFile } from "../src/utils/import-module.ts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, "fixtures/minimal");
@@ -137,7 +138,7 @@ describe("adapters", () => {
     const handlerPath = resolve(root, ".vercel/output/functions/__elur-js-kit.func/index.js");
     await stat(handlerPath);
 
-    const { default: handler } = await import(handlerPath);
+    const { default: handler } = await importFile(handlerPath);
     const response = await handler(new Request("http://localhost/"));
     assert.equal(response.status, 200);
     const body = await response.text();
@@ -159,7 +160,7 @@ describe("adapters", () => {
     const handlerPath = resolve(root, "netlify/functions/__elur-js-kit.mjs");
     await stat(handlerPath);
 
-    const { default: handler } = await import(handlerPath);
+    const { default: handler } = await importFile(handlerPath);
     const response = await handler(new Request("http://localhost/"));
     assert.equal(response.status, 200);
     const body = await response.text();

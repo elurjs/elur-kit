@@ -6,6 +6,7 @@ import type { BuildConfig } from "../build/build.js";
 import type { PageDataLoad } from "../types.js";
 import { matchRoute } from "./match.js";
 import { renderPage } from "./render.js";
+import { importFile } from "../utils/import-module.js";
 
 export interface StreamingPageOptions {
   route: PageRoute;
@@ -17,7 +18,7 @@ export interface StreamingPageOptions {
   request?: Request;
 }
 
-const defaultImport = (path: string) => import(path);
+const defaultImport = (path: string) => importFile(path);
 
 /** Builds the concrete URL path for a route pattern given matched params. */
 function buildConcretePath(

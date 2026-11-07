@@ -15,6 +15,7 @@ import { scanRoutes } from "../src/router/route-scanner.ts";
 import { resolveActionPageKey } from "../src/ssr/server.ts";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
+import { importFile } from "../src/utils/import-module.ts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const appDir = resolve(__dirname, "fixtures/minimal/src/app");
@@ -46,7 +47,7 @@ describe("handleActionRequest", () => {
     const actions = await scanActions(appDir);
     const actionPath = page ? actions[page]?.[name] : Object.values(actions).find((p) => p[name])?.[name];
     if (!actionPath) return undefined;
-    const mod = await import(actionPath);
+    const mod = await importFile(actionPath);
     return mod[name] as (...args: unknown[]) => unknown;
   }
 

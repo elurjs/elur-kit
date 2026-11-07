@@ -5,6 +5,7 @@ import { renderPageBody, RouteNotFoundError } from "../ssr/stream.js";
 import { actionNames } from "../action/scan.js";
 import { serveStaticFile, htmlResponse, jsonResponse, notFound, methodNotAllowed } from "./context.js";
 import { publicErrorResponse } from "../errors.js";
+import { importFile } from "../utils/import-module.js";
 import { cacheKey, createFsCacheAdapter, type CacheAdapter } from "../cache/adapter.js";
 import { connectCacheAdapter } from "../cache/invalidation.js";
 import { shouldCachePublic, type CachePolicy } from "../cache/policy.js";
@@ -180,7 +181,7 @@ export function createWebHandler(
         if (typeof action === "function") return action as (...args: unknown[]) => unknown;
         return undefined;
       }
-      const mod = (await import(actionPath)) as Record<string, unknown>;
+      const mod = (await importFile(actionPath)) as Record<string, unknown>;
       const action = mod[name];
       if (typeof action === "function") return action as (...args: unknown[]) => unknown;
       return undefined;
@@ -283,7 +284,7 @@ export function createWebHandler(
       if (options.importer) {
         mod = (await options.importer(apiMatch.route.routePath as unknown as string)) as Record<string, unknown>;
       } else {
-        mod = (await import(apiMatch.route.routePath)) as Record<string, unknown>;
+        mod = (await importFile(apiMatch.route.routePath)) as Record<string, unknown>;
       }
       const handler = mod[request.method ?? "GET"];
       if (typeof handler !== "function") return methodNotAllowed(request.method ?? "GET");

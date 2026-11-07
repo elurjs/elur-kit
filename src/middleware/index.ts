@@ -19,6 +19,7 @@
 
 import { matchRoute } from "../ssr/match.js";
 import type { PageRoute } from "../router/route-scanner.js";
+import { importFile } from "../utils/import-module.js";
 
 /** The middleware function signature. */
 export type Middleware = (request: Request, context: MiddlewareContext) =>
@@ -74,7 +75,7 @@ export async function loadMiddleware(root: string): Promise<LoadedMiddleware | n
 
   for (const path of candidates) {
     try {
-      const mod = await import(path);
+      const mod = (await importFile(path)) as Record<string, unknown>;
       const handler = (mod.default ?? mod.middleware) as Middleware | undefined;
       if (typeof handler !== "function") continue;
       const config = (mod.config ?? {}) as MiddlewareConfig;

@@ -8,6 +8,7 @@ import type { PageDataLoad, PageProps, RouteParams, PageMetadata, GenerateMetada
 import { existsSync } from "node:fs";
 import { decodeActionErrorCookie, ACTION_ERROR_COOKIE } from "../action/error-store.js";
 import { normalizeCachePolicy, type CachePolicy } from "../cache/policy.js";
+import { importFile } from "../utils/import-module.js";
 
 export interface RenderPageOptions {
   route: PageRoute;
@@ -53,7 +54,7 @@ export interface RenderPageResult {
   cachePolicy?: CachePolicy;
 }
 
-const defaultImport = (path: string) => import(path);
+const defaultImport = (path: string) => importFile(path);
 
 /**
  * Collects `<html>` attributes and head scripts declared by data loaders

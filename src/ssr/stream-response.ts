@@ -28,6 +28,7 @@ import type { BuildConfig } from "../build/build.js";
 import { renderPage } from "./render.js";
 import { randomUUID } from "node:crypto";
 import { buildResolvedChunk } from "../middleware/stream-boundary.js";
+import { importFile } from "../utils/import-module.js";
 
 export interface StreamResponseOptions {
   route: PageRoute;
@@ -250,7 +251,7 @@ export async function createBufferedResponse(
   });
 }
 
-const defaultImport = (path: string) => import(path);
+const defaultImport = (path: string) => importFile(path);
 
 /**
  * Checks if the host runtime supports streaming responses.
