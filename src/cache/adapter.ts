@@ -12,8 +12,9 @@
 // can implement the same interface and be plugged in via config.
 
 import { createHash, randomUUID } from "node:crypto";
-import { mkdir, readFile, rename, rm, writeFile, readdir, stat } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile, readdir, stat } from "node:fs/promises";
 import { dirname, join } from "node:path";
+import { renameWithRetry } from "../utils/fs-atomic.js";
 
 // Types
 
@@ -81,7 +82,7 @@ export function createFsCacheAdapter(options: FsCacheAdapterOptions): CacheAdapt
     const tmp = `${tagIndexPath}.${process.pid}.${randomUUID()}.tmp`;
     try {
       await writeFile(tmp, JSON.stringify(index), "utf8");
-      await rename(tmp, tagIndexPath);
+      await renameWithRetry(tmp, tagIndexPath);
     } finally {
       await rm(tmp, { force: true });
     }
@@ -130,7 +131,7 @@ export function createFsCacheAdapter(options: FsCacheAdapterOptions): CacheAdapt
     const tmp = `${path}.${process.pid}.${randomUUID()}.tmp`;
     try {
       await writeFile(tmp, JSON.stringify(entry), "utf8");
-      await rename(tmp, path);
+      await renameWithRetry(tmp, path);
     } finally {
       await rm(tmp, { force: true });
     }

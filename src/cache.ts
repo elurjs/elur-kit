@@ -1,6 +1,7 @@
-import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { createHash, randomUUID } from "node:crypto";
 import { dirname, join } from "node:path";
+import { renameWithRetry } from "./utils/fs-atomic.js";
 
 export interface CacheEntry {
   html: string;
@@ -47,7 +48,7 @@ export async function setCachedHtml(
   const temporaryPath = `${path}.${process.pid}.${randomUUID()}.tmp`;
   try {
     await writeFile(temporaryPath, JSON.stringify(entry), "utf8");
-    await rename(temporaryPath, path);
+    await renameWithRetry(temporaryPath, path);
   } finally {
     await rm(temporaryPath, { force: true });
   }

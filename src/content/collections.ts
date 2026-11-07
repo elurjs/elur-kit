@@ -16,7 +16,7 @@
 // entries. `getEntry("blog", "hello")` returns a single entry by slug.
 
 import { readdir, readFile, stat } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { isAbsolute, join, relative, resolve } from "node:path";
 import { parseDocument } from "./frontmatter.js";
 import { renderMarkdown } from "./markdown.js";
 import { createValidator, type SchemaValidator } from "./schema.js";
@@ -209,7 +209,8 @@ export async function getCollection<TData = Record<string, unknown>>(
   // Verify the resolved path is still inside the content root.
   const resolvedDir = resolve(collectionDir);
   const resolvedRoot = resolve(root);
-  if (!resolvedDir.startsWith(resolvedRoot + "/") && resolvedDir !== resolvedRoot) {
+  const relativeDir = relative(resolvedRoot, resolvedDir);
+  if (relativeDir.startsWith("..") || isAbsolute(relativeDir)) {
     throw new Error(`[elur-kit] Collection "${name}" escapes the content root.`);
   }
 

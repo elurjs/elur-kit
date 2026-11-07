@@ -10,6 +10,7 @@ import { processImageBatch, type ImageManifest } from "../image/service.js";
 import { runIntegrationHook, type ElurKitIntegration } from "../integrations/index.js";
 import { generateSitemapFromRoutes } from "../seo/sitemap-from-routes.js";
 import type { RouteParams, GenerateStaticParams } from "../types.js";
+import { importFile } from "../utils/import-module.js";
 
 export interface BuildConfig {
   /** Absolute path to the app directory (e.g. /project/src/app). */
@@ -394,8 +395,8 @@ async function buildDynamicPages(
   route: PageRoute,
   actions: Record<string, string[]>,
 ): Promise<string[]> {
-  const { generateStaticParams } = (await import(
-    route.pagePath
+  const { generateStaticParams } = (await importFile(
+    route.pagePath,
   )) as { generateStaticParams?: GenerateStaticParams };
 
   if (!generateStaticParams) {
