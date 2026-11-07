@@ -89,7 +89,10 @@ export function createFsCacheAdapter(options: FsCacheAdapterOptions): CacheAdapt
   }
 
   function entryPath(key: string): string {
-    return join(cacheDir, `${key}.html.json`);
+    // Hash the key so arbitrary page paths (including Windows-invalid
+    // characters such as "?") never become file names.
+    const hashed = createHash("sha256").update(key).digest("hex");
+    return join(cacheDir, `${hashed}.html.json`);
   }
 
   async function get(key: string): Promise<CacheEntry | null> {

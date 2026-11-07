@@ -93,8 +93,8 @@ export function transformedAppDir(
  */
 function compensateRelativeImports(source: string, delta: number, maxUps: number): string {
   if (delta === 0) return source;
-  const prepend = "..".repeat(delta) + "/";
-  const strip = -delta;
+  const prepend = delta > 0 ? "..".repeat(delta) + "/" : "";
+  const strip = delta < 0 ? -delta : 0;
   return source.replace(
     /(?:(\bfrom\s*)|(\bimport\s*\()|(\bimport\s+)|(\bexport\s*\*\s*from\s*))(["'])(\.[^"']*)\5/g,
     (_match, fromKw, importCall, importKw, exportStar, quote, specifier) => {
